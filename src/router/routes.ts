@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@mdi/font/css/materialdesignicons.css';
+import Import from '@/views/Import.vue';
 
-import Vue from 'vue';
-import Vuetify from 'vuetify/lib';
-
-Vue.use(Vuetify);
-
-export default new Vuetify({});
+export default [
+  {
+    name: 'import',
+    path: '/import',
+    component: Import,
+  },
+];

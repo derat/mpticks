@@ -1,30 +1,15 @@
-import Vue from 'vue';
+// Copyright 2020 Daniel Erat. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 import VueRouter from 'vue-router';
-import Home from '../views/Home.vue';
+import routes from './routes';
 
-Vue.use(VueRouter);
+const router = new VueRouter({ mode: 'history', routes });
 
-const routes = [
-  {
-    path: '/',
-    name: 'home',
-    component: Home,
-  },
-  {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ '../views/About.vue'),
-  },
-];
-
-const router = new VueRouter({
-  mode: 'history',
-  base: process.env.BASE_URL,
-  routes,
+router.beforeEach((to, from, next) => {
+  // TODO: Add routing logic here.
+  next();
 });
 
 export default router;
