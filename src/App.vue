@@ -6,12 +6,12 @@
   <v-app>
     <v-navigation-drawer v-model="drawer" app>
       <v-list>
-        <v-list-item to="import">
+        <v-list-item v-for="item in navItems" :key="item.to" :to="item.to">
           <v-list-item-action>
-            <v-icon>import_export</v-icon>
+            <v-icon>{{ item.icon }}</v-icon>
           </v-list-item-action>
           <v-list-item-content>
-            <v-list-item-title>Import</v-list-item-title>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
       </v-list>
@@ -29,10 +29,21 @@
 </template>
 
 <script lang="ts">
+interface NavItem {
+  title: string;
+  icon: string;
+  to: string;
+}
+
 import { Component, Vue } from 'vue-property-decorator';
 
 @Component
 export default class App extends Vue {
+  readonly navItems: NavItem[] = [
+    { title: 'Ticks', icon: 'check_box', to: 'ticks' },
+    { title: 'Import', icon: 'import_export', to: 'import' },
+  ];
+
   // Model for navigation drawer.
   drawer: any = null;
   // TODO: Make this change dynamically.

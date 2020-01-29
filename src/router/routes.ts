@@ -3,11 +3,21 @@
 // found in the LICENSE file.
 
 import Import from '@/views/Import.vue';
+import Ticks from '@/views/Ticks.vue';
 
 export default [
+  {
+    name: 'ticks',
+    path: '/ticks',
+    component: Ticks,
+  },
   {
     name: 'import',
     path: '/import',
     component: Import,
+  },
+  {
+    path: '*',
+    redirect: '/ticks',
   },
 ];

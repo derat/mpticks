@@ -3,12 +3,12 @@
      found in the LICENSE file. -->
 
 <template>
-  <div>Import</div>
+  <div>Ticks</div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 
 @Component
-export default class Import extends Vue {}
+export default class Ticks extends Vue {}
 </script>

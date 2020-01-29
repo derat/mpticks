@@ -7,6 +7,10 @@ import Vue from 'vue';
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
 
+import VueRouter from 'vue-router';
+
+Vue.use(VueRouter);
+
 import '@/register-service-worker';
 
 import router from '@/router';
