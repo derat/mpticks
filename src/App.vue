@@ -19,7 +19,7 @@
 
     <v-app-bar color="primary" app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" color="white" />
-      <v-toolbar-title class="white--text">{{ title }}</v-toolbar-title>
+      <v-toolbar-title class="white--text">{{ $route.name }}</v-toolbar-title>
     </v-app-bar>
 
     <v-content>
