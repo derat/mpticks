@@ -11,8 +11,6 @@ import VueRouter from 'vue-router';
 
 Vue.use(VueRouter);
 
-import '@/register-service-worker';
-
 import router from '@/router';
 import vuetify from '@/plugins/vuetify';
 import App from '@/App.vue';
