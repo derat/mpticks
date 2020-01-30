@@ -56,7 +56,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { getTicks } from '@/api';
+import { getTicks, getRoutes } from '@/api';
 
 @Component
 export default class Import extends Vue {
@@ -71,8 +71,11 @@ export default class Import extends Vue {
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
 
   onClick() {
-    getTicks(this.email, this.key).then(ticks => {
+    getTicks(this.email, this.key, 118294182).then(ticks => {
       console.log(ticks);
+    });
+    getRoutes([108445430, 108445441], this.key).then(routes => {
+      console.log(routes);
     });
   }
 }
