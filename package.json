@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mdi/font": "^4.8.95",
+    "axios": "^0.19.2",
     "core-js": "^3.4.4",
     "eslint-plugin-vuetify": "^1.0.0-beta.5",
     "material-design-icons-iconfont": "^5.0.1",
