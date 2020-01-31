@@ -5,23 +5,23 @@
 import axios from 'axios';
 
 // A single tick returned by the get-ticks API endpoint.
-export interface Tick {
+export interface ApiTick {
   routeId: number;
-  date: string;
+  date: string; // 'YYYY-MM-DD'
   pitches: number;
   notes: string;
   style: string; // 'Solo', 'TR', 'Follow', 'Lead'
   leadStyle: string; // 'Onsight', 'Flash', 'Redpoint', 'Pinkpoint', 'Fell/Hung', ''
   tickId: number;
-  userStars: number;
-  userRating: string;
+  userStars: number; // 1 is 'bomb', 5 is 4-star
+  userRating: string; // optional user-supplied grade, e.g. '5.11a'
 }
 
 // The result of a get-ticks API call.
 interface GetTicksResult {
   hardest: string;
   average: string;
-  ticks: Tick[];
+  ticks: ApiTick[];
   success: number;
 }
 
@@ -32,8 +32,8 @@ export function getTicks(
   email: string,
   key: string,
   minTickId: number = 0,
-  ticks: Tick[] = []
-): Promise<Tick[]> {
+  ticks: ApiTick[] = []
+): Promise<ApiTick[]> {
   const url =
     'https://www.mountainproject.com/data/get-ticks' +
     `?email=${email}&key=${key}&startPos=${ticks.length}`;
@@ -56,11 +56,11 @@ export function getTicks(
 }
 
 // A single route returned by the get-routes API endpoint.
-interface Route {
+export interface ApiRoute {
   id: number;
   name: string;
   type: string; // comma-separated list of 'Sport', 'Trad', 'TR', 'Other'
-  rating: string;
+  rating: string; // actually the grade, e.g. '5.11a'
   stars: number; // 1 is 'bomb', 5 is 4-star
   starVotes: number;
   pitches: number;
@@ -76,13 +76,19 @@ interface Route {
 
 // The result of a get-routes API call.
 interface GetRoutesResult {
-  routes: Route[];
+  routes: ApiRoute[];
   success: number;
 }
 
 // Makes a single call to the Mountain Project get-routes API endpoint to return
 // information about the specified routes.
-export function getRoutes(routeIds: number[], key: string): Promise<Route[]> {
+export function getRoutes(
+  routeIds: number[],
+  key: string
+): Promise<ApiRoute[]> {
+  if (routeIds.length == 0) return Promise.resolve([]);
+
+  // TODO: Automatically break into smaller groups.
   if (routeIds.length > 200) {
     throw new Error(`Requested ${routeIds.length} routes, but limit is 200`);
   }
@@ -90,11 +96,8 @@ export function getRoutes(routeIds: number[], key: string): Promise<Route[]> {
   const url =
     'https://www.mountainproject.com/data/get-routes' +
     `?routeIds=${routeIds.join(',')}&key=${key}`;
-  console.log(url);
   return axios.get(url).then(response => {
-    console.log(response);
     const result = (response.data as unknown) as GetRoutesResult;
-    console.log(result);
     if (!result.success) throw new Error('API reported failure');
     return result.routes;
   });

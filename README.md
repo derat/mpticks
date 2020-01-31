@@ -1,29 +1,96 @@
 # mpticks
 
-## Project setup
-```
-npm install
-```
+## Background
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+This is a web app for importing and visualizing ticks (i.e. personal history)
+from [Mountain Project], a popular website that catalogues user-supplied
+information about rock climbing areas.
 
-### Compiles and minifies for production
-```
-npm run build
-```
+Mountain Project's user pages display pitches/routes/days-out over different
+periods of time, implying that users are expected to tick all their climbs
+(including when repeated routes). However, doing so ends up cluttering per-route
+tick lists with the same names over and over and with users' personal notes.
 
-### Run your unit tests
-```
-npm run test:unit
-```
+There are many different opinions about how ticks should be used:
 
-### Lints and fixes files
-```
-npm run lint
-```
+*   [Suggestion: Private Ticks Option]
+*   [Hiding tick list from profile]
+*   [Ticks posted on mountain project page]
+*   [Tick Lists]
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+It doesn't look like a "private ticks" feature is going to be added to Mountain
+Project anytime soon, hence the existence of this app.
+
+[Mountain Project]: https://www.mountainproject.com/
+[Suggestion: Private Ticks Option]: https://www.mountainproject.com/forum/topic/111808954/suggestion-private-ticks-option
+[Hiding tick list from profile]: https://www.mountainproject.com/forum/topic/113634433/hiding-tick-list-from-profile
+[Ticks posted on mountain project page]: https://www.mountainproject.com/forum/topic/107421753/ticks-posted-on-mountain-project-page
+[Tick Lists]: https://www.mountainproject.com/forum/topic/106511221/tick-lists
+
+## Cloud Firestore data
+
+### How ticks are stored
+
+The obvious approach would be to store each tick in its own [Cloud Firestore]
+document, and also store data about each route in its own document (either
+per-user or globally). This would make it easy to add or delete ticks or query a
+user's most-recent ticks.
+
+The big downside to this is [Google's pricing model for Cloud Firestore]: the
+free quota includes only 50,000 document reads, 20,000 writes, and 20,000
+deletes per day. I assume that some users have thousands of ticks, and they
+could consume the free quota quickly.
+
+At the other extreme, each user could have a single document storing all their
+ticks. Cloud Firestore documents are limited to a maximum size of 1 MB, so
+there's a risk of running up against the limit if a user has many ticks. At the
+same time, users with many ticks seem unlikely to also have extensive notes in
+each, so it's conceivable that a document could store 10,000 ticks. There's
+still the question of how route data would be stored with this approach, though.
+
+As a compromise, each route gets its own document, containing both data about
+the route itself and all of the user's ticks for the route. This is unlikely to
+run up against document size constraints. It's not much better than the "each
+tick in its own document" approach for users who don't repeat routes yet still
+have thousands of ticks, but I'm hopeful that that will be an uncommon scenario.
+
+[Cloud Firestore]: https://firebase.google.com/docs/firestore
+[Google's pricing model for Cloud Firestore]: https://firebase.google.com/docs/firestore/quotas
+
+### Schema
+
+#### `users` collection
+
+*   `<user_id>` - Document containing the specified user's data.
+    *   `locations` - Map field containing top-level locations keyed by location
+        name, e.g. 'Colorado'.
+        *   `<location_name>` - Map containing information about a location.
+            *   `routeIds` - Array field containing a list of numeric route IDs
+                in the location.
+            *   `numTicks` - Total number of ticks in the location (including
+                child locations).
+            *   `children` - Map field containing nested locations.
+                *   `<location_name>` - Map containing information about a
+                    location.
+                    *   ...
+    *   `routes` - Subcollection containing per-route information.
+        *   `<route_id>` - Document containing information about a route, keyed
+            by Mountain-Project-assigned route IDs.
+            *   `name` - String field containing the route's name.
+            *   `type` - String field containing the route type.
+            *   `grade` - String field containing the route's grade, e.g. '5.9'.
+            *   `pitches` - Number field containing the number of pitches.
+            *   `ticks` - Map field keyed by Mountain-Project-assigned tick IDs.
+                *   `<tick_id>` - Map containing tick data.
+                    *   `date` - String field containing date as `YYYY-MM-DD`.
+                    *   `pitches` - Number field containing the number of
+                        climbed pitches.
+                    *   `style` - Number field containing the climbing style.
+                        See the `TickStyle` enum from
+                        [src/models.ts](./src/models.ts) for available values.
+                    *   `notes` - String field containing optional user-supplied
+                        notes.
+                    *   `stars` - String field containing optional user-supplied
+                        score for the route: 1 is 'bomb', 5 is 4-star.
+                    *   `grade` - String field containing optional user-supplied
+                        grade for the route, e.g. '5.10a'.
