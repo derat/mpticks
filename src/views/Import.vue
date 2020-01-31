@@ -76,7 +76,15 @@
 import { Component, Vue } from 'vue-property-decorator';
 import firebase from '@/firebase';
 import { ApiRoute, ApiTick, getRoutes, getTicks } from '@/api';
-import { Route, RouteId, RouteType, Tick, TickId, TickStyle } from '@/models';
+import {
+  Location,
+  Route,
+  RouteId,
+  RouteType,
+  Tick,
+  TickId,
+  TickStyle,
+} from '@/models';
 
 @Component
 export default class Import extends Vue {
@@ -94,14 +102,20 @@ export default class Import extends Vue {
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
 
   onClick() {
+    const lastTickId = 118294181; // FIXME: Save this.
     const routes: Record<RouteId, Route> = {};
     const routeTicks: Record<RouteId, Record<TickId, Tick>> = {};
+    let rootLocation: Location | null = null;
 
-    const lastTickId = 118294181; // FIXME: Save this.
-    this.addLog(`Getting ticks after ${lastTickId} from MP...`);
-
-    // Start by getting all of the new ticks.
-    getTicks(this.email, this.key, lastTickId + 1)
+    this.addLog(`Loading locations from Firestore...`);
+    this.loadRootLocationFromFirestore()
+      .then(root => {
+        rootLocation = root;
+      })
+      .then(() => {
+        this.addLog(`Getting ticks after ${lastTickId} from MP...`);
+        return getTicks(this.email, this.key, lastTickId + 1);
+      })
       .then(apiTicks => {
         this.addLog(`Got ${apiTicks.length} new tick(s).`);
         const routeIds: RouteId[] = [];
@@ -126,7 +140,10 @@ export default class Import extends Vue {
       .then(apiRoutes => {
         // Process the routes that we got from the API.
         this.addLog(`Got ${apiRoutes.length} route(s).`);
-        for (const r of apiRoutes) routes[r.id] = createRoute(r);
+        for (const r of apiRoutes) {
+          routes[r.id] = createRoute(r);
+          setRouteLocation(r.id, r.name, r.location, rootLocation!);
+        }
 
         // Add the ticks to the routes.
         for (const routeId of Object.keys(routeTicks).map(id => parseInt(id))) {
@@ -138,9 +155,14 @@ export default class Import extends Vue {
         }
 
         this.addLog(
-          `Saving ${Object.keys(routes).length} route(s) to Firestore...`
+          `Saving location data and ${Object.keys(routes).length} ` +
+            'route(s) to Firestore...'
         );
-        return this.saveRoutesToFirestore(Object.values(routes));
+        const writes = Object.keys(routes)
+          .map(id => parseInt(id))
+          .map(routeId => this.getRouteRef(routeId).set(routes[routeId]));
+        writes.push(this.getRootLocationRef().set(rootLocation!));
+        return Promise.all(writes);
       })
       .then(() => {
         this.addLog('Import was successful.');
@@ -149,6 +171,15 @@ export default class Import extends Vue {
 
   addLog(msg: string) {
     this.log += (this.log ? '\n' : '') + msg;
+  }
+
+  loadRootLocationFromFirestore(): Promise<Location> {
+    return this.getRootLocationRef()
+      .get()
+      .then(snap => {
+        if (!snap.exists) return { routes: {}, children: {} };
+        return snap.data() as Location;
+      });
   }
 
   // Tries to load the routes identified by |ids| from Firestore into |routes|.
@@ -172,13 +203,13 @@ export default class Import extends Vue {
     ).then(ids => ids.filter(id => !!id));
   }
 
-  // Saves the supplied routes to Firestore.
-  saveRoutesToFirestore(routes: Record<RouteId, Route>) {
-    return Promise.all(
-      Object.keys(routes)
-        .map(id => parseInt(id))
-        .map(routeId => this.getRouteRef(routeId).set(routes[routeId]))
-    );
+  getRootLocationRef() {
+    return firebase
+      .firestore()
+      .collection('users')
+      .doc('default') // FIXME: user ID
+      .collection('locations')
+      .doc('root');
   }
 
   getRouteRef(id: RouteId) {
@@ -251,10 +282,29 @@ function getRouteType(apiType: string): RouteType {
 function createRoute(apiRoute: ApiRoute): Route {
   return {
     name: apiRoute.name || '',
+    location: apiRoute.location || [],
     type: getRouteType(apiRoute.type || ''),
     grade: apiRoute.rating || '',
     pitches: apiRoute.pitches || -1,
     ticks: {},
   };
+}
+
+function setRouteLocation(
+  id: RouteId,
+  name: string,
+  components: string[],
+  root: Location
+) {
+  // If we're in the correct sublocation, we're done.
+  if (!components.length) {
+    root.routes[id] = name;
+    return;
+  }
+
+  // Otherwise, recurse.
+  const sub = components[0];
+  if (!root.children[sub]) root.children[sub] = { routes: {}, children: {} };
+  setRouteLocation(id, name, components.slice(1), root.children[sub]);
 }
 </script>

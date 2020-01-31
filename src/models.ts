@@ -44,6 +44,7 @@ export enum RouteType {
 // A document in the 'routes' subcollection under a user document.
 export interface Route {
   name: string;
+  location: string[];
   type: RouteType;
   grade: string; // e.g. '5.11a'
   pitches: number;
@@ -51,15 +52,9 @@ export interface Route {
 }
 
 export type LocationName = string;
-type LocationMap = Record<LocationName, Location>;
 
-export interface LocationInfo {
-  routeIds: RouteId[]; // routes that are directly in the location
-  numTicks: number; // includes ticks from children
-  children: LocationMap;
-}
-
-// A document in the 'users' collection.
-export interface User {
-  locations: LocationMap; // top-level locations
+export interface Location {
+  routes: Record<RouteId, string>;
+  children: Record<LocationName, Location>;
+  // TODO: Include tick counts?
 }

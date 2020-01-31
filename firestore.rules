@@ -12,6 +12,10 @@ service cloud.firestore {
       //      request.auth.uid == uid
       allow read, write: if true;
     }
+    match /users/{uid}/locations/root {
+      // TODO: Lock down permissions here too.
+      allow read, write: if true;
+    }
     // Access to everything else is denied by default.
   }
 }
