@@ -57,7 +57,6 @@ export default class Ticks extends Vue {
             name: `${tick.date}`,
           };
         });
-        console.log(this.items);
       });
   }
 }
