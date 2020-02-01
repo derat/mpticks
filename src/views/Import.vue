@@ -3,72 +3,70 @@
      found in the LICENSE file. -->
 
 <template>
-  <div>
-    <v-card class="ma-3 px-3">
+  <div class="mx-3">
+    <v-row>
+      <v-col cols="12" md="8">
+        <p>
+          Enter the email address that you use to log in to Mountain Project and
+          your private API key displayed at the right side of
+          <a target="_blank" href="https://www.mountainproject.com/data"
+            >this page</a
+          >.
+        </p>
+
+        <p>
+          This information is only used to fetch your ticks and routes (and in
+          fact, it will be sent directly from your browser to Mountain Project's
+          servers).
+        </p>
+      </v-col>
+    </v-row>
+
+    <v-divider class="mb-2" />
+
+    <v-form v-model="valid" @submit.prevent>
       <v-row>
-        <v-col cols="12" md="8">
-          <p>
-            Enter the email address that you use to log in to Mountain Project
-            and your private API key displayed at the right side of
-            <a target="_blank" href="https://www.mountainproject.com/data"
-              >this page</a
-            >.
-          </p>
-
-          <p>
-            This information is only used to fetch your ticks and routes (and in
-            fact, it will be sent directly from your browser to Mountain
-            Project's servers).
-          </p>
-        </v-col>
-      </v-row>
-
-      <v-divider class="mb-2" />
-
-      <v-form v-model="valid" @submit.prevent>
-        <v-row>
-          <v-col cols="12" md="6" class="py-0">
-            <v-text-field
-              label="Email address"
-              v-model="email"
-              single-line
-              :rules="emailRules"
-            />
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12" md="6" class="py-0">
-            <v-text-field
-              label="Private key"
-              v-model="key"
-              single-line
-              :rules="keyRules"
-            />
-          </v-col>
-        </v-row>
-      </v-form>
-
-      <v-row>
-        <v-col class="pb-1">
-          <v-btn color="primary" :disabled="!valid" @click="onClick"
-            >Import</v-btn
-          >
-        </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col cols="12" md="8">
-          <v-textarea
-            v-model="log"
-            label="Log"
-            outlined
-            readonly
-            rows="8"
-            class="mb-n7"
+        <v-col cols="12" md="6" class="py-0">
+          <v-text-field
+            label="Email address"
+            v-model="email"
+            single-line
+            :rules="emailRules"
           />
         </v-col>
       </v-row>
-    </v-card>
+      <v-row>
+        <v-col cols="12" md="6" class="py-0">
+          <v-text-field
+            label="Private key"
+            v-model="key"
+            single-line
+            :rules="keyRules"
+          />
+        </v-col>
+      </v-row>
+    </v-form>
+
+    <v-row>
+      <v-col class="pb-1">
+        <v-btn color="primary" :disabled="!valid" @click="onClick"
+          >Import</v-btn
+        >
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" md="8">
+        <v-textarea
+          v-model="log"
+          label="Log"
+          outlined
+          readonly
+          rows="8"
+          class="mb-n7"
+        />
+      </v-col>
+    </v-row>
   </div>
 </template>
 
