@@ -12,7 +12,7 @@ service cloud.firestore {
       //      request.auth.uid == uid
       allow read, write: if true;
     }
-    match /users/{uid}/locations/root {
+    match /users/{uid}/areas/{area} {
       // TODO: Lock down permissions here too.
       allow read, write: if true;
     }

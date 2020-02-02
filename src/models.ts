@@ -44,17 +44,34 @@ export enum RouteType {
 // A document in the 'routes' subcollection under a user document.
 export interface Route {
   name: string;
-  location: string[];
   type: RouteType;
   grade: string; // e.g. '5.11a'
   pitches: number;
   ticks: Record<TickId, Tick>;
+  // TODO: Should this also contain the ID of the area document, so we can e.g.
+  // maintain a tick count there?
+}
+
+// Partial information about a route stored in Location.
+export interface RouteSummary {
+  name: string;
+  grade: string;
 }
 
 export type LocationName = string;
 
-export interface Location {
-  routes: Record<RouteId, string>;
-  children: Record<LocationName, Location>;
-  // TODO: Include tick counts?
+// A unique identifier for an area containing routes. Created by joining the
+// components of the |location| field returned by the get-routes API endpoint
+// with pipes, e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'.
+export type AreaId = string;
+
+// A document in the 'areas' subcollection under a user document.
+export interface Area {
+  // Routes that are located in this location (but not in child locations).
+  routes: Record<RouteId, RouteSummary>;
+}
+
+export interface AreaMap {
+  children: Record<string, AreaMap>;
+  doc?: AreaId;
 }
