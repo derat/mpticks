@@ -89,5 +89,6 @@ export interface AreaMap {
   children: Record<string, AreaMap>;
   // If the area contains routes, the document ID of the Area document in the
   // |areas| subcollection describing the area's routes.
+  // TODO: Rename this to |areaId|?
   doc?: AreaId;
 }
