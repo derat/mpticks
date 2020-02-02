@@ -78,6 +78,7 @@ import {
   Area,
   AreaId,
   AreaMap,
+  makeAreaId,
   Route,
   RouteId,
   RouteType,
@@ -135,12 +136,10 @@ export default class Import extends Vue {
         // Process the new routes that we got from the API.
         this.addLog(`Got ${apiRoutes.length} route(s).`);
         const newRoutes: Record<RouteId, Route> = {};
-        const newRouteComponents: Record<RouteId, string[]> = {};
         for (const r of apiRoutes) {
           routes[r.id] = newRoutes[r.id] = createRoute(r);
-          newRouteComponents[r.id] = r.location;
         }
-        return this.addRoutesToAreas(newRoutes, newRouteComponents, batch);
+        return this.addRoutesToAreas(newRoutes, batch);
       })
       .then(() => {
         // Add the ticks to the routes.
@@ -152,7 +151,7 @@ export default class Import extends Vue {
           }
         }
         for (const routeId of Object.keys(routes).map(id => parseInt(id))) {
-          batch.set(this.getRouteRef(routeId), routes[routeId]);
+          batch.set(this.routeRef(routeId), routes[routeId]);
         }
 
         return batch.commit();
@@ -176,7 +175,7 @@ export default class Import extends Vue {
     // success.
     return Promise.all(
       ids.map(id =>
-        this.getRouteRef(id)
+        this.routeRef(id)
           .get()
           .then(snap => {
             if (!snap.exists) return id;
@@ -190,19 +189,14 @@ export default class Import extends Vue {
   // Loads areas from Firestore and adds each route to the appropriate area.
   addRoutesToAreas(
     routes: Record<RouteId, Route>,
-    routeComponents: Record<RouteId, string[]>,
     batch: firebase.firestore.WriteBatch
   ): Promise<void> {
     if (!Object.keys(routes).length) return Promise.resolve();
 
-    const makeAreaId = function(components: string[]) {
-      return components.join('|');
-    };
-
     // Figure out which areas are needed.
-    const areaIds: Record<AreaId, string[]> = {};
-    for (const components of Object.values(routeComponents)) {
-      areaIds[makeAreaId(components)] = components;
+    const areaLocations: Record<AreaId, string[]> = {};
+    for (const r of Object.values(routes)) {
+      areaLocations[makeAreaId(r.location)] = r.location;
     }
 
     const areas: Record<AreaId, Area> = {};
@@ -217,27 +211,25 @@ export default class Import extends Vue {
       .then(() =>
         // Try to load each area from Firestore.
         Promise.all(
-          Object.keys(areaIds).map(areaId =>
-            this.getAreaRef(areaId)
+          Object.keys(areaLocations).map(areaId =>
+            this.areaRef(areaId)
               .get()
               .then(snap => {
                 if (snap.exists) {
                   areas[areaId] = snap.data() as Area;
                 } else {
                   areas[areaId] = { routes: {} };
-                  const components = areaIds[areaId];
-                  addAreaToAreaMap(areaId, components, areaMap);
+                  addAreaToAreaMap(areaId, areaLocations[areaId], areaMap);
                 }
               })
           )
         )
       )
       .then(() => {
-        // Update areas to contain routes.
+        // Update areas to contain route summaries.
         for (const routeId of Object.keys(routes).map(id => parseInt(id))) {
           const route = routes[routeId];
-          const areaId = makeAreaId(routeComponents[routeId]);
-          areas[areaId].routes[routeId] = {
+          areas[makeAreaId(route.location)].routes[routeId] = {
             name: route.name,
             grade: route.grade,
           };
@@ -246,25 +238,30 @@ export default class Import extends Vue {
         // Queue up writes.
         batch.set(this.areaMapRef, areaMap);
         for (const areaId of Object.keys(areas)) {
-          batch.set(this.getAreaRef(areaId), areas[areaId]);
+          batch.set(this.areaRef(areaId), areas[areaId]);
         }
       });
   }
 
-  getRouteRef(id: RouteId) {
+  get userId() {
+    // TODO: Require login and return the actual UID here.
+    return 'default';
+  }
+
+  routeRef(id: RouteId) {
     return firebase
       .firestore()
       .collection('users')
-      .doc('default') // FIXME: user ID
+      .doc(this.userId)
       .collection('routes')
       .doc(id.toString());
   }
 
-  getAreaRef(id: AreaId) {
+  areaRef(id: AreaId) {
     return firebase
       .firestore()
       .collection('users')
-      .doc('default') // FIXME: user ID
+      .doc(this.userId)
       .collection('areas')
       .doc(id);
   }
@@ -273,13 +270,13 @@ export default class Import extends Vue {
     return firebase
       .firestore()
       .collection('users')
-      .doc('default') // FIXME: user ID
+      .doc(this.userId)
       .collection('areas')
       .doc('map');
   }
 }
 
-// Converts the |style| and |leadStyle| values from an ApiTick object into the
+// Converts the |style| and |leadStyle| values from an ApiTick object to the
 // TickStyle enum used in a Tick object.
 function getTickStyle(style: string, leadStyle: string): TickStyle {
   switch (style) {
@@ -310,6 +307,8 @@ function getTickStyle(style: string, leadStyle: string): TickStyle {
   }
 }
 
+// Creates a Tick describing the supplied tick returned by the get-ticks API
+// endpoint. Throws an error if key information is missing.
 function createTick(apiTick: ApiTick): Tick {
   if (!apiTick.tickId) throw new Error('Missing tick ID');
   if (!apiTick.routeId) throw new Error('Missing route ID');
@@ -330,28 +329,38 @@ function createTick(apiTick: ApiTick): Tick {
   };
 }
 
+// Converts the |type| value from an ApiRoute object to the RouteType enum used
+// by the Route object.
 function getRouteType(apiType: string): RouteType {
   if (apiType.startsWith('Sport')) return RouteType.SPORT;
   if (apiType.startsWith('Trad')) return RouteType.TRAD;
   return RouteType.OTHER;
 }
 
+// Creates a Route describing the supplied route returned by the get-routes API
+// endpoint. Throws an error if key information is missing.
 function createRoute(apiRoute: ApiRoute): Route {
+  if (!apiRoute.id) throw new Error('Missing route ID');
+
   return {
     name: apiRoute.name || '',
     type: getRouteType(apiRoute.type || ''),
+    location: apiRoute.location,
     grade: apiRoute.rating || '',
     pitches: apiRoute.pitches || -1,
     ticks: {},
   };
 }
 
-function addAreaToAreaMap(id: AreaId, components: string[], map: AreaMap) {
-  const name = components[0];
+// Recursively walks |map| in order to add an area identified by |id|.
+// |location| contains the area's location components, e.g.
+// ['Colorado', 'Boulder', 'Boulder Canyon', 'Castle Rock'].
+function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
+  const name = location[0];
   if (!map.children[name]) map.children[name] = { children: {} };
 
   // If we're down to the final component, we're done. Otherwise, recurse.
-  if (components.length == 1) map.children[name].doc = id;
-  else addAreaToAreaMap(id, components.slice(1), map.children[name]);
+  if (location.length == 1) map.children[name].doc = id;
+  else addAreaToAreaMap(id, location.slice(1), map.children[name]);
 }
 </script>

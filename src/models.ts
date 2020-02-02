@@ -47,11 +47,10 @@ export enum RouteType {
 export interface Route {
   name: string;
   type: RouteType;
+  location: string[]; // e.g. ['Colorado', 'Boulder', ...]
   grade: string; // e.g. '5.11a'
   pitches: number;
   ticks: Record<TickId, Tick>;
-  // TODO: Should this also contain the ID of the area document, so we can e.g.
-  // maintain a tick count there?
 }
 
 // Partial information about a route stored in Area.
@@ -64,6 +63,11 @@ export interface RouteSummary {
 // components of the |location| field returned by the get-routes API endpoint
 // with pipes, e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'.
 export type AreaId = string;
+
+// Generates an AreaId based on the supplied location components.
+export function makeAreaId(location: string[]) {
+  return location.join('|');
+}
 
 // A document in the |areas| subcollection under a user document. Specifically,
 // this is a location (to use Mountain Project's terminology) that includes one
