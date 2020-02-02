@@ -62,6 +62,9 @@ export interface RouteSummary {
 // A unique identifier for an area containing routes. Created by joining the
 // components of the |location| field returned by the get-routes API endpoint
 // with pipes, e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'.
+//
+// This is used as the document ID for the corresponding AreaMap in the |areas|
+// subcollection.
 export type AreaId = string;
 
 // Generates an AreaId based on the supplied location components.
@@ -88,7 +91,7 @@ export interface AreaMap {
   // Areas within this area, keyed by name (e.g. 'Boulder Canyon').
   children: Record<string, AreaMap>;
   // If the area contains routes, the document ID of the Area document in the
-  // |areas| subcollection describing the area's routes.
-  // TODO: Rename this to |areaId|?
-  doc?: AreaId;
+  // |areas| subcollection describing the area's routes. Undefined if the area
+  // doesn't directly contain any routes.
+  areaId?: AreaId;
 }

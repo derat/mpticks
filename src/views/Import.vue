@@ -360,7 +360,7 @@ function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
   if (!map.children[name]) map.children[name] = { children: {} };
 
   // If we're down to the final component, we're done. Otherwise, recurse.
-  if (location.length == 1) map.children[name].doc = id;
+  if (location.length == 1) map.children[name].areaId = id;
   else addAreaToAreaMap(id, location.slice(1), map.children[name]);
 }
 </script>

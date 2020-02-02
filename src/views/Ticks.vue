@@ -53,7 +53,7 @@ class TickItem implements Item {
 class RouteItem implements Item {
   readonly id: string;
   readonly name: string;
-  children: Item[] = []; // empty to force dynamic loading of ticks
+  children: Item[] = []; // initially empty to force dynamic loading of ticks
 
   readonly routeId: RouteId;
 
@@ -82,17 +82,17 @@ class RouteItem implements Item {
 }
 
 class AreaItem implements Item {
-  id: string;
-  name: string;
-  children: Item[];
+  readonly id: string;
+  readonly name: string;
+  children: Item[]; // dynamically updated after loading the area doc
 
-  areaId?: AreaId; // only set if this area contains routes
-  childAreas: AreaItem[];
+  readonly areaId?: AreaId; // only set if this area contains routes
+  readonly childAreas: AreaItem[];
 
   constructor(parentId: string, map: AreaMap, name: string) {
     this.id = parentId + (parentId ? '|' : '') + name;
     this.name = name;
-    this.areaId = map.doc;
+    this.areaId = map.areaId;
 
     // Construct items for child areas, but if we have an ID (indicating that
     // there are routes in this area), leave |children| empty until we're
