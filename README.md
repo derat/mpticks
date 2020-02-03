@@ -1,5 +1,7 @@
 # mpticks
 
+[![Build Status](https://travis-ci.org/derat/mpticks.svg?branch=master)](https://travis-ci.org/derat/mpticks)
+
 ## Background
 
 This is a web app for importing and visualizing ticks (i.e. personal history)
