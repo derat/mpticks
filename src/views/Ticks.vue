@@ -74,9 +74,9 @@ class RouteItem implements Item {
         if (!snap.exists) return;
         const route = snap.data() as Route;
         // TODO: Sort by descending date and ID.
-        this.children = Object.keys(route.ticks)
-          .map(id => parseInt(id))
-          .map(tickId => new TickItem(this.id, tickId, route.ticks[tickId]));
+        this.children = Object.entries(route.ticks).map(
+          ([tickId, tick]) => new TickItem(this.id, parseInt(tickId), tick)
+        );
       });
   }
 }
@@ -97,11 +97,9 @@ class AreaItem implements Item {
     // Construct items for child areas, but if we have an ID (indicating that
     // there are routes in this area), leave |children| empty until we're
     // clicked so we can dynamically load the routes.
-    this.childAreas = Object.keys(map.children)
+    this.childAreas = Object.entries(map.children)
       .sort()
-      .map(
-        childName => new AreaItem(this.id, map.children[childName], childName)
-      );
+      .map(([childName, child]) => new AreaItem(this.id, child, childName));
     this.children = this.areaId ? [] : this.childAreas;
   }
 
@@ -117,11 +115,10 @@ class AreaItem implements Item {
         const area = snap.data() as Area;
         this.children = (this.childAreas as Item[]).concat(
           // TODO: Sort routes by ascending name.
-          Object.keys(area.routes)
-            .map(id => parseInt(id))
-            .map(
-              routeId => new RouteItem(this.id, routeId, area.routes[routeId])
-            )
+          Object.entries(area.routes).map(
+            ([routeId, route]) =>
+              new RouteItem(this.id, parseInt(routeId), route)
+          )
         );
       });
   }
@@ -143,8 +140,8 @@ export default class Ticks extends Vue {
       .then(snap => {
         if (!snap.exists) return;
         const map = snap.data() as AreaMap;
-        this.items = Object.keys(map.children).map(
-          name => new AreaItem('', map.children[name], name)
+        this.items = Object.entries(map.children).map(
+          ([name, child]) => new AreaItem('', child, name)
         );
       });
   }

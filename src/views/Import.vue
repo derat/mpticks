@@ -104,28 +104,28 @@ export default class Import extends Vue {
 
   onClick() {
     const lastTickId = 118294181; // FIXME: Save this.
-    const routes: Record<RouteId, Route> = {};
-    const routeTicks: Record<RouteId, Record<TickId, Tick>> = {};
+    const routes = new Map<RouteId, Route>();
+    const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
 
     this.addLog(`Getting ticks after ${lastTickId} from MP...`);
     getTicks(this.email, this.key, lastTickId + 1)
       .then(apiTicks => {
         this.addLog(`Got ${apiTicks.length} new tick(s).`);
-        const routeIds: Set<RouteId> = new Set();
         for (const apiTick of apiTicks) {
           try {
             const routeId = apiTick.routeId;
-            if (!routeTicks[routeId]) routeTicks[routeId] = {};
-            routeTicks[routeId][apiTick.tickId] = createTick(apiTick);
-            routeIds.add(routeId);
+            if (!routeTicks.get(routeId)) {
+              routeTicks.set(routeId, new Map<TickId, Tick>());
+            }
+            routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
           } catch (err) {
             this.addLog(`Skipping invalid tick ${apiTick}: ${err}`);
           }
         }
-        const ids = Array.from(routeIds);
-        this.addLog(`Loading ${ids.length} route(s) from Firestore...`);
-        return this.loadRoutesFromFirestore(routes, ids);
+        const routeIds = Array.from(routeTicks.keys());
+        this.addLog(`Loading ${routeIds.length} route(s) from Firestore...`);
+        return this.loadRoutesFromFirestore(routeIds, routes);
       })
       .then(missing => {
         // Get the missing routes from the Mountain Project API.
@@ -133,27 +133,29 @@ export default class Import extends Vue {
         return getRoutes(missing, this.key);
       })
       .then(apiRoutes => {
-        // Process the new routes that we got from the API.
+        // Create the new routes that we got from the API.
         this.addLog(`Got ${apiRoutes.length} route(s).`);
-        const newRoutes: Record<RouteId, Route> = {};
+        const newRoutes = new Map<RouteId, Route>();
         for (const r of apiRoutes) {
-          routes[r.id] = newRoutes[r.id] = createRoute(r);
+          const route = createRoute(r);
+          routes.set(r.id, route);
+          newRoutes.set(r.id, route);
         }
-        return this.addRoutesToAreas(newRoutes, batch);
+        // Update Firestore area documents to list the new routes.
+        return this.saveRoutesToAreas(newRoutes, batch);
       })
       .then(() => {
         // Add the ticks to the routes.
-        for (const routeId of Object.keys(routeTicks).map(id => parseInt(id))) {
-          const route = routes[routeId];
-          const ticks = routeTicks[routeId];
-          for (const tickId of Object.keys(ticks).map(id => parseInt(id))) {
-            route.ticks[tickId] = ticks[tickId];
-          }
-        }
-        for (const routeId of Object.keys(routes).map(id => parseInt(id))) {
-          batch.set(this.routeRef(routeId), routes[routeId]);
-        }
-
+        routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
+          ticks.forEach((tick: Tick, tickId: TickId) => {
+            routes.get(routeId)!.ticks[tickId] = tick;
+          });
+        });
+        // Write the updated routes to Firestore.
+        routes.forEach((route: Route, routeId: RouteId) => {
+          batch.set(this.routeRef(routeId), route);
+        });
+        this.addLog('Writing updated data to Firestore...');
         return batch.commit();
       })
       .then(() => {
@@ -168,8 +170,8 @@ export default class Import extends Vue {
   // Tries to load the routes identified by |ids| from Firestore into |routes|.
   // Returns IDs of missing routes (if any).
   loadRoutesFromFirestore(
-    routes: Record<RouteId, Route>,
-    ids: RouteId[]
+    ids: RouteId[],
+    routes: Map<RouteId, Route>
   ): Promise<RouteId[]> {
     // Load routes in parallel, returning IDs of missing routes and 0 for
     // success.
@@ -179,7 +181,7 @@ export default class Import extends Vue {
           .get()
           .then(snap => {
             if (!snap.exists) return id;
-            routes[id] = snap.data() as Route;
+            routes.set(id, snap.data() as Route);
             return 0;
           })
       )
@@ -187,20 +189,20 @@ export default class Import extends Vue {
   }
 
   // Loads areas from Firestore and adds each route to the appropriate area.
-  addRoutesToAreas(
-    routes: Record<RouteId, Route>,
+  saveRoutesToAreas(
+    routes: Map<RouteId, Route>,
     batch: firebase.firestore.WriteBatch
   ): Promise<void> {
-    if (!Object.keys(routes).length) return Promise.resolve();
+    if (!routes.size) return Promise.resolve();
 
     // Figure out which areas are needed.
-    const areaLocations: Record<AreaId, string[]> = {};
-    for (const r of Object.values(routes)) {
-      areaLocations[makeAreaId(r.location)] = r.location;
+    const areaLocations = new Map<AreaId, string[]>();
+    for (const r of routes.values()) {
+      areaLocations.set(makeAreaId(r.location), r.location);
     }
 
-    const areas: Record<AreaId, Area> = {};
-    let areaMap = { children: {} };
+    const areas = new Map<AreaId, Area>();
+    let areaMap: AreaMap = { children: {} };
 
     // Load the area map from Firestore so new areas can be added to it.
     return this.areaMapRef
@@ -211,15 +213,15 @@ export default class Import extends Vue {
       .then(() =>
         // Try to load each area from Firestore.
         Promise.all(
-          Object.keys(areaLocations).map(areaId =>
+          Array.from(areaLocations).map(([areaId, location]) =>
             this.areaRef(areaId)
               .get()
               .then(snap => {
                 if (snap.exists) {
-                  areas[areaId] = snap.data() as Area;
+                  areas.set(areaId, snap.data() as Area);
                 } else {
-                  areas[areaId] = { routes: {} };
-                  addAreaToAreaMap(areaId, areaLocations[areaId], areaMap);
+                  areas.set(areaId, { routes: {} });
+                  addAreaToAreaMap(areaId, location, areaMap);
                 }
               })
           )
@@ -227,52 +229,38 @@ export default class Import extends Vue {
       )
       .then(() => {
         // Update areas to contain route summaries.
-        for (const routeId of Object.keys(routes).map(id => parseInt(id))) {
-          const route = routes[routeId];
-          areas[makeAreaId(route.location)].routes[routeId] = {
+        routes.forEach((route: Route, routeId: RouteId) => {
+          areas.get(makeAreaId(route.location))!.routes[routeId] = {
             name: route.name,
             grade: route.grade,
           };
-        }
-
+        });
         // Queue up writes.
         batch.set(this.areaMapRef, areaMap);
-        for (const areaId of Object.keys(areas)) {
-          batch.set(this.areaRef(areaId), areas[areaId]);
-        }
+        areas.forEach((area: Area, areaId: AreaId) => {
+          batch.set(this.areaRef(areaId), area);
+        });
       });
   }
 
-  get userId() {
-    // TODO: Require login and return the actual UID here.
-    return 'default';
+  get userRef() {
+    // TODO: Require login and use the actual UID here instead of 'default'.
+    return firebase
+      .firestore()
+      .collection('users')
+      .doc('default');
   }
 
   routeRef(id: RouteId) {
-    return firebase
-      .firestore()
-      .collection('users')
-      .doc(this.userId)
-      .collection('routes')
-      .doc(id.toString());
+    return this.userRef.collection('routes').doc(id.toString());
   }
 
   areaRef(id: AreaId) {
-    return firebase
-      .firestore()
-      .collection('users')
-      .doc(this.userId)
-      .collection('areas')
-      .doc(id);
+    return this.userRef.collection('areas').doc(id);
   }
 
   get areaMapRef() {
-    return firebase
-      .firestore()
-      .collection('users')
-      .doc(this.userId)
-      .collection('areas')
-      .doc('map');
+    return this.areaRef('map');
   }
 }
 
@@ -360,7 +348,7 @@ function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
   if (!map.children[name]) map.children[name] = { children: {} };
 
   // If we're down to the final component, we're done. Otherwise, recurse.
-  if (location.length == 1) map.children[name].areaId = id;
-  else addAreaToAreaMap(id, location.slice(1), map.children[name]);
+  if (location.length == 1) map.children[name]!.areaId = id;
+  else addAreaToAreaMap(id, location.slice(1), map.children[name]!);
 }
 </script>

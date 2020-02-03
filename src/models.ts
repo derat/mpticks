@@ -50,6 +50,10 @@ export interface Route {
   location: string[]; // e.g. ['Colorado', 'Boulder', ...]
   grade: string; // e.g. '5.11a'
   pitches: number;
+  // We would ideally use Map instead of Record here and in the rest of this
+  // file, but all of these types need to get serialized and deserialized by
+  // Firestore, which only expects simple types and objects (unless you write
+  // custom conversion functions, which seems like a pain).
   ticks: Record<TickId, Tick>;
 }
 
