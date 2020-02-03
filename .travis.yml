@@ -1,8 +1,10 @@
-matrix:
-  include:
-    - language: node_js
-      node_js: lts/*
-      install:
-        - npm install
-      script:
-        - npm run test:unit
+language: node_js
+node_js: lts/*
+install:
+  - npm install
+script:
+  - npm run test:unit
+notifications:
+  email:
+    on_success: never
+    on_failure: always
