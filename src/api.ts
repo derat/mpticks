@@ -4,6 +4,20 @@
 
 import axios from 'axios';
 
+// Exposed for unit tests.
+export function makeGetTicksUrl(email: string, key: string, startPos: number) {
+  return (
+    'https://www.mountainproject.com/data/get-ticks' +
+    `?email=${email}&key=${key}&startPos=${startPos}`
+  );
+}
+export function makeGetRoutesUrl(routeIds: number[], key: string) {
+  return (
+    'https://www.mountainproject.com/data/get-routes' +
+    `?routeIds=${routeIds.join(',')}&key=${key}`
+  );
+}
+
 // A single tick returned by the get-ticks API endpoint.
 export interface ApiTick {
   routeId: number;
@@ -26,18 +40,15 @@ interface GetTicksResult {
 }
 
 // Makes one or more calls to the Mountain Project get-ticks API endpoint to
-// fetch all of the ticks belonging to the specified user.
-// |ticks| is used to pass along earlier results when recursing.
+// fetch all of the ticks belonging to the specified user. |ticks| is used to
+// pass along earlier results when recursing.
 export function getTicks(
   email: string,
   key: string,
   minTickId: number = 0,
   ticks: ApiTick[] = []
 ): Promise<ApiTick[]> {
-  const url =
-    'https://www.mountainproject.com/data/get-ticks' +
-    `?email=${email}&key=${key}&startPos=${ticks.length}`;
-  return axios.get(url).then(response => {
+  return axios.get(makeGetTicksUrl(email, key, ticks.length)).then(response => {
     const result = (response.data as unknown) as GetTicksResult;
     if (!result.success) throw new Error('API reported failure');
 
@@ -80,25 +91,28 @@ interface GetRoutesResult {
   success: number;
 }
 
-// Makes a single call to the Mountain Project get-routes API endpoint to return
-// information about the specified routes.
+// The get-routes endpoint is documented as returning at most 200 routes:
+// https://www.mountainproject.com/data
+// This is exported for unit tests.
+export const maxRoutesPerRequest = 200;
+
+// Makes one or more calls to the Mountain Project get-routes API endpoint to
+// return information about the specified routes. |routes| is used to pass along
+// earlier results when recursing.
 export function getRoutes(
   routeIds: number[],
-  key: string
+  key: string,
+  routes: ApiRoute[] = []
 ): Promise<ApiRoute[]> {
   if (routeIds.length == 0) return Promise.resolve([]);
 
-  // TODO: Automatically break into smaller groups.
-  if (routeIds.length > 200) {
-    throw new Error(`Requested ${routeIds.length} routes, but limit is 200`);
-  }
-
-  const url =
-    'https://www.mountainproject.com/data/get-routes' +
-    `?routeIds=${routeIds.join(',')}&key=${key}`;
+  const url = makeGetRoutesUrl(routeIds.slice(0, maxRoutesPerRequest), key);
   return axios.get(url).then(response => {
     const result = (response.data as unknown) as GetRoutesResult;
     if (!result.success) throw new Error('API reported failure');
-    return result.routes;
+
+    routes = routes.concat(result.routes as ApiRoute[]);
+    if (routeIds.length <= maxRoutesPerRequest) return routes;
+    return getRoutes(routeIds.slice(maxRoutesPerRequest), key, routes);
   });
 }
