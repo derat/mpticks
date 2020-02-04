@@ -18,9 +18,6 @@ const app = firebase.initializeApp({
 app
   .firestore()
   .enablePersistence({ synchronizeTabs: true })
-  .then(() => {
-    console.log('Firestore persistence enabled');
-  })
   .catch(err => {
     console.log('Firestore persistence disabled:', err);
   });
