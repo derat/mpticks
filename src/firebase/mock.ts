@@ -170,11 +170,6 @@ export class MockUser {
   }
 }
 
-interface FirestoreBinding {
-  vm: Vue;
-  name: string; // data property name
-}
-
 // Sentinel value for firebase.firestore.FieldValue.delete().
 const mockDeleteSentinel = {};
 
@@ -188,8 +183,6 @@ export const MockFirebase = new (class {
 
   // Firestore documents keyed by path.
   _docs: Record<string, DocData> = {};
-  // Firestore document paths to bound Vue data props.
-  _bindings: Record<string, FirestoreBinding[]> = {};
 
   constructor() {
     this.reset();
@@ -200,17 +193,11 @@ export const MockFirebase = new (class {
     this.currentUser = new MockUser('test-uid', 'Test User');
     this.getDocHook = null;
     this._docs = {};
-    this._bindings = {};
   }
 
   // Sets the document at |path| to |data|.
   setDoc(path: string, data: DocData) {
     this._docs[path] = deepCopy(data);
-
-    // Update all Vue instance data properties bound to the doc.
-    for (const binding of this._bindings[path] || []) {
-      binding.vm.$data[binding.name] = deepCopy(data);
-    }
   }
 
   // Returns the document at |path|. Primarily used to simulate actual document
@@ -246,39 +233,6 @@ export const MockFirebase = new (class {
     }
     this.setDoc(path, doc);
   }
-
-  // Map of global mocks that should be passed to vue-test-utils's mount() or
-  // shallowMount().
-  mountMocks: Record<string, any> = {
-    $bind: function(name: string, ref: DocumentReference) {
-      if (!Object.prototype.hasOwnProperty.call(MockFirebase._docs, ref.path)) {
-        return Promise.reject(`No document at ${ref.path}`);
-      }
-
-      // Record the binding so we can handle updates later.
-      const vm = this as Vue;
-      vm.$unbind(name);
-      const bindings = MockFirebase._bindings[ref.path] || [];
-      bindings.push({ vm, name });
-      MockFirebase._bindings[ref.path] = bindings;
-
-      // Assign the data to the Vue.
-      const data = deepCopy(MockFirebase._docs[ref.path]);
-      (this as Vue).$data[name] = data;
-      return Promise.resolve(data);
-    },
-
-    $unbind: function(name: string) {
-      // Unregister the binding so the Vue's data property won't be updated.
-      const vm = this as Vue;
-      for (const path of Object.keys(MockFirebase._bindings)) {
-        MockFirebase._bindings[path] = MockFirebase._bindings[path].filter(
-          b => !(b.vm == vm && b.name == name)
-        );
-      }
-      vm.$data[name] = null;
-    },
-  };
 })();
 
 export const MockEmailAuthProviderID = 'email';
@@ -341,49 +295,3 @@ jest.mock('firebase/app', () => {
 jest.mock('firebase/auth');
 jest.mock('firebase/firestore');
 jest.mock('firebase/functions');
-
-// Mock implementation of firebaseui.auth.AuthUI.
-export const MockAuthUI = new (class {
-  // Return value for isPendingRedirect(). This is false when the page is first
-  // loaded and then true when redirecting back to it after authentication has
-  // been performed.
-  pendingRedirect = false;
-  // Container element ID passed to start().
-  containerID: string | null = null;
-  // Configuration object passed to start().
-  config: Record<string, any> | null = null;
-
-  constructor() {
-    this.reset();
-  }
-
-  // Resets data to defaults.
-  reset() {
-    this.pendingRedirect = false;
-    this.containerID = null;
-    this.config = null;
-  }
-
-  isPendingRedirect() {
-    return this.pendingRedirect;
-  }
-
-  start(id: string, config: object) {
-    this.containerID = id;
-    this.config = config;
-  }
-})();
-
-jest.mock('firebaseui', () => {
-  return {
-    auth: {
-      AuthUI: {
-        // Pretend like an instance has already been created.
-        getInstance: () => MockAuthUI,
-      },
-      CredentialHelper: {
-        NONE: {},
-      },
-    },
-  };
-});
