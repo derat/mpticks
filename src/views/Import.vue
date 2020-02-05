@@ -202,7 +202,7 @@ export default class Import extends Vue {
     }
 
     const areas = new Map<AreaId, Area>();
-    let areaMap: AreaMap = { children: {} };
+    let areaMap: AreaMap = {};
 
     // Load the area map from Firestore so new areas can be added to it.
     return this.areaMapRef
@@ -345,7 +345,8 @@ function createRoute(apiRoute: ApiRoute): Route {
 // ['Colorado', 'Boulder', 'Boulder Canyon', 'Castle Rock'].
 function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
   const name = location[0];
-  if (!map.children[name]) map.children[name] = { children: {} };
+  if (!map.children) map.children = {};
+  if (!map.children[name]) map.children[name] = {};
 
   // If we're down to the final component, we're done. Otherwise, recurse.
   if (location.length == 1) map.children[name]!.areaId = id;

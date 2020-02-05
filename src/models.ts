@@ -80,8 +80,8 @@ export function makeAreaId(location: string[]) {
 // this is a location (to use Mountain Project's terminology) that includes one
 // or more routes.
 //
-// If a location does not directly include routes but needs to be tracked
-// because it has sublocations with routes, then it's only tracked by AreaMap.
+// If an area does not directly include routes but needs to be tracked because
+// it has subareas with routes, then it's only tracked by AreaMap.
 export interface Area {
   // Routes that are in this area (but not in child areas).
   routes: Record<RouteId, RouteSummary>;
@@ -92,8 +92,9 @@ export interface Area {
 // level of the 'map' document, |children| contains top-level locations, e.g.
 // 'Colorado' and 'International'.
 export interface AreaMap {
-  // Areas within this area, keyed by name (e.g. 'Boulder Canyon').
-  children: Record<string, AreaMap>;
+  // Areas within this area, keyed by name (e.g. 'Boulder Canyon'). Undefined if
+  // the area doesn't contain any subareas.
+  children?: Record<string, AreaMap>;
   // If the area contains routes, the document ID of the Area document in the
   // |areas| subcollection describing the area's routes. Undefined if the area
   // doesn't directly contain any routes.

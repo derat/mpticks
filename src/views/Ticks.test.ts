@@ -25,80 +25,32 @@ import {
   TickId,
   TickStyle,
 } from '@/models';
+import { makeRoute, makeRouteSummary, makeTick } from '@/testdata';
 
 import Ticks from './Ticks.vue';
 
-const tickId1: TickId = 101;
-const tick1: Tick = {
-  date: '2020-01-01',
-  pitches: 1,
-  style: TickStyle.LEAD_ONSIGHT,
-  notes: 'got it!',
-  stars: -1,
-  grade: '',
-};
-const tickId2: TickId = 102;
-const tick2: Tick = {
-  date: '2019-07-01',
-  pitches: 2,
-  style: TickStyle.FOLLOW,
-  notes: 'fun route',
-  stars: 2,
-  grade: '5.9',
-};
-const tickId3: TickId = 103;
-const tick3: Tick = {
-  date: '2019-10-31',
-  pitches: 2,
-  style: TickStyle.LEAD,
-  notes: '',
-  stars: 2,
-  grade: '5.9',
-};
-const tickId4: TickId = 104;
-const tick4: Tick = {
-  date: '2019-02-28',
-  pitches: 1,
-  style: TickStyle.LEAD_FELL_HUNG,
-  notes: 'whoops',
-  stars: 4,
-  grade: '',
-};
+const tickId1: TickId = 11;
+const tick1: Tick = makeTick(tickId1);
+const tickId2: TickId = 12;
+const tick2: Tick = makeTick(tickId2);
+const tickId3: TickId = 13;
+const tick3: Tick = makeTick(tickId3);
+const tickId4: TickId = 14;
+const tick4: Tick = makeTick(tickId4);
 
-const area1 = 'Colorado';
-const subArea1 = 'Boulder';
+const area1 = 'California';
+const subArea1 = 'Yosemite';
 const areaId1 = makeAreaId([area1, subArea1]);
 
-const area2 = 'California';
+const area2 = 'Colorado';
 const areaId2 = makeAreaId([area2]);
 
-const routeId1: RouteId = 11;
-const route1: Route = {
-  name: 'First Route',
-  type: RouteType.SPORT,
-  location: [area1, subArea1],
-  grade: '5.10c',
-  pitches: 1,
-  ticks: { [tickId1]: tick1 },
-};
-const routeId2: RouteId = 12;
-const route2: Route = {
-  name: 'Second Route',
-  type: RouteType.TRAD,
-  location: [area2],
-  grade: '5.9+',
-  pitches: 2,
-  ticks: { [tickId2]: tick2, [tickId3]: tick3 },
-};
-const routeId3: RouteId = 13;
-const route3: Route = {
-  name: 'Third Route',
-  type: RouteType.OTHER,
-  location: [area2],
-  grade: '5.7',
-  pitches: 1,
-  ticks: { [tickId4]: tick4 },
-};
+const routeId1: RouteId = 1;
+const route1: Route = makeRoute(routeId1, [tickId1], [area1, subArea1]);
+const routeId2: RouteId = 2;
+const route2: Route = makeRoute(routeId2, [tickId2, tickId3], [area2]);
+const routeId3: RouteId = 3;
+const route3: Route = makeRoute(routeId3, [tickId4], [area2]);
 
 setUpVuetifyTesting();
 
@@ -111,25 +63,19 @@ describe('Ticks', () => {
       children: {
         [area1]: {
           children: {
-            [subArea1]: {
-              children: {},
-              areaId: areaId1,
-            },
+            [subArea1]: { children: {}, areaId: areaId1 },
           },
         },
-        [area2]: {
-          children: {},
-          areaId: areaId2,
-        },
+        [area2]: { children: {}, areaId: areaId2 },
       },
     });
     MockFirebase.setDoc(`users/default/areas/${areaId1}`, {
-      routes: { [routeId1]: { name: route1.name, grade: route1.grade } },
+      routes: { [routeId1]: makeRouteSummary(routeId1) },
     });
     MockFirebase.setDoc(`users/default/areas/${areaId2}`, {
       routes: {
-        [routeId2]: { name: route2.name, grade: route2.grade },
-        [routeId3]: { name: route3.name, grade: route3.grade },
+        [routeId2]: makeRouteSummary(routeId2),
+        [routeId3]: makeRouteSummary(routeId3),
       },
     });
     MockFirebase.setDoc(`users/default/routes/${routeId1}`, route1);
@@ -151,45 +97,39 @@ describe('Ticks', () => {
     };
     const routeLabel = (route: Route) => `${route.name} (${route.grade})`;
 
-    expect(labels()).toEqual([area2, area1]);
+    // The top-level areas should be shown initially.
+    expect(labels()).toEqual([area1, area2]);
+
+    // Expand the first area to show its subarea.
     await toggle(0);
+    expect(labels()).toEqual([area1, subArea1, area2]);
 
-    expect(labels()).toEqual([
-      area2,
-      routeLabel(route2),
-      routeLabel(route3),
-      area1,
-    ]);
+    // Expanding the subarea should show its route.
+    await toggle(1);
+    expect(labels()).toEqual([area1, subArea1, routeLabel(route1), area2]);
+
+    // Expand the second area to show its routes.
     await toggle(3);
-
     expect(labels()).toEqual([
-      area2,
-      routeLabel(route2),
-      routeLabel(route3),
-      area1,
-      subArea1,
-    ]);
-    await toggle(4);
-
-    expect(labels()).toEqual([
-      area2,
-      routeLabel(route2),
-      routeLabel(route3),
       area1,
       subArea1,
       routeLabel(route1),
+      area2,
+      routeLabel(route2),
+      routeLabel(route3),
     ]);
-    await toggle(1);
 
+    // Click the second area's first route to show its ticks.
+    await toggle(4);
     expect(labels()).toEqual([
+      area1,
+      subArea1,
+      routeLabel(route1),
       area2,
       routeLabel(route2),
       tick2.date,
       tick3.date,
       routeLabel(route3),
-      area1,
-      subArea1,
-      routeLabel(route1),
     ]);
   });
 });

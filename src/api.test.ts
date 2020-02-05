@@ -15,6 +15,8 @@ import {
   maxRoutesPerRequest,
 } from './api';
 
+import { makeApiRoute, makeApiTick } from '@/testdata';
+
 // Arbitrary data to use in tests.
 const email = 'user@example.org';
 const key = 'secret123';
@@ -34,18 +36,8 @@ describe('getTicks', () => {
   function createTicks(startId: number, count: number): ApiTick[] {
     // https://stackoverflow.com/a/29559488
     return [...Array(count).keys()].map(i => {
-      const id = startId - i;
-      return {
-        routeId: id + 5,
-        date: '2020-01-01',
-        pitches: (id % 3) + 1,
-        notes: `notes ${id}`,
-        style: 'Lead',
-        leadStyle: ['Flash', 'Redpoint'][id % 2],
-        tickId: id,
-        userStars: id % 5,
-        userRating: ['5.6', '5.12a'][id % 2],
-      };
+      const tickId = startId - i;
+      return makeApiTick(tickId, 100 + tickId /* routeId */);
     });
   }
 
@@ -114,35 +106,13 @@ describe('getRoutes', () => {
     mockAxios.reset();
   });
 
-  // Returns an ApiRoute with supplied route ID and containing arbitrary but
-  // consistent data.
-  function createRoute(id: number): ApiRoute {
-    return {
-      id,
-      name: `route ${id}`,
-      type: ['Sport', 'Trad'][id % 2],
-      rating: ['5.6', '5.12a'][id % 2],
-      stars: id % 5,
-      starVotes: id % 3,
-      pitches: (id % 3) + 1,
-      location: [`location ${id}`],
-      url: `https://example.org/${id}`,
-      imgSqSmall: '',
-      imgSmall: '',
-      imgSmallMed: '',
-      imgMedium: '',
-      longitude: id,
-      latitude: id + 1,
-    };
-  }
-
   // Sets a response for a get-routes request with the supplied |routeIds|
   // parameter. Will return the requested routes.
   function handleGetRoutes(routeIds: number[]) {
     mockAxios
       .onGet(getRoutesUrl, { params: { key, routeIds: routeIds.join(',') } })
       .replyOnce(200, {
-        routes: routeIds.map(id => createRoute(id)),
+        routes: routeIds.map(id => makeApiRoute(id)),
         success: true,
       });
   }
@@ -151,7 +121,7 @@ describe('getRoutes', () => {
     const ids = [123, 456, 789];
     handleGetRoutes(ids);
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => createRoute(id)));
+      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
       done();
     });
   });
@@ -160,7 +130,7 @@ describe('getRoutes', () => {
     const ids = [...Array(maxRoutesPerRequest).keys()].map(i => i + 1);
     handleGetRoutes(ids);
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => createRoute(id)));
+      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
       done();
     });
   });
@@ -172,7 +142,7 @@ describe('getRoutes', () => {
     handleGetRoutes(ids.slice(max, 2 * max));
     handleGetRoutes(ids.slice(2 * max));
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => createRoute(id)));
+      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
       done();
     });
   });

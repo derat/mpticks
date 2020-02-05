@@ -97,7 +97,7 @@ class AreaItem implements Item {
     // Construct items for child areas, but if we have an ID (indicating that
     // there are routes in this area), leave |children| empty until we're
     // clicked so we can dynamically load the routes.
-    this.childAreas = Object.entries(map.children)
+    this.childAreas = Object.entries(map.children || {})
       .sort()
       .map(([childName, child]) => new AreaItem(this.id, child, childName));
     this.children = this.areaId ? [] : this.childAreas;
