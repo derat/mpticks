@@ -2,27 +2,31 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import moxios from 'moxios';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+
 import {
   ApiRoute,
   ApiTick,
   getRoutes,
+  getRoutesUrl,
   getTicks,
-  makeGetRoutesUrl,
-  makeGetTicksUrl,
+  getTicksUrl,
   maxRoutesPerRequest,
 } from './api';
 
 // Arbitrary data to use in tests.
 const email = 'user@example.org';
-const apiKey = 'secret123';
+const key = 'secret123';
+
+const mockAxios = new MockAdapter(axios);
+afterAll(() => {
+  mockAxios.restore();
+});
 
 describe('getTicks', () => {
   beforeEach(() => {
-    moxios.install();
-  });
-  afterEach(() => {
-    moxios.uninstall();
+    mockAxios.reset();
   });
 
   // Returns |count| ApiTicks starting at the supplied tick ID and counting
@@ -45,80 +49,69 @@ describe('getTicks', () => {
     });
   }
 
-  // Waits for the next HTTP request. Asserts that it is a get-ticks request
-  // with the supplied |startPos| parameter and then returns |count| ticks
-  // starting with id |startId|.
-  function replyToGetTicks(startPos: number, startId: number, count: number) {
-    const req = moxios.requests.mostRecent();
-    expect(req.url).toEqual(makeGetTicksUrl(email, apiKey, startPos));
-    return req.respondWith({
-      status: 200,
-      response: {
+  // Sets a response for a get-ticks request with the supplied |startPos|
+  // parameter. Will return |count| ticks starting with id |startId|.
+  function handleGetTicks(startPos: number, startId: number, count: number) {
+    mockAxios
+      .onGet(getTicksUrl, { params: { email, key, startPos } })
+      .replyOnce(200, {
         hardest: '',
         average: '',
         ticks: createTicks(startId, count),
         success: true,
-      },
-    });
+      });
   }
 
   it('handles not receiving any ticks', done => {
-    getTicks(email, apiKey).then(ticks => {
+    handleGetTicks(0, -1, 0);
+    getTicks(email, key).then(ticks => {
       expect(ticks).toEqual([]);
       done();
     });
-    moxios.wait(() => replyToGetTicks(0, -1, 0));
   });
 
   it('returns a single set of ticks', done => {
-    getTicks(email, apiKey).then(ticks => {
+    handleGetTicks(0, 100, 3);
+    handleGetTicks(3, -1, 0);
+    getTicks(email, key).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 3));
       done();
-    });
-    moxios.wait(() => {
-      replyToGetTicks(0, 100, 3).then(() => replyToGetTicks(3, -1, 0));
     });
   });
 
   it('aggregates multiple sets of ticks', done => {
-    getTicks(email, apiKey).then(ticks => {
+    // Return 3 ticks, then 3 more, and then 1 final tick.
+    handleGetTicks(0, 100, 3);
+    handleGetTicks(3, 97, 3);
+    handleGetTicks(6, 94, 1);
+    handleGetTicks(7, -1, 0);
+    getTicks(email, key).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 7));
       done();
-    });
-    moxios.wait(() => {
-      // Return 3 ticks, then 3 more, and then 1 final tick.
-      replyToGetTicks(0, 100, 3)
-        .then(() => replyToGetTicks(3, 97, 3))
-        .then(() => replyToGetTicks(6, 94, 1))
-        .then(() => replyToGetTicks(7, -1, 0));
     });
   });
 
   it("doesn't return already-seen ticks", done => {
-    getTicks(email, apiKey, 97 /* minTickId */).then(ticks => {
+    handleGetTicks(0, 100, 3);
+    handleGetTicks(3, 97, 3);
+    getTicks(email, key, 97 /* minTickId */).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 4));
       done();
-    });
-    moxios.wait(() => {
-      replyToGetTicks(0, 100, 3).then(() => replyToGetTicks(3, 97, 3));
     });
   });
 
   it("doesn't return anything if all ticks have been seen", done => {
-    getTicks(email, apiKey, 101 /* minTickId */).then(ticks => {
+    handleGetTicks(0, 100, 3);
+    getTicks(email, key, 101 /* minTickId */).then(ticks => {
       expect(ticks).toEqual([]);
       done();
     });
-    moxios.wait(() => replyToGetTicks(0, 100, 3));
   });
 });
 
 describe('getRoutes', () => {
   beforeEach(() => {
-    moxios.install();
-  });
-  afterEach(() => {
-    moxios.uninstall();
+    mockAxios.reset();
   });
 
   // Returns an ApiRoute with supplied route ID and containing arbitrary but
@@ -143,50 +136,44 @@ describe('getRoutes', () => {
     };
   }
 
-  // Waits for the next HTTP request. Asserts that it is a get-routes request
-  // with the supplied |routeIds| parameter and then returns the requested
-  // routes.
-  function replyToGetRoutes(routeIds: number[]) {
-    const req = moxios.requests.mostRecent();
-    expect(req.url).toEqual(makeGetRoutesUrl(routeIds, apiKey));
-    return req.respondWith({
-      status: 200,
-      response: {
+  // Sets a response for a get-routes request with the supplied |routeIds|
+  // parameter. Will return the requested routes.
+  function handleGetRoutes(routeIds: number[]) {
+    mockAxios
+      .onGet(getRoutesUrl, { params: { key, routeIds: routeIds.join(',') } })
+      .replyOnce(200, {
         routes: routeIds.map(id => createRoute(id)),
         success: true,
-      },
-    });
+      });
   }
 
   it('returns a single set of routes', done => {
     const ids = [123, 456, 789];
-    getRoutes(ids, apiKey).then(routes => {
+    handleGetRoutes(ids);
+    getRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => createRoute(id)));
       done();
     });
-    moxios.wait(() => replyToGetRoutes(ids));
   });
 
   it('uses a single request when possible', done => {
     const ids = [...Array(maxRoutesPerRequest).keys()].map(i => i + 1);
-    getRoutes(ids, apiKey).then(routes => {
+    handleGetRoutes(ids);
+    getRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => createRoute(id)));
       done();
     });
-    moxios.wait(() => replyToGetRoutes(ids));
   });
 
   it('uses multiple requests when needed', done => {
     const max = maxRoutesPerRequest;
     const ids = [...Array(2 * max + 10).keys()].map(i => i + 1);
-    getRoutes(ids, apiKey).then(routes => {
+    handleGetRoutes(ids.slice(0, max));
+    handleGetRoutes(ids.slice(max, 2 * max));
+    handleGetRoutes(ids.slice(2 * max));
+    getRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => createRoute(id)));
       done();
-    });
-    moxios.wait(() => {
-      replyToGetRoutes(ids.slice(0, max))
-        .then(() => replyToGetRoutes(ids.slice(max, 2 * max)))
-        .then(() => replyToGetRoutes(ids.slice(2 * max)));
     });
   });
 });

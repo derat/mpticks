@@ -5,18 +5,8 @@
 import axios from 'axios';
 
 // Exposed for unit tests.
-export function makeGetTicksUrl(email: string, key: string, startPos: number) {
-  return (
-    'https://www.mountainproject.com/data/get-ticks' +
-    `?email=${email}&key=${key}&startPos=${startPos}`
-  );
-}
-export function makeGetRoutesUrl(routeIds: number[], key: string) {
-  return (
-    'https://www.mountainproject.com/data/get-routes' +
-    `?routeIds=${routeIds.join(',')}&key=${key}`
-  );
-}
+export const getTicksUrl = 'https://www.mountainproject.com/data/get-ticks';
+export const getRoutesUrl = 'https://www.mountainproject.com/data/get-routes';
 
 // A single tick returned by the get-ticks API endpoint.
 export interface ApiTick {
@@ -48,22 +38,24 @@ export function getTicks(
   minTickId: number = 0,
   ticks: ApiTick[] = []
 ): Promise<ApiTick[]> {
-  return axios.get(makeGetTicksUrl(email, key, ticks.length)).then(response => {
-    const result = (response.data as unknown) as GetTicksResult;
-    if (!result.success) throw new Error('API reported failure');
+  return axios
+    .get(getTicksUrl, { params: { email, key, startPos: ticks.length } })
+    .then(response => {
+      const result = (response.data as unknown) as GetTicksResult;
+      if (!result.success) throw new Error('API reported failure');
 
-    // If we're at the end of the list, quit.
-    if (!result.ticks.length) return ticks;
+      // If we're at the end of the list, quit.
+      if (!result.ticks.length) return ticks;
 
-    for (const tick of result.ticks) {
-      // If we got all of the new ticks, quit.
-      if (tick.tickId < minTickId) return ticks;
-      ticks.push(tick);
-    }
+      for (const tick of result.ticks) {
+        // If we got all of the new ticks, quit.
+        if (tick.tickId < minTickId) return ticks;
+        ticks.push(tick);
+      }
 
-    // Recurse to get additional ticks.
-    return getTicks(email, key, minTickId, ticks);
-  });
+      // Recurse to get additional ticks.
+      return getTicks(email, key, minTickId, ticks);
+    });
 }
 
 // A single route returned by the get-routes API endpoint.
@@ -106,8 +98,11 @@ export function getRoutes(
 ): Promise<ApiRoute[]> {
   if (routeIds.length == 0) return Promise.resolve([]);
 
-  const url = makeGetRoutesUrl(routeIds.slice(0, maxRoutesPerRequest), key);
-  return axios.get(url).then(response => {
+  const params = {
+    key,
+    routeIds: routeIds.slice(0, maxRoutesPerRequest).join(','),
+  };
+  return axios.get(getRoutesUrl, { params }).then(response => {
     const result = (response.data as unknown) as GetRoutesResult;
     if (!result.success) throw new Error('API reported failure');
 
