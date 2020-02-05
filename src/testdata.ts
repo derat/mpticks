@@ -13,19 +13,19 @@ import {
   TickStyle,
 } from '@/models';
 
-// Returns an ApiRoute with arbitrary but consistent (for |id|) data.
-export function makeApiRoute(id: RouteId, location?: string[]): ApiRoute {
-  if (!location) location = [`Location ${id}`];
+// Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
+export function makeApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
+  if (!location) location = [`Location ${routeId}`];
   return {
-    id,
-    name: `Route ${id}`,
-    type: ['Sport', 'Trad', 'Other'][id % 3],
-    rating: ['5.6', '5.9', '5.12a'][id % 3],
-    stars: (id % 5) + 1,
-    starVotes: id % 3,
-    pitches: (id % 3) + 1,
+    id: routeId,
+    name: `Route ${routeId}`,
+    type: ['Sport', 'Trad', 'Other'][routeId % 3],
+    rating: ['5.6', '5.9', '5.12a'][routeId % 3],
+    stars: (routeId % 5) + 1,
+    starVotes: routeId % 3,
+    pitches: (routeId % 3) + 1,
     location,
-    url: `https://example.org/${id}`,
+    url: `https://example.org/${routeId}`,
     imgSqSmall: '',
     imgSmall: '',
     imgSmallMed: '',
@@ -35,23 +35,23 @@ export function makeApiRoute(id: RouteId, location?: string[]): ApiRoute {
   };
 }
 
-// Returns a Route with arbitrary but consistent (for |id|) data.
+// Returns a Route with arbitrary but consistent (for |routeId|) data.
 export function makeRoute(
-  id: RouteId,
+  routeId: RouteId,
   tickIds: TickId[],
   location?: string[]
 ): Route {
-  const apiRoute = makeApiRoute(id, location);
+  const apiRoute = makeApiRoute(routeId, location);
   return {
     name: apiRoute.name,
     // This needs to match the logic in makeApiRoute.
-    type: [RouteType.SPORT, RouteType.TRAD, RouteType.OTHER][id % 3],
+    type: [RouteType.SPORT, RouteType.TRAD, RouteType.OTHER][routeId % 3],
     location: apiRoute.location,
     grade: apiRoute.rating,
     pitches: apiRoute.pitches,
     // https://stackoverflow.com/a/26265095
     ticks: tickIds.reduce(
-      (m, id) => ((m[id] = makeTick(id)), m),
+      (m, id) => ((m[id] = makeTick(id, routeId)), m),
       {} as Record<TickId, Tick>
     ),
   };
@@ -90,8 +90,8 @@ export function makeApiTick(tickId: TickId, routeId: RouteId): ApiTick {
 }
 
 // Returns a Tick with arbitrary but consistent (for |tickId|) data.
-export function makeTick(tickId: TickId): Tick {
-  const apiTick = makeApiTick(tickId, 0);
+export function makeTick(tickId: TickId, routeId: RouteId): Tick {
+  const apiTick = makeApiTick(tickId, routeId);
   return {
     date: apiTick.date,
     pitches: apiTick.pitches,

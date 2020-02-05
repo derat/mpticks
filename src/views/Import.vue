@@ -28,6 +28,7 @@
       <v-row>
         <v-col cols="12" md="6" class="py-0">
           <v-text-field
+            ref="emailField"
             label="Email address"
             v-model="email"
             single-line
@@ -38,6 +39,7 @@
       <v-row>
         <v-col cols="12" md="6" class="py-0">
           <v-text-field
+            ref="keyField"
             label="Private key"
             v-model="key"
             single-line
@@ -49,7 +51,11 @@
 
     <v-row>
       <v-col class="pb-1">
-        <v-btn color="primary" :disabled="!valid" @click="onClick"
+        <v-btn
+          ref="importButton"
+          color="primary"
+          :disabled="!valid"
+          @click="onClick"
           >Import</v-btn
         >
       </v-col>
@@ -103,7 +109,7 @@ export default class Import extends Vue {
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
 
   onClick() {
-    const lastTickId = 118294181; // FIXME: Save this.
+    const lastTickId = 0; // FIXME: 118294181
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
@@ -120,6 +126,7 @@ export default class Import extends Vue {
             }
             routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
           } catch (err) {
+            console.warning(`Skipping invalid tick ${apiTick}: ${err}`);
             this.addLog(`Skipping invalid tick ${apiTick}: ${err}`);
           }
         }

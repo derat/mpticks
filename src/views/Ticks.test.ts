@@ -8,12 +8,7 @@ import firebase from 'firebase/app';
 import 'firebase/firestore';
 
 import { mount, Wrapper } from '@vue/test-utils';
-import {
-  setUpVuetifyTesting,
-  newVuetifyMountOptions,
-  deepCopy,
-  getValue,
-} from '@/testutil';
+import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 import Vue from 'vue';
 import flushPromises from 'flush-promises';
 import {
@@ -30,13 +25,18 @@ import { makeRoute, makeRouteSummary, makeTick } from '@/testdata';
 import Ticks from './Ticks.vue';
 
 const tickId1: TickId = 11;
-const tick1: Tick = makeTick(tickId1);
 const tickId2: TickId = 12;
-const tick2: Tick = makeTick(tickId2);
 const tickId3: TickId = 13;
-const tick3: Tick = makeTick(tickId3);
 const tickId4: TickId = 14;
-const tick4: Tick = makeTick(tickId4);
+
+const routeId1: RouteId = 1;
+const routeId2: RouteId = 2;
+const routeId3: RouteId = 3;
+
+const tick1: Tick = makeTick(tickId1, routeId1);
+const tick2: Tick = makeTick(tickId2, routeId2);
+const tick3: Tick = makeTick(tickId3, routeId2);
+const tick4: Tick = makeTick(tickId4, routeId3);
 
 const area1 = 'California';
 const subArea1 = 'Yosemite';
@@ -45,11 +45,8 @@ const areaId1 = makeAreaId([area1, subArea1]);
 const area2 = 'Colorado';
 const areaId2 = makeAreaId([area2]);
 
-const routeId1: RouteId = 1;
 const route1: Route = makeRoute(routeId1, [tickId1], [area1, subArea1]);
-const routeId2: RouteId = 2;
 const route2: Route = makeRoute(routeId2, [tickId2, tickId3], [area2]);
-const routeId3: RouteId = 3;
 const route3: Route = makeRoute(routeId3, [tickId4], [area2]);
 
 setUpVuetifyTesting();
