@@ -140,7 +140,7 @@ export default class Ticks extends Vue {
       .then(snap => {
         if (!snap.exists) return;
         const map = snap.data() as AreaMap;
-        this.items = Object.entries(map.children)
+        this.items = Object.entries(map.children || {})
           .sort()
           .map(([name, child]) => new AreaItem('', child, name));
       });

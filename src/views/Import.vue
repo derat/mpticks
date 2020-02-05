@@ -109,7 +109,9 @@ export default class Import extends Vue {
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
 
   onClick() {
-    const lastTickId = 0; // FIXME: 118294181
+    // TODO: Get this ID from the user doc.
+    const lastTickId = 0;
+    //const lastTickId = 118294181;
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
@@ -126,7 +128,7 @@ export default class Import extends Vue {
             }
             routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
           } catch (err) {
-            console.warning(`Skipping invalid tick ${apiTick}: ${err}`);
+            console.log(`Skipping invalid tick ${apiTick}: ${err}`);
             this.addLog(`Skipping invalid tick ${apiTick}: ${err}`);
           }
         }
