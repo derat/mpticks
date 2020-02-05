@@ -56,14 +56,18 @@ describe('Import', () => {
     return wrapper.find({ ref });
   }
 
-  // Fills the form and clicks the import button.
-  async function startImport() {
+  // Fills the form, clicks the import button, and waits for the import to
+  // finish.
+  async function doImport() {
     findRef('emailField').vm.$emit('input', email);
     findRef('keyField').vm.$emit('input', key);
-    await flushPromises();
+    await flushPromises(); // validate the form
+
     const button = findRef('importButton');
     expect(button.attributes('disabled')).toBeFalsy();
     button.trigger('click');
+    await flushPromises(); // flush after get-ticks call
+    await flushPromises(); // flush after get-routes call
   }
 
   function handleGetTicks(ticks: ApiTick[]) {
@@ -91,10 +95,7 @@ describe('Import', () => {
 
     handleGetTicks([makeApiTick(tickId1, routeId1)]);
     handleGetRoutes([makeApiRoute(routeId1, location)]);
-    startImport();
-    await flushPromises();
-    // TODO: Needed for the get-routes call. This is super-hacky.
-    await flushPromises();
+    await doImport();
 
     expect(MockFirebase.getDoc(`users/default/routes/${routeId1}`)).toEqual(
       makeRoute(routeId1, [tickId1], location)
