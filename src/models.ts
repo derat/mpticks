@@ -100,3 +100,9 @@ export interface AreaMap {
   // doesn't directly contain any routes.
   areaId?: AreaId;
 }
+
+// A document in the 'users' collection.
+export interface User {
+  // The maximum tick ID that has been imported.
+  maxTickId: TickId;
+}

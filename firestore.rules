@@ -4,17 +4,22 @@
 
 rules_version = '2';
 
+function authorized(req, uid) {
+  // TODO: Use something like this:
+  // return req.auth != null && req.auth.uid != null && req.auth.uid == uid;
+  return true;
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if authorized(request, uid);
+    }
     match /users/{uid}/routes/{route} {
-      // TODO: Update this to be something like the following:
-      //   if request.auth != null && request.auth.uid != null &&
-      //      request.auth.uid == uid
-      allow read, write: if true;
+      allow read, write: if authorized(request, uid);
     }
     match /users/{uid}/areas/{area} {
-      // TODO: Lock down permissions here too.
-      allow read, write: if true;
+      allow read, write: if authorized(request, uid);
     }
     // Access to everything else is denied by default.
   }

@@ -97,6 +97,9 @@ describe('Import', () => {
     handleGetRoutes([makeApiRoute(routeId1, location)]);
     await doImport();
 
+    expect(MockFirebase.getDoc('users/default')).toEqual({
+      maxTickId: tickId1,
+    });
     expect(MockFirebase.getDoc(`users/default/routes/${routeId1}`)).toEqual(
       makeRoute(routeId1, [tickId1], location)
     );
