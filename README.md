@@ -67,44 +67,57 @@ be an uncommon scenario.
 
 ### Schema
 
-TypeScript interfaces for Firestore documents are defined in
+TypeScript interfaces for all Firestore documents are defined in
 [src/models.ts](./src/models.ts).
 
-*   `users` - Collection keyed by Firebase user ID and containing documents
-    corresponding to the `User` interface:
-    *   `maxTickId`: Number field containing the maximum tick ID that has been
-        imported.
-    *   `routes` - Subcollection containing per-route information, keyed by
-        Mountain-Project-assigned route ID and with map values corresponding to
-        the `Route` interface):
-        *   `name` - String field containing the route's name.
-        *   `type` - Number field containing a `RouteType` enum value.
-        *   `location` - String array field containing the route's location,
-            e.g. `['Colorado', 'Boulder', 'Boulder Canyon', ...]`.
-        *   `grade` - String field containing the route's grade, e.g. '5.9'.
-        *   `pitches` - Number field containing the number of pitches.
-        *   `ticks` - Map field keyed by Mountain-Project-assigned tick ID and
-            with map values corresponding to the `Tick` interface:
-            *   `date` - String field containing tick date as `YYYY-MM-DD`.
-            *   `pitches` - Number field containing climbed pitches.
-            *   `style` - Number field containing a `TickStyle` enum value.
-            *   `notes` - String field containing user-supplied notes.
-            *   `stars` - String field containing user-supplied score for the
-                route: 1 is 'bomb', 5 is 4-star.
-            *   `grade` - String field containing user-supplied grade for the
-                route, e.g. '5.10a'.
-    *   `areas` - Subcollection containing information about climbing areas,
-        keyed by a pipe-separated location (e.g. `Colorado|Boulder|Boulder
-        Canyon|...`) and with map values corresponding to the `Area` interface:
-        *   `routes` - Map field keyed by route ID and with map values
-            containing the following (corresponding to the `RouteSummary`
-            interface):
-            *   `name`: Route name.
-            *   `grade`: Route grade.
-    *   `areas/map` - Singleton document containing the area hierarchy
-        (corresponding to the `AreaMap` interface):
-            *   `children` - Optional map field keyed by location component
-                (e.g. `Boulder Canyon`) and with map values corresponding to the
-                `AreaMap` interface.
-            *   `areaId` - Optional string field containing the area's document
-                ID in the `areas` subcollection.
+#### `users` collection
+
+User-specific information is stored in the `users` collection. Documents have
+names corresponding to Firebase user IDs and correspond to the `User` interface:
+
+*   `maxTickId`: Number field containing the maximum tick ID that has been
+    imported.
+
+#### `routes` subcollection
+
+Per-route information is stored in the `routes` subcollection under each user
+document. Documents have names corresponding to Mountain Project route IDs and
+correspond to the `Route` interface:
+
+*   `name` - String field containing the route's name.
+*   `type` - Number field containing a `RouteType` enum value.
+*   `location` - String array field containing the route's location, e.g.
+    `['Colorado', 'Boulder', 'Boulder Canyon', 'Avalon']`.
+*   `grade` - String field containing the route's grade, e.g. `'5.9'`.
+*   `pitches` - Number field containing the number of pitches.
+*   `ticks` - Map field keyed by Mountain Project tick ID. Values are maps
+    corresponding to the `Tick` interface:
+    *   `date` - String field containing tick date as `YYYY-MM-DD`, e.g.
+        `'2020-01-01'`.
+    *   `pitches` - Number field containing climbed pitches.
+    *   `style` - Number field containing a `TickStyle` enum value.
+    *   `notes` - String field containing user-supplied notes.
+    *   `stars` - String field containing user-supplied score for the route: 1
+        is 'bomb', 5 is 4-star.
+    *   `grade` - String field containing user-supplied grade for the route,
+        e.g. `'5.10a'`.
+
+#### `areas` subcollection
+
+Area-specific information is stored in the `areas` subcollection under each user
+document. Documents have names corresponding to pipe-separated Mountain Project
+locations (e.g. `Colorado|Boulder|Boulder Canyon|Avalon`) and correspond to the
+`Area` interface:
+
+*   `routes` - Map field keyed by route ID. Values are maps corresponding to the
+    `RouteSummary` interface:
+    *   `name`: String field containing the route name.
+    *   `grade`: String field containing the route grade, e.g. `'5.10a'`.
+
+A singleton document in the `areas` subcollection named `map` contains the full
+area hierarchy and corresponds to the `AreaMap` interface:
+
+*   `children` - Optional map field keyed by location component (e.g. `'Boulder
+    Canyon'`) and with map values corresponding to the `AreaMap` interface.
+*   `areaId` - Optional string field containing the area's document ID in the
+    `areas` subcollection.
