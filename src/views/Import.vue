@@ -125,7 +125,7 @@ export default class Import extends Vue {
           this.addLog(`Last tick was ${user.maxTickId}.`);
           user = snap.data() as User;
         } else {
-          console.log('No user doc; will import all ticks.');
+          this.addLog('No user doc; will import all ticks.');
         }
         this.addLog('Getting new ticks from Mountain Project...');
         return getTicks(this.email, this.key, user.maxTickId + 1);
