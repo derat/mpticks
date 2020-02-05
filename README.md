@@ -5,7 +5,7 @@
 ## Background
 
 This is a web app for importing and visualizing ticks (i.e. personal history)
-from [Mountain Project], a popular website that catalogues user-supplied
+from [Mountain Project], a popular website that collects user-supplied
 information about rock climbing areas.
 
 Mountain Project's user pages display pitches/routes/days-out over different
@@ -48,51 +48,63 @@ ticks. Cloud Firestore documents are limited to a maximum size of 1 MB, so
 there's a risk of running up against the limit if a user has many ticks. At the
 same time, users with many ticks seem unlikely to also have extensive notes in
 each, so it's conceivable that a document could store 10,000 ticks. There's
-still the question of how route data would be stored with this approach, though.
+still the question of where route data would be stored with this approach,
+though.
 
 As a compromise, each route gets its own document, containing both data about
-the route itself and all of the user's ticks for the route. This is unlikely to
-run up against document size constraints. It's not much better than the "each
-tick in its own document" approach for users who don't repeat routes yet still
-have thousands of ticks, but I'm hopeful that that will be an uncommon scenario.
+the route itself and all of the user's ticks for the route. Each area gets its
+own document listing all of its routes, and there's also an "area map" document
+that describes the area hierarchy so that it can be displayed with a single
+document read.
+
+This is unlikely to run up against document size constraints. It's not much
+better than the "each tick in its own document" approach for users who don't
+repeat routes yet still have thousands of ticks, but I'm hopeful that that will
+be an uncommon scenario.
 
 [Cloud Firestore]: https://firebase.google.com/docs/firestore
 [Google's pricing model for Cloud Firestore]: https://firebase.google.com/docs/firestore/quotas
 
 ### Schema
 
-#### `users` collection
+TypeScript interfaces for Firestore documents are defined in
+[src/models.ts](./src/models.ts).
 
-*   `<user_id>` - Document containing the specified user's data.
-    *   `locations` - Map field containing top-level locations keyed by location
-        name, e.g. 'Colorado'.
-        *   `<location_name>` - Map containing information about a location.
-            *   `routeIds` - Array field containing a list of numeric route IDs
-                in the location.
-            *   `numTicks` - Total number of ticks in the location (including
-                child locations).
-            *   `children` - Map field containing nested locations.
-                *   `<location_name>` - Map containing information about a
-                    location.
-                    *   ...
-    *   `routes` - Subcollection containing per-route information.
-        *   `<route_id>` - Document containing information about a route, keyed
-            by Mountain-Project-assigned route IDs.
-            *   `name` - String field containing the route's name.
-            *   `type` - String field containing the route type.
-            *   `grade` - String field containing the route's grade, e.g. '5.9'.
-            *   `pitches` - Number field containing the number of pitches.
-            *   `ticks` - Map field keyed by Mountain-Project-assigned tick IDs.
-                *   `<tick_id>` - Map containing tick data.
-                    *   `date` - String field containing date as `YYYY-MM-DD`.
-                    *   `pitches` - Number field containing the number of
-                        climbed pitches.
-                    *   `style` - Number field containing the climbing style.
-                        See the `TickStyle` enum from
-                        [src/models.ts](./src/models.ts) for available values.
-                    *   `notes` - String field containing optional user-supplied
-                        notes.
-                    *   `stars` - String field containing optional user-supplied
-                        score for the route: 1 is 'bomb', 5 is 4-star.
-                    *   `grade` - String field containing optional user-supplied
-                        grade for the route, e.g. '5.10a'.
+*   `users` - Collection keyed by Firebase user ID and containing documents
+    corresponding to the `User` interface:
+    *   `maxTickId`: Number field containing the maximum tick ID that has been
+        imported.
+    *   `routes` - Subcollection containing per-route information, keyed by
+        Mountain-Project-assigned route ID and with map values corresponding to
+        the `Route` interface):
+        *   `name` - String field containing the route's name.
+        *   `type` - Number field containing a `RouteType` enum value.
+        *   `location` - String array field containing the route's location,
+            e.g. `['Colorado', 'Boulder', 'Boulder Canyon', ...]`.
+        *   `grade` - String field containing the route's grade, e.g. '5.9'.
+        *   `pitches` - Number field containing the number of pitches.
+        *   `ticks` - Map field keyed by Mountain-Project-assigned tick ID and
+            with map values corresponding to the `Tick` interface:
+            *   `date` - String field containing tick date as `YYYY-MM-DD`.
+            *   `pitches` - Number field containing climbed pitches.
+            *   `style` - Number field containing a `TickStyle` enum value.
+            *   `notes` - String field containing user-supplied notes.
+            *   `stars` - String field containing user-supplied score for the
+                route: 1 is 'bomb', 5 is 4-star.
+            *   `grade` - String field containing user-supplied grade for the
+                route, e.g. '5.10a'.
+    *   `areas` - Subcollection containing information about climbing areas,
+        keyed by a pipe-separated location (e.g. `Colorado|Boulder|Boulder
+        Canyon|...`) and with map values corresponding to the `Area` interface:
+        *   `routes` - Map field keyed by route ID and with map values
+            containing the following (corresponding to the `RouteSummary`
+            interface):
+            *   `name`: Route name.
+            *   `grade`: Route grade.
+    *   `areas/map` - Singleton document containing the area hierarchy
+        (corresponding to the `AreaMap` interface):
+            *   `children` - Optional map field keyed by location component
+                (e.g. `Boulder Canyon`) and with map values corresponding to the
+                `AreaMap` interface.
+            *   `areaId` - Optional string field containing the area's document
+                ID in the `areas` subcollection.

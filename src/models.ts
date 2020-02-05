@@ -41,7 +41,7 @@ export enum RouteType {
   OTHER = 2,
 }
 
-// A document in the |routes| subcollection under a user document.
+// A document in the 'routes' subcollection under a user document.
 // This contains detailed information about the route itself, along with all of
 // the user's ticks for the route.
 export interface Route {
@@ -76,7 +76,7 @@ export function makeAreaId(location: string[]) {
   return location.join('|');
 }
 
-// A document in the |areas| subcollection under a user document. Specifically,
+// A document in the 'areas' subcollection under a user document. Specifically,
 // this is a location (to use Mountain Project's terminology) that includes one
 // or more routes.
 //
@@ -87,16 +87,21 @@ export interface Area {
   routes: Record<RouteId, RouteSummary>;
 }
 
-// The 'map' document in the |areas| subcollection, but also used recursively
+// The 'map' document in the 'areas' subcollection, but also used recursively
 // within that document. This stores the high-level tree of areas. At the top
 // level of the 'map' document, |children| contains top-level locations, e.g.
 // 'Colorado' and 'International'.
+//
+// I considered saving this as a field in User instead of making it a singleton
+// document in 'areas', but then the Import view would end up needing to load
+// this potentially-bulky data to get the max tick ID even when no new areas
+// need to be added.
 export interface AreaMap {
   // Areas within this area, keyed by name (e.g. 'Boulder Canyon'). Undefined if
   // the area doesn't contain any subareas.
   children?: Record<string, AreaMap>;
   // If the area contains routes, the document ID of the Area document in the
-  // |areas| subcollection describing the area's routes. Undefined if the area
+  // 'areas' subcollection describing the area's routes. Undefined if the area
   // doesn't directly contain any routes.
   areaId?: AreaId;
 }
