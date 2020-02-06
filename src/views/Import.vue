@@ -51,13 +51,12 @@
 
     <v-row>
       <v-col class="pb-1">
-        <!-- TODO: Disable this while an import is ongoing. -->
         <v-btn
           ref="importButton"
           color="primary"
-          :disabled="!valid"
+          :disabled="!valid || importing"
           @click="onClick"
-          >Import</v-btn
+          >{{ importButtonLabel }}</v-btn
         >
       </v-col>
     </v-row>
@@ -105,23 +104,32 @@ export default class Import extends Vue {
   // Whether the form contains valid input.
   valid = false;
 
+  // Whether an import is currently ongoing.
+  importing = false;
+
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
 
+  get importButtonLabel() {
+    return this.importing ? 'Importing...' : 'Import';
+  }
+
   onClick() {
+    this.importing = true;
+
     let user: User = { maxTickId: 0 };
     //let user: User = { maxTickId: 118294181 };
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
 
-    this.addLog('Loading user doc to find out where we left off...');
+    this.addLog('Loading user doc to see where we left off...');
     this.userRef
       .get()
       .then(snap => {
         if (snap.exists) {
-          this.addLog(`Last tick was ${user.maxTickId}.`);
           user = snap.data() as User;
+          this.addLog(`Last tick was ${user.maxTickId}.`);
         } else {
           this.addLog('No user doc; will import all ticks.');
         }
@@ -188,7 +196,13 @@ export default class Import extends Vue {
         return batch.commit();
       })
       .then(() => {
-        this.addLog('Import was successful.');
+        this.addLog('Import complete.');
+      })
+      .catch(err => {
+        this.addLog(`Import failed: ${err}`);
+      })
+      .finally(() => {
+        this.importing = false;
       });
   }
 
