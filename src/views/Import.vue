@@ -142,10 +142,12 @@ export default class Import extends Vue {
     this.logMessages.push(msg);
     if (isErr) console.error(msg);
 
-    // Scroll the log messages down.
-    // I have no idea why, but the element seems to be missing in tests.
-    const textarea = document.getElementById('log-textarea');
-    if (textarea) textarea.scrollTop = textarea.scrollHeight;
+    // Scroll the log messages down after the new message is added.
+    window.setTimeout(() => {
+      // I have no idea why, but the element seems to be missing in tests.
+      const textarea = document.getElementById('log-textarea');
+      if (textarea) textarea.scrollTop = textarea.scrollHeight;
+    }, 0);
   }
 
   onImportClick() {
