@@ -37,10 +37,12 @@ class TickItem implements Item {
   readonly id: string;
   readonly name: string;
   readonly children = undefined;
+  readonly tickId: TickId;
 
   constructor(parentId: string, tickId: TickId, tick: Tick) {
     this.id = `${parentId}|tick-${tickId}`;
     this.name = tick.date;
+    this.tickId = tickId;
     // TODO: Collect more information about the tick.
   }
 
@@ -71,10 +73,12 @@ class RouteItem implements Item {
       .then(snap => {
         if (!snap.exists) return;
         const route = snap.data() as Route;
-        // TODO: Sort by descending date and ID.
-        this.children = Object.entries(route.ticks).map(
-          ([tickId, tick]) => new TickItem(this.id, parseInt(tickId), tick)
-        );
+        // Sort by descending date and ID.
+        this.children = Object.entries(route.ticks)
+          .map(
+            ([tickId, tick]) => new TickItem(this.id, parseInt(tickId), tick)
+          )
+          .sort((a, b) => b.name.localeCompare(a.name) || b.tickId - a.tickId);
       });
   }
 }
@@ -110,11 +114,12 @@ class AreaItem implements Item {
         if (!snap.exists) return;
         const area = snap.data() as Area;
         this.children = (this.childAreas as Item[]).concat(
-          // TODO: Sort routes by ascending name.
-          Object.entries(area.routes).map(
-            ([routeId, route]) =>
-              new RouteItem(this.id, parseInt(routeId), route)
-          )
+          Object.entries(area.routes)
+            .map(
+              ([routeId, route]) =>
+                new RouteItem(this.id, parseInt(routeId), route)
+            )
+            .sort((a, b) => a.name.localeCompare(b.name))
         );
       });
   }

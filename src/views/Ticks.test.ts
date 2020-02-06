@@ -127,8 +127,8 @@ describe('Ticks', () => {
       routeLabel(route1),
       area2,
       routeLabel(route2),
-      tick2.date,
       tick3.date,
+      tick2.date,
       routeLabel(route3),
     ]);
   });
