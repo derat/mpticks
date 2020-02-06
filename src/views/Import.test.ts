@@ -117,7 +117,6 @@ describe('Import', () => {
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
-      routes: { [rid1]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
@@ -142,7 +141,6 @@ describe('Import', () => {
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
-      routes: { [rid1]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
@@ -187,7 +185,6 @@ describe('Import', () => {
         [getDayOfWeek(parseDate(t3.date))]: 1,
       },
       grades: { [r1.grade]: 2, [r2.grade]: 1 },
-      routes: { [rid1]: 2, [rid2]: 1 },
       routePitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
       routeTypes: { [r1.type]: 2, [r2.type]: 1 },
       // TODO: This is hacky and just works because the ticks use route pitches.

@@ -380,7 +380,6 @@ export default class Import extends Vue {
       dates: {},
       daysOfWeek: {},
       grades: {},
-      routes: {},
       routePitches: {},
       routeTypes: {},
       tickPitches: {},
@@ -402,7 +401,6 @@ export default class Import extends Vue {
           stats.dates[tick.date] = ++stats.dates[tick.date] || 1;
           stats.daysOfWeek[dayOfWeek] = ++stats.daysOfWeek[dayOfWeek] || 1;
           stats.grades[route.grade] = ++stats.grades[route.grade] || 1;
-          stats.routes[routeId] = ++stats.routes[routeId] || 1;
           if (typeof route.pitches !== 'undefined') {
             stats.routePitches[route.pitches] =
               ++stats.routePitches[route.pitches] || 1;

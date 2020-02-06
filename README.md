@@ -134,7 +134,6 @@ subcollection under each user document. The document corresponds to the
 *   `daysOfWeek` - Map field keyed by [ISO 8601 day of week] where `1` is Monday
     and `7` is Sunday.
 *   `grades` - Map field keyed by route grades, e.g. `'5.9'` or `'V3'`.
-*   `routes` - Map field keyed by Mountain Project route ID.
 *   `routePitches` - Map field keyed by total pitches in route.
 *   `routeTypes` - Map field keyed by `RouteType` enum values.
 *   `tickPitches` - Map field keyed by climbed pitches.

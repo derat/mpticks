@@ -123,7 +123,6 @@ export interface TickStats {
   dates: Record<string, number>; // 'YYYYMMDD'
   daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   grades: Record<string, number>;
-  routes: Record<RouteId, number>;
   routePitches: Record<number, number>;
   routeTypes: Record<number, number>; // RouteType (TS doesn't allow enum keys)
   tickPitches: Record<number, number>;
