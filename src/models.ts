@@ -20,6 +20,31 @@ export enum TickStyle {
   LEAD_FELL_HUNG = 9,
 }
 
+export function TickStyleToString(style: TickStyle): string {
+  switch (style) {
+    case TickStyle.SOLO:
+      return 'Solo';
+    case TickStyle.TOP_ROPE:
+      return 'Top-rope';
+    case TickStyle.FOLLOW:
+      return 'Follow';
+    case TickStyle.LEAD:
+      return 'Lead';
+    case TickStyle.LEAD_ONSIGHT:
+      return 'Lead (Onsight)';
+    case TickStyle.LEAD_FLASH:
+      return 'Lead (Flash)';
+    case TickStyle.LEAD_REDPOINT:
+      return 'Lead (Redpoint)';
+    case TickStyle.LEAD_PINKPOINT:
+      return 'Lead (Pinkpoint)';
+    case TickStyle.LEAD_FELL_HUNG:
+      return 'Lead (Fell/Hung)';
+    default:
+      return 'Unknown';
+  }
+}
+
 // A map value in Route's |ticks| field.
 export interface Tick {
   date: string; // 'YYYYMMDD'

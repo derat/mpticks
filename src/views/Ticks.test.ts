@@ -19,6 +19,7 @@ import {
   Tick,
   TickId,
   TickStyle,
+  TickStyleToString,
 } from '@/models';
 import { makeRoute, makeRouteSummary, makeTick } from '@/testdata';
 
@@ -96,6 +97,13 @@ describe('Ticks', () => {
       await flushPromises();
     };
     const routeLabel = (route: Route) => `${route.name} (${route.grade})`;
+    const tickLabel = (tick: Tick) => {
+      const year = tick.date.substring(0, 4);
+      const month = tick.date.substring(4, 6);
+      const day = tick.date.substring(6, 8);
+      const style = TickStyleToString(tick.style);
+      return `${year}-${month}-${day} ${style} ${tick.notes}`;
+    };
 
     // The top-level areas should be shown initially.
     expect(labels()).toEqual([area1, area2]);
@@ -127,8 +135,8 @@ describe('Ticks', () => {
       routeLabel(route1),
       area2,
       routeLabel(route2),
-      tick3.date,
-      tick2.date,
+      tickLabel(tick3),
+      tickLabel(tick2),
       routeLabel(route3),
     ]);
   });

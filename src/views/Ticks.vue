@@ -11,7 +11,21 @@
     :load-children="loadItem"
     open-on-click
     v-if="ready"
-  />
+  >
+    <template v-slot:prepend="{ item }">
+      <v-icon class="tree-icon">{{ item.icon }} </v-icon>
+    </template>
+    <template v-slot:label="{ item }">
+      <div v-if="item.tickDate">
+        <div>
+          <span class="tick-date">{{ item.tickDate }}</span>
+          <span class="tick-style">{{ item.tickStyle }}</span>
+        </div>
+        <div class="tick-notes">{{ item.tickNotes }}</div>
+      </div>
+      <span v-else>{{ item.name }}</span>
+    </template>
+  </v-treeview>
   <Spinner v-else />
 </template>
 
@@ -27,6 +41,7 @@ import {
   RouteSummary,
   TickId,
   Tick,
+  TickStyleToString,
 } from '@/models';
 import Spinner from '@/components/Spinner.vue';
 
@@ -34,6 +49,12 @@ import Spinner from '@/components/Spinner.vue';
 interface Item {
   readonly id: string; // default 'item-key' property for v-treeview
   readonly name: string;
+  readonly icon: string;
+
+  readonly tickDate?: string;
+  readonly tickStyle?: string;
+  readonly tickNotes?: string;
+
   // v-treeview will call loadItem(), which calls loadChildren(), if the
   // |children| property contains an empty array. If it's undefined, the item
   // has no children.
@@ -46,14 +67,32 @@ interface Item {
 class TickItem implements Item {
   readonly id: string;
   readonly name: string;
+  readonly icon = 'check';
+  readonly isTick = true;
   readonly children = undefined;
+
   readonly tickId: TickId;
+  readonly tick: Tick;
 
   constructor(parentId: string, tickId: TickId, tick: Tick) {
     this.id = `${parentId}|tick-${tickId}`;
     this.name = tick.date;
+    this.isTick = true;
     this.tickId = tickId;
-    // TODO: Collect more information about the tick.
+    this.tick = tick;
+  }
+
+  get tickDate(): string {
+    const year = this.tick.date.substring(0, 4);
+    const month = this.tick.date.substring(4, 6);
+    const day = this.tick.date.substring(6, 8);
+    return `${year}-${month}-${day}`;
+  }
+  get tickStyle(): string {
+    return TickStyleToString(this.tick.style);
+  }
+  get tickNotes(): string {
+    return this.tick.notes || '';
   }
 
   loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
@@ -65,6 +104,7 @@ class TickItem implements Item {
 class RouteItem implements Item {
   readonly id: string;
   readonly name: string;
+  readonly icon = 'view_list';
   children: Item[] = []; // initially empty to force dynamic loading of ticks
 
   readonly routeId: RouteId;
@@ -96,6 +136,7 @@ class RouteItem implements Item {
 class AreaItem implements Item {
   readonly id: string;
   readonly name: string;
+  readonly icon = 'photo';
   children: Item[]; // dynamically updated after loading the area doc
 
   readonly areaId?: AreaId; // only set if this area contains routes
@@ -168,3 +209,25 @@ export default class Ticks extends Vue {
   }
 }
 </script>
+
+<style scoped>
+>>> .v-treeview-node__content {
+  align-items: flex-start;
+}
+.tree-icon {
+  opacity: 0.8;
+}
+.tick-style {
+  background-color: #eee;
+  border: solid 1px #ddd;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-left: 6px;
+  padding: 2px 5px;
+  vertical-align: middle;
+}
+.tick-notes {
+  white-space: normal;
+  font-size: 12px;
+}
+</style>
