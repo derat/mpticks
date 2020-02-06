@@ -62,7 +62,7 @@ export function getTicks(
 export interface ApiRoute {
   id: number;
   name: string;
-  type: string; // comma-separated list of 'Sport', 'Trad', 'TR', 'Other'
+  type: string; // comma-separated list of 'Sport', 'Trad', 'Boulder', 'TR', 'Other'
   rating: string; // actually the grade, e.g. '5.11a'
   stars: number; // 1 is 'bomb', 5 is 4-star
   starVotes: number;

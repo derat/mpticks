@@ -362,8 +362,9 @@ function createTick(apiTick: ApiTick): Tick {
 // Converts the |type| value from an ApiRoute object to the RouteType enum used
 // by the Route object.
 function getRouteType(apiType: string): RouteType {
-  if (apiType.startsWith('Sport')) return RouteType.SPORT;
-  if (apiType.startsWith('Trad')) return RouteType.TRAD;
+  if (apiType.indexOf('Sport') != -1) return RouteType.SPORT;
+  if (apiType.indexOf('Trad') != -1) return RouteType.TRAD;
+  if (apiType.indexOf('Boulder') != -1) return RouteType.BOULDER;
   return RouteType.OTHER;
 }
 

@@ -38,7 +38,8 @@ export interface Tick {
 export enum RouteType {
   SPORT = 0,
   TRAD = 1,
-  OTHER = 2,
+  BOULDER = 2,
+  OTHER = 3,
 }
 
 // A document in the 'routes' subcollection under a user document.
