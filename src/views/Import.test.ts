@@ -41,7 +41,7 @@ describe('Import', () => {
   const testUid = 'test-uid';
   const userPath = `users/${testUid}`;
   const areaMapPath = `${userPath}/areas/map`;
-  const tickStatsPath = `${userPath}/stats/ticks`;
+  const tickCountsPath = `${userPath}/stats/tickCounts`;
 
   const email = 'user@example.org';
   const key = 'secret123';
@@ -112,7 +112,7 @@ describe('Import', () => {
     expect(MockFirebase.getDoc(areaMapPath)).toEqual({
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    expect(MockFirebase.getDoc(tickStatsPath)).toEqual({
+    expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
       areas: { [aid]: 1 },
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
@@ -136,7 +136,7 @@ describe('Import', () => {
     MockFirebase.setDoc(areaMapPath, {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    MockFirebase.setDoc(tickStatsPath, {
+    MockFirebase.setDoc(tickCountsPath, {
       areas: { [aid]: 1 },
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
@@ -176,7 +176,7 @@ describe('Import', () => {
         [loc[0]]: { areaId: aid2, children: { [loc[1]]: { areaId: aid } } },
       },
     });
-    expect(MockFirebase.getDoc(tickStatsPath)).toEqual({
+    expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
       areas: { [aid]: 2, [aid2]: 1 },
       dates: { [t1.date]: 1, [t2.date]: 1, [t3.date]: 1 },
       daysOfWeek: {

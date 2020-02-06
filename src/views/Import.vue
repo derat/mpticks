@@ -97,8 +97,8 @@ import {
   RouteId,
   RouteType,
   Tick,
+  TickCounts,
   TickId,
-  TickStats,
   TickStyle,
   User,
 } from '@/models';
@@ -375,7 +375,7 @@ export default class Import extends Vue {
 
     this.log('Updating stats...');
 
-    let stats: TickStats = {
+    let counts: TickCounts = {
       areas: {},
       dates: {},
       daysOfWeek: {},
@@ -386,8 +386,8 @@ export default class Import extends Vue {
       tickStyles: {},
     };
 
-    return this.statsTicksRef.get().then(snap => {
-      if (snap.exists) stats = snap.data()! as TickStats;
+    return this.tickCountsRef.get().then(snap => {
+      if (snap.exists) counts = snap.data()! as TickCounts;
 
       routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
         const route = routes.get(routeId);
@@ -397,24 +397,24 @@ export default class Import extends Vue {
           const dayOfWeek = getDayOfWeek(parseDate(tick.date));
 
           // https://stackoverflow.com/a/13298258/6882947
-          stats.areas[areaId] = ++stats.areas[areaId] || 1;
-          stats.dates[tick.date] = ++stats.dates[tick.date] || 1;
-          stats.daysOfWeek[dayOfWeek] = ++stats.daysOfWeek[dayOfWeek] || 1;
-          stats.grades[route.grade] = ++stats.grades[route.grade] || 1;
+          counts.areas[areaId] = ++counts.areas[areaId] || 1;
+          counts.dates[tick.date] = ++counts.dates[tick.date] || 1;
+          counts.daysOfWeek[dayOfWeek] = ++counts.daysOfWeek[dayOfWeek] || 1;
+          counts.grades[route.grade] = ++counts.grades[route.grade] || 1;
           if (typeof route.pitches !== 'undefined') {
-            stats.routePitches[route.pitches] =
-              ++stats.routePitches[route.pitches] || 1;
+            counts.routePitches[route.pitches] =
+              ++counts.routePitches[route.pitches] || 1;
           }
-          stats.routeTypes[route.type] = ++stats.routeTypes[route.type] || 1;
+          counts.routeTypes[route.type] = ++counts.routeTypes[route.type] || 1;
           if (typeof tick.pitches !== 'undefined') {
-            stats.tickPitches[tick.pitches] =
-              ++stats.tickPitches[tick.pitches] || 1;
+            counts.tickPitches[tick.pitches] =
+              ++counts.tickPitches[tick.pitches] || 1;
           }
-          stats.tickStyles[tick.style] = ++stats.tickStyles[tick.style] || 1;
+          counts.tickStyles[tick.style] = ++counts.tickStyles[tick.style] || 1;
         });
       });
 
-      batch.set(this.statsTicksRef, stats);
+      batch.set(this.tickCountsRef, counts);
     });
   }
 
@@ -437,8 +437,8 @@ export default class Import extends Vue {
     return this.areaRef('map');
   }
 
-  get statsTicksRef() {
-    return this.userRef.collection('stats').doc('ticks');
+  get tickCountsRef() {
+    return this.userRef.collection('stats').doc('tickCounts');
   }
 }
 

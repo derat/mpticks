@@ -113,12 +113,12 @@ export interface User {
   maxTickId: TickId;
 }
 
-// The 'ticks' document in the 'stats' subcollection. Contains tick counts keyed
-// by various values.
+// The 'tickCounts' document in the 'stats' subcollection. Contains tick counts
+// keyed by various values.
 //
 // Think long and hard before adding any new properties here, as existing
 // documents in Firestore won't include them.
-export interface TickStats {
+export interface TickCounts {
   areas: Record<AreaId, number>;
   dates: Record<string, number>; // 'YYYYMMDD'
   daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday

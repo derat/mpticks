@@ -124,9 +124,9 @@ area hierarchy and corresponds to the `AreaMap` interface:
 
 #### `stats` subcollection
 
-Aggregate tick counts are stored in a `ticks` document in the `stats`
+Aggregate tick counts are stored in a `tickCounts` document in the `stats`
 subcollection under each user document. The document corresponds to the
-`TickStats` interface:
+`TickCounts` interface:
 
 *   `areas` - Map field keyed by area document IDs (i.e. pipe-separated area
     locations).
