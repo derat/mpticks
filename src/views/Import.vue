@@ -14,15 +14,13 @@
           >.
         </p>
 
-        <p>
-          This information is only used to fetch your ticks and routes (and in
-          fact, it will be sent directly from your browser to Mountain Project's
-          servers).
+        <p class="data-note caption">
+          This information is only used to fetch your ticks and routes. In fact,
+          it goes directly from your browser to Mountain Project's servers and
+          isn't sent to this website.
         </p>
       </v-col>
     </v-row>
-
-    <v-divider class="mb-2" />
 
     <v-form v-model="valid" @submit.prevent>
       <v-row>
@@ -31,7 +29,6 @@
             ref="emailField"
             label="Email address"
             v-model="email"
-            single-line
             :rules="emailRules"
           />
         </v-col>
@@ -40,10 +37,20 @@
         <v-col cols="12" md="6" class="py-0">
           <v-text-field
             ref="keyField"
-            label="Private key"
+            label="API key"
             v-model="key"
-            single-line
             :rules="keyRules"
+          />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12" md="8">
+          <v-checkbox
+            label="Remember email and key in browser"
+            v-model="remember"
+            dense
+            hide-details
+            class="mt-0"
           />
         </v-col>
       </v-row>
@@ -55,15 +62,16 @@
           ref="importButton"
           color="primary"
           :disabled="!valid || importing"
-          @click="onClick"
+          @click="onImportClick"
           >{{ importButtonLabel }}</v-btn
         >
       </v-col>
     </v-row>
 
-    <v-row>
+    <v-row v-if="logMessages.length">
       <v-col cols="12" md="8">
         <v-textarea
+          id="log-textarea"
           label="Log"
           :value="logMessages.join('\n')"
           outlined
@@ -99,6 +107,7 @@ export default class Import extends Vue {
   // Models for UI components.
   email = '';
   key = '';
+  remember = false;
   logMessages: string[] = [];
 
   // Whether the form contains valid input.
@@ -107,21 +116,52 @@ export default class Import extends Vue {
   // Whether an import is in progress.
   importing = false;
 
+  // Rules for input fields.
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
   keyRules = [(v: string) => !!v || 'Private key must be supplied'];
+
+  // localStorage item names.
+  readonly emailItem = 'importEmail';
+  readonly keyItem = 'importKey';
 
   get importButtonLabel() {
     return this.importing ? 'Importing...' : 'Import';
   }
 
-  onClick() {
-    this.importing = true;
+  mounted() {
+    const email = window.localStorage.getItem(this.emailItem);
+    if (email) this.email = email;
+    const key = window.localStorage.getItem(this.keyItem);
+    if (key) this.key = key;
+    if (email || key) this.remember = true;
+  }
+
+  log(msg: string, isErr = false) {
+    this.logMessages.push(msg);
+    if (isErr) console.error(msg);
+
+    // Scroll the log messages down.
+    // I have no idea why, but the element seems to be missing in tests.
+    const textarea = document.getElementById('log-textarea');
+    if (textarea) textarea.scrollTop = textarea.scrollHeight;
+  }
+
+  onImportClick() {
+    if (this.remember) {
+      window.localStorage.setItem(this.emailItem, this.email);
+      window.localStorage.setItem(this.keyItem, this.key);
+    } else {
+      window.localStorage.removeItem(this.emailItem);
+      window.localStorage.removeItem(this.keyItem);
+    }
 
     let user: User = { maxTickId: 0 };
     //let user: User = { maxTickId: 118294181 };
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
+
+    this.importing = true;
 
     this.log('Loading user doc to see where we left off...');
     this.userRef
@@ -215,11 +255,6 @@ export default class Import extends Vue {
       .finally(() => {
         this.importing = false;
       });
-  }
-
-  log(msg: string, isErr = false) {
-    this.logMessages.push(msg);
-    if (isErr) console.error(msg);
   }
 
   // Tries to load the routes identified by |ids| from Firestore into |routes|.
@@ -414,3 +449,12 @@ function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
   else addAreaToAreaMap(id, location.slice(1), map.children[name]!);
 }
 </script>
+
+<style scoped>
+.data-note {
+  margin-bottom: 0;
+}
+#log-textarea {
+  scroll-behavior: smooth;
+}
+</style>
