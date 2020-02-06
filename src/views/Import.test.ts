@@ -37,6 +37,8 @@ describe('Import', () => {
   let wrapper: Wrapper<Vue>;
 
   const testUid = 'test-uid';
+  const userPath = `users/${testUid}`;
+  const areaMapPath = `${userPath}/areas/map`;
   const email = 'user@example.org';
   const key = 'secret123';
 
@@ -86,7 +88,7 @@ describe('Import', () => {
       .replyOnce(200, { routes, success: true });
   }
 
-  it('fetches and saves data', async () => {
+  it('fetches and saves new data', async () => {
     const routeId1 = 1;
     const tickId1 = 10;
     const location = ['California', 'Yosemite'];
@@ -96,7 +98,6 @@ describe('Import', () => {
     handleGetRoutes([makeApiRoute(routeId1, location)]);
     await doImport();
 
-    const userPath = `users/${testUid}`;
     expect(MockFirebase.getDoc(userPath)).toEqual({ maxTickId: tickId1 });
     expect(MockFirebase.getDoc(`${userPath}/routes/${routeId1}`)).toEqual(
       makeRoute(routeId1, [tickId1], location)
@@ -104,8 +105,62 @@ describe('Import', () => {
     expect(MockFirebase.getDoc(`${userPath}/areas/${areaId}`)).toEqual({
       routes: { [routeId1]: makeRouteSummary(routeId1) },
     });
-    expect(MockFirebase.getDoc(`${userPath}/areas/map`)).toEqual({
-      children: { [location[0]]: { children: { [location[1]]: { areaId } } } },
+    expect(MockFirebase.getDoc(areaMapPath)).toEqual({
+      children: { California: { children: { Yosemite: { areaId } } } },
+    });
+  });
+
+  it('preserves existing data', async () => {
+    // Start out with a single tick.
+    const routeId1 = 1;
+    const tickId1 = 10;
+    const location1 = ['A', 'B'];
+    const areaId1 = makeAreaId(location1);
+    MockFirebase.setDoc(userPath, { maxTickId: tickId1 });
+    MockFirebase.setDoc(
+      `${userPath}/routes/${routeId1}`,
+      makeRoute(routeId1, [tickId1], location1)
+    );
+    MockFirebase.setDoc(`${userPath}/areas/${areaId1}`, {
+      routes: { [routeId1]: makeRouteSummary(routeId1) },
+    });
+    MockFirebase.setDoc(areaMapPath, {
+      children: {
+        [location1[0]]: { children: { [location1[1]]: { areaId: areaId1 } } },
+      },
+    });
+
+    // Report a second route in a subarea of the first route's area, and new
+    // ticks for the first and second routes.
+    const routeId2 = 2;
+    const tickId2 = 11;
+    const tickId3 = 12;
+    const location2 = ['A'];
+    const areaId2 = makeAreaId(location2);
+    handleGetTicks([
+      makeApiTick(tickId2, routeId1),
+      makeApiTick(tickId3, routeId2),
+    ]);
+    handleGetRoutes([makeApiRoute(routeId2, location2)]);
+    await doImport();
+
+    expect(MockFirebase.getDoc(userPath)).toEqual({ maxTickId: tickId3 });
+    expect(MockFirebase.getDoc(`${userPath}/routes/${routeId1}`)).toEqual(
+      makeRoute(routeId1, [tickId1, tickId2], location1)
+    );
+    expect(MockFirebase.getDoc(`${userPath}/routes/${routeId2}`)).toEqual(
+      makeRoute(routeId2, [tickId3], location2)
+    );
+    expect(MockFirebase.getDoc(`${userPath}/areas/${areaId1}`)).toEqual({
+      routes: { [routeId1]: makeRouteSummary(routeId1) },
+    });
+    expect(MockFirebase.getDoc(`${userPath}/areas/${areaId2}`)).toEqual({
+      routes: { [routeId2]: makeRouteSummary(routeId2) },
+    });
+    expect(MockFirebase.getDoc(areaMapPath)).toEqual({
+      children: {
+        A: { areaId: areaId2, children: { B: { areaId: areaId1 } } },
+      },
     });
   });
 });
