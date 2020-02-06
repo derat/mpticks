@@ -5,11 +5,7 @@
 <template>
   <div class="login-wrapper">
     <div id="firebaseui-auth-container" v-show="showUI" />
-    <v-container class="fill-height" v-if="!showUI">
-      <v-row justify="center" align="center">
-        <v-progress-circular indeterminate size="48" />
-      </v-row>
-    </v-container>
+    <Spinner v-if="!showUI" />
   </div>
 </template>
 
@@ -21,7 +17,9 @@ import 'firebaseui/dist/firebaseui.css';
 
 import { Component, Vue } from 'vue-property-decorator';
 
-@Component
+import Spinner from '@/components/Spinner.vue';
+
+@Component({ components: { Spinner } })
 export default class Login extends Vue {
   // True when an OAuth-based flow has redirected back to this view after
   // getting user confirmation.

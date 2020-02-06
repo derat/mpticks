@@ -3,7 +3,16 @@
      found in the LICENSE file. -->
 
 <template>
-  <v-treeview dense :items="items" :load-children="loadItem" open-on-click />
+  <!-- TODO: Display a hint pointing the user at the import view if no ticks are
+       present. -->
+  <v-treeview
+    dense
+    :items="items"
+    :load-children="loadItem"
+    open-on-click
+    v-if="ready"
+  />
+  <Spinner v-else />
 </template>
 
 <script lang="ts">
@@ -19,6 +28,7 @@ import {
   TickId,
   Tick,
 } from '@/models';
+import Spinner from '@/components/Spinner.vue';
 
 // Interface for items in the v-treeview.
 interface Item {
@@ -125,9 +135,11 @@ class AreaItem implements Item {
   }
 }
 
-@Component
+@Component({ components: { Spinner } })
 export default class Ticks extends Vue {
   items: Item[] = [];
+
+  ready = false;
 
   mounted() {
     this.userRef
@@ -135,6 +147,7 @@ export default class Ticks extends Vue {
       .doc('map')
       .get()
       .then(snap => {
+        this.ready = true;
         if (!snap.exists) return;
         const map = snap.data() as AreaMap;
         this.items = Object.entries(map.children || {})
