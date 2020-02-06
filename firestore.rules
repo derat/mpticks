@@ -19,6 +19,9 @@ service cloud.firestore {
     match /users/{uid}/areas/{area} {
       allow read, write: if authorized(request, uid);
     }
+    match /users/{uid}/stats/ticks {
+      allow read, write: if authorized(request, uid);
+    }
     // Access to everything else is denied by default.
   }
 }

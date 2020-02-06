@@ -68,8 +68,8 @@ export function makeApiTick(tickId: TickId, routeId: RouteId): ApiTick {
   const apiRoute = makeApiRoute(routeId, []);
 
   // Ladies and gentlemen, JavaScript: https://stackoverflow.com/a/34290167
-  const d = new Date('2020-01-01');
-  d.setDate(d.getDate() + tickId);
+  const d = new Date(2020, 0, 1);
+  d.setDate(tickId);
   const date = [
     d.getFullYear(),
     ('0' + (d.getMonth() + 1)).slice(-2),

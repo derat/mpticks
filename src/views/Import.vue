@@ -98,9 +98,11 @@ import {
   RouteType,
   Tick,
   TickId,
+  TickStats,
   TickStyle,
   User,
 } from '@/models';
+import { parseDate, getDayOfWeek } from '@/dateutil';
 
 @Component
 export default class Import extends Vue {
@@ -221,6 +223,7 @@ export default class Import extends Vue {
           });
         });
       })
+      .then(() => this.updateStats(routeTicks, routes, batch))
       .then(() => {
         if (!routeTicks.size) return Promise.resolve();
 
@@ -333,6 +336,62 @@ export default class Import extends Vue {
       });
   }
 
+  // Loads, updates, and writes the stats document to include the ticks in
+  // |routeTicks|. |routes| is used to get route information.
+  updateStats(
+    routeTicks: Map<RouteId, Map<TickId, Tick>>,
+    routes: Map<RouteId, Route>,
+    batch: firebase.firestore.WriteBatch
+  ): Promise<void> {
+    if (!routeTicks.size) return Promise.resolve();
+
+    this.log('Updating stats...');
+
+    let stats: TickStats = {
+      areas: {},
+      dates: {},
+      daysOfWeek: {},
+      grades: {},
+      routes: {},
+      routePitches: {},
+      routeTypes: {},
+      tickPitches: {},
+      tickStyles: {},
+    };
+
+    return this.statsTicksRef.get().then(snap => {
+      if (snap.exists) stats = snap.data()! as TickStats;
+
+      routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
+        const route = routes.get(routeId);
+        if (!route) return;
+        const areaId = makeAreaId(route.location);
+        ticks.forEach((tick: Tick, tickId: TickId) => {
+          const dayOfWeek = getDayOfWeek(parseDate(tick.date));
+
+          // https://stackoverflow.com/a/13298258/6882947
+          stats.areas[areaId] = ++stats.areas[areaId] || 1;
+          stats.dates[tick.date] = ++stats.dates[tick.date] || 1;
+          stats.daysOfWeek[dayOfWeek] = ++stats.daysOfWeek[dayOfWeek] || 1;
+          stats.grades[route.grade] = ++stats.grades[route.grade] || 1;
+          stats.routes[routeId] = ++stats.routes[routeId] || 1;
+          if (typeof route.pitches !== 'undefined') {
+            stats.routePitches[route.pitches] =
+              ++stats.routePitches[route.pitches] || 1;
+          }
+          stats.routeTypes[route.type] = ++stats.routeTypes[route.type] || 1;
+          if (typeof tick.pitches !== 'undefined') {
+            stats.tickPitches[tick.pitches] =
+              ++stats.tickPitches[tick.pitches] || 1;
+          }
+          stats.tickStyles[tick.style] = ++stats.tickStyles[tick.style] || 1;
+        });
+      });
+
+      batch.set(this.statsTicksRef, stats);
+    });
+  }
+
   get userRef() {
     return firebase
       .firestore()
@@ -350,6 +409,10 @@ export default class Import extends Vue {
 
   get areaMapRef() {
     return this.areaRef('map');
+  }
+
+  get statsTicksRef() {
+    return this.userRef.collection('stats').doc('ticks');
   }
 }
 

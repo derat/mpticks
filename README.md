@@ -92,8 +92,8 @@ correspond to the `Route` interface:
 *   `pitches` - Number field containing the number of pitches.
 *   `ticks` - Map field keyed by Mountain Project tick ID. Values are maps
     corresponding to the `Tick` interface:
-    *   `date` - String field containing tick date as `YYYY-MM-DD`, e.g.
-        `'2020-01-01'`.
+    *   `date` - String field containing tick date as `YYYYMMDD`, e.g.
+        `'20200101'`.
     *   `pitches` - Number field containing climbed pitches.
     *   `style` - Number field containing a `TickStyle` enum value.
     *   `notes` - String field containing user-supplied notes.
@@ -121,3 +121,23 @@ area hierarchy and corresponds to the `AreaMap` interface:
     Canyon'`) and with map values corresponding to the `AreaMap` interface.
 *   `areaId` - Optional string field containing the area's document ID in the
     `areas` subcollection.
+
+#### `stats` subcollection
+
+Aggregate tick counts are stored in a `ticks` document in the `stats`
+subcollection under each user document. The document corresponds to the
+`TickStats` interface:
+
+*   `areas` - Map field keyed by area document IDs (i.e. pipe-separated area
+    locations).
+*   `dates` - Map field keyed by date as `YYYYMMDD`.
+*   `daysOfWeek` - Map field keyed by [ISO 8601 day of week] where `1` is Monday
+    and `7` is Sunday.
+*   `grades` - Map field keyed by route grades, e.g. `'5.9'` or `'V3'`.
+*   `routes` - Map field keyed by Mountain Project route ID.
+*   `routePitches` - Map field keyed by total pitches in route.
+*   `routeTypes` - Map field keyed by `RouteType` enum values.
+*   `tickPitches` - Map field keyed by climbed pitches.
+*   `tickStyles` - Map field keyed by `TickStyle` enum values.
+
+[ISO 8601 day of week]: https://en.wikipedia.org/wiki/ISO_week_date

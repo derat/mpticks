@@ -112,3 +112,20 @@ export interface User {
   // The maximum tick ID that has been imported.
   maxTickId: TickId;
 }
+
+// The 'ticks' document in the 'stats' subcollection. Contains tick counts keyed
+// by various values.
+//
+// Think long and hard before adding any new properties here, as existing
+// documents in Firestore won't include them.
+export interface TickStats {
+  areas: Record<AreaId, number>;
+  dates: Record<string, number>; // 'YYYYMMDD'
+  daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
+  grades: Record<string, number>;
+  routes: Record<RouteId, number>;
+  routePitches: Record<number, number>;
+  routeTypes: Record<number, number>; // RouteType (TS doesn't allow enum keys)
+  tickPitches: Record<number, number>;
+  tickStyles: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
+}
