@@ -18,6 +18,11 @@ export enum TickStyle {
   LEAD_REDPOINT = 7,
   LEAD_PINKPOINT = 8,
   LEAD_FELL_HUNG = 9,
+  // These three seem to be boulder-specific. I haven't seen 'Attempt' in the
+  // wild yet.
+  SEND = 10,
+  FLASH = 11,
+  ATTEMPT = 12,
 }
 
 export function TickStyleToString(style: TickStyle): string {
@@ -40,6 +45,12 @@ export function TickStyleToString(style: TickStyle): string {
       return 'Lead (Pinkpoint)';
     case TickStyle.LEAD_FELL_HUNG:
       return 'Lead (Fell/Hung)';
+    case TickStyle.SEND:
+      return 'Send';
+    case TickStyle.FLASH:
+      return 'Flash';
+    case TickStyle.ATTEMPT:
+      return 'Attempt';
     default:
       return 'Unknown';
   }

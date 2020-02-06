@@ -470,6 +470,12 @@ function getTickStyle(style: string, leadStyle: string): TickStyle {
           return TickStyle.LEAD;
       }
     }
+    case 'Send':
+      return TickStyle.SEND;
+    case 'Flash':
+      return TickStyle.FLASH;
+    case 'Attempt':
+      return TickStyle.ATTEMPT;
     default:
       return TickStyle.UNKNOWN;
   }

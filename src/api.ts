@@ -14,7 +14,7 @@ export interface ApiTick {
   date: string; // 'YYYY-MM-DD'
   pitches: number;
   notes: string;
-  style: string; // 'Solo', 'TR', 'Follow', 'Lead'
+  style: string; // 'Solo', 'TR', 'Follow', 'Lead', 'Flash', 'Send', 'Attempt', ''
   leadStyle: string; // 'Onsight', 'Flash', 'Redpoint', 'Pinkpoint', 'Fell/Hung', ''
   tickId: number;
   userStars: number; // 1 is 'bomb', 5 is 4-star
