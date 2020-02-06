@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { MockFirebase } from '@/firebase/mock';
+import { MockFirebase, MockUser } from '@/firebase/mock';
 
 import firebase from 'firebase/app';
 import 'firebase/firestore';
@@ -24,39 +24,42 @@ import { makeRoute, makeRouteSummary, makeTick } from '@/testdata';
 
 import Ticks from './Ticks.vue';
 
-const tickId1: TickId = 11;
-const tickId2: TickId = 12;
-const tickId3: TickId = 13;
-const tickId4: TickId = 14;
-
-const routeId1: RouteId = 1;
-const routeId2: RouteId = 2;
-const routeId3: RouteId = 3;
-
-const tick1: Tick = makeTick(tickId1, routeId1);
-const tick2: Tick = makeTick(tickId2, routeId2);
-const tick3: Tick = makeTick(tickId3, routeId2);
-const tick4: Tick = makeTick(tickId4, routeId3);
-
-const area1 = 'California';
-const subArea1 = 'Yosemite';
-const areaId1 = makeAreaId([area1, subArea1]);
-
-const area2 = 'Colorado';
-const areaId2 = makeAreaId([area2]);
-
-const route1: Route = makeRoute(routeId1, [tickId1], [area1, subArea1]);
-const route2: Route = makeRoute(routeId2, [tickId2, tickId3], [area2]);
-const route3: Route = makeRoute(routeId3, [tickId4], [area2]);
-
 setUpVuetifyTesting();
 
 describe('Ticks', () => {
   let wrapper: Wrapper<Vue>;
 
+  const testUid = 'test-uid';
+
+  const tickId1: TickId = 11;
+  const tickId2: TickId = 12;
+  const tickId3: TickId = 13;
+  const tickId4: TickId = 14;
+
+  const routeId1: RouteId = 1;
+  const routeId2: RouteId = 2;
+  const routeId3: RouteId = 3;
+
+  const tick1: Tick = makeTick(tickId1, routeId1);
+  const tick2: Tick = makeTick(tickId2, routeId2);
+  const tick3: Tick = makeTick(tickId3, routeId2);
+  const tick4: Tick = makeTick(tickId4, routeId3);
+
+  const area1 = 'California';
+  const subArea1 = 'Yosemite';
+  const areaId1 = makeAreaId([area1, subArea1]);
+
+  const area2 = 'Colorado';
+  const areaId2 = makeAreaId([area2]);
+
+  const route1: Route = makeRoute(routeId1, [tickId1], [area1, subArea1]);
+  const route2: Route = makeRoute(routeId2, [tickId2, tickId3], [area2]);
+  const route3: Route = makeRoute(routeId3, [tickId4], [area2]);
+
   beforeEach(async () => {
     MockFirebase.reset();
-    MockFirebase.setDoc('users/default/areas/map', {
+    MockFirebase.currentUser = new MockUser(testUid, 'Test User');
+    MockFirebase.setDoc(`users/${testUid}/areas/map`, {
       children: {
         [area1]: {
           children: {
@@ -66,18 +69,18 @@ describe('Ticks', () => {
         [area2]: { children: {}, areaId: areaId2 },
       },
     });
-    MockFirebase.setDoc(`users/default/areas/${areaId1}`, {
+    MockFirebase.setDoc(`users/${testUid}/areas/${areaId1}`, {
       routes: { [routeId1]: makeRouteSummary(routeId1) },
     });
-    MockFirebase.setDoc(`users/default/areas/${areaId2}`, {
+    MockFirebase.setDoc(`users/${testUid}/areas/${areaId2}`, {
       routes: {
         [routeId2]: makeRouteSummary(routeId2),
         [routeId3]: makeRouteSummary(routeId3),
       },
     });
-    MockFirebase.setDoc(`users/default/routes/${routeId1}`, route1);
-    MockFirebase.setDoc(`users/default/routes/${routeId2}`, route2);
-    MockFirebase.setDoc(`users/default/routes/${routeId3}`, route3);
+    MockFirebase.setDoc(`users/${testUid}/routes/${routeId1}`, route1);
+    MockFirebase.setDoc(`users/${testUid}/routes/${routeId2}`, route2);
+    MockFirebase.setDoc(`users/${testUid}/routes/${routeId3}`, route3);
 
     wrapper = mount(Ticks, newVuetifyMountOptions());
     await flushPromises();

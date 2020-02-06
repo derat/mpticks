@@ -5,9 +5,7 @@
 rules_version = '2';
 
 function authorized(req, uid) {
-  // TODO: Use something like this:
-  // return req.auth != null && req.auth.uid != null && req.auth.uid == uid;
-  return true;
+  return req.auth != null && req.auth.uid == uid;
 }
 
 service cloud.firestore {

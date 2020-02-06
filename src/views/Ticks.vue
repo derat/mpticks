@@ -8,6 +8,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import firebase from '@/firebase';
 import {
   Area,
   AreaId,
@@ -18,7 +19,6 @@ import {
   TickId,
   Tick,
 } from '@/models';
-import firebase from '@/firebase';
 
 // Interface for items in the v-treeview.
 interface Item {
@@ -30,7 +30,7 @@ interface Item {
   readonly children: Item[] | undefined;
 
   // Called to dynamically populate |children| when the item is clicked.
-  loadChildren(firestore: firebase.firestore.Firestore): Promise<void>;
+  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void>;
 }
 
 class TickItem implements Item {
@@ -44,7 +44,7 @@ class TickItem implements Item {
     // TODO: Collect more information about the tick.
   }
 
-  loadChildren(firestore: firebase.firestore.Firestore): Promise<void> {
+  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
     // Not reached since |children| is undefined.
     throw new Error('Ticks have no children');
   }
@@ -63,10 +63,8 @@ class RouteItem implements Item {
     this.routeId = routeId;
   }
 
-  loadChildren(firestore: firebase.firestore.Firestore): Promise<void> {
-    return firestore
-      .collection('users')
-      .doc('default') // FIXME: UID
+  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
+    return userRef
       .collection('routes')
       .doc(this.routeId.toString())
       .get()
@@ -103,10 +101,8 @@ class AreaItem implements Item {
     this.children = this.areaId ? [] : this.childAreas;
   }
 
-  loadChildren(firestore: firebase.firestore.Firestore): Promise<void> {
-    return firestore
-      .collection('users')
-      .doc('default') // FIXME: user ID
+  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
+    return userRef
       .collection('areas')
       .doc(this.areaId!)
       .get()
@@ -129,11 +125,7 @@ export default class Ticks extends Vue {
   items: Item[] = [];
 
   mounted() {
-    // TODO: Bind the document and compute this dynamically instead.
-    firebase
-      .firestore()
-      .collection('users')
-      .doc('default') // FIXME: user ID
+    this.userRef
       .collection('areas')
       .doc('map')
       .get()
@@ -147,7 +139,14 @@ export default class Ticks extends Vue {
   }
 
   loadItem(item: Item): Promise<void> {
-    return item.loadChildren(firebase.firestore());
+    return item.loadChildren(this.userRef);
+  }
+
+  get userRef(): firebase.firestore.DocumentReference {
+    return firebase
+      .firestore()
+      .collection('users')
+      .doc(firebase.auth().currentUser!.uid);
   }
 }
 </script>

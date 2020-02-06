@@ -97,11 +97,9 @@ import {
 
 @Component
 export default class Import extends Vue {
-  // Models for text fields.
+  // Models for UI components.
   email = '';
   key = '';
-
-  // Model for textarea.
   log = '';
 
   // Whether the form contains valid input.
@@ -275,11 +273,10 @@ export default class Import extends Vue {
   }
 
   get userRef() {
-    // TODO: Require login and use the actual UID here instead of 'default'.
     return firebase
       .firestore()
       .collection('users')
-      .doc('default');
+      .doc(firebase.auth().currentUser!.uid);
   }
 
   routeRef(id: RouteId) {

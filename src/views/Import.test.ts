@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { MockFirebase } from '@/firebase/mock';
+import { MockFirebase, MockUser } from '@/firebase/mock';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 
@@ -34,17 +34,16 @@ afterAll(() => {
 });
 
 describe('Import', () => {
-  beforeEach(() => {
-    mockAxios.reset();
-  });
-
   let wrapper: Wrapper<Vue>;
 
+  const testUid = 'test-uid';
   const email = 'user@example.org';
   const key = 'secret123';
 
   beforeEach(async () => {
+    mockAxios.reset();
     MockFirebase.reset();
+    MockFirebase.currentUser = new MockUser(testUid, 'Test User');
     wrapper = mount(Import, newVuetifyMountOptions());
     await flushPromises();
   });
@@ -97,16 +96,15 @@ describe('Import', () => {
     handleGetRoutes([makeApiRoute(routeId1, location)]);
     await doImport();
 
-    expect(MockFirebase.getDoc('users/default')).toEqual({
-      maxTickId: tickId1,
-    });
-    expect(MockFirebase.getDoc(`users/default/routes/${routeId1}`)).toEqual(
+    const userPath = `users/${testUid}`;
+    expect(MockFirebase.getDoc(userPath)).toEqual({ maxTickId: tickId1 });
+    expect(MockFirebase.getDoc(`${userPath}/routes/${routeId1}`)).toEqual(
       makeRoute(routeId1, [tickId1], location)
     );
-    expect(MockFirebase.getDoc(`users/default/areas/${areaId}`)).toEqual({
+    expect(MockFirebase.getDoc(`${userPath}/areas/${areaId}`)).toEqual({
       routes: { [routeId1]: makeRouteSummary(routeId1) },
     });
-    expect(MockFirebase.getDoc('users/default/areas/map')).toEqual({
+    expect(MockFirebase.getDoc(`${userPath}/areas/map`)).toEqual({
       children: { [location[0]]: { children: { [location[1]]: { areaId } } } },
     });
   });
