@@ -157,95 +157,16 @@ export default class Import extends Vue {
       window.localStorage.removeItem(this.keyItem);
     }
 
-    let user: User = { maxTickId: 0 };
-    //let user: User = { maxTickId: 118294181 };
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
 
     this.importing = true;
-
-    this.log('Loading user doc to see where we left off...');
-    this.userRef
-      .get()
-      .then(snap => {
-        if (snap.exists) {
-          user = snap.data() as User;
-          this.log(`Last tick was ${user.maxTickId}.`);
-        } else {
-          this.log('No user doc; will import all ticks.');
-        }
-        this.log('Getting new ticks from Mountain Project...');
-        return getTicks(this.email, this.key, user.maxTickId + 1);
-      })
-      .then(apiTicks => {
-        this.log(`Got ${apiTicks.length} new tick(s).`);
-        if (!apiTicks.length) return Promise.resolve();
-
-        for (const apiTick of apiTicks) {
-          try {
-            const routeId = apiTick.routeId;
-            if (!routeTicks.get(routeId)) {
-              routeTicks.set(routeId, new Map<TickId, Tick>());
-            }
-            routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
-            user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
-          } catch (err) {
-            this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
-          }
-        }
-
-        const routeIds = Array.from(routeTicks.keys());
-        this.log(`Loading ${routeIds.length} route(s) from Firestore...`);
-        return this.loadRoutesFromFirestore(routeIds, routes).then(missing => {
-          if (!missing.length) return Promise.resolve();
-
-          // Get the missing routes from the Mountain Project API.
-          this.log(
-            `Getting ${missing.length} route(s) from Mountain Project...`
-          );
-          return getRoutes(missing, this.key).then(apiRoutes => {
-            // Create the new routes that we got from the API.
-            this.log(`Got ${apiRoutes.length} route(s).`);
-            const newRoutes = new Map<RouteId, Route>();
-            for (const apiRoute of apiRoutes) {
-              try {
-                const route = createRoute(apiRoute);
-                routes.set(apiRoute.id, route);
-                newRoutes.set(apiRoute.id, route);
-              } catch (err) {
-                this.log(`Skipping invalid route ${apiRoute}: ${err}`, true);
-              }
-            }
-            // Load and update Firestore area documents to list the new routes.
-            this.log('Updating areas for new routes...');
-            return this.saveRoutesToAreas(newRoutes, batch);
-          });
-        });
-      })
+    this.getTicks(routeTicks, batch)
+      .then(() => this.getRoutes(Array.from(routeTicks.keys()), routes, batch))
+      .then(() => this.updateRoutes(routeTicks, routes, batch))
       .then(() => this.updateStats(routeTicks, routes, batch))
       .then(() => {
-        if (!routeTicks.size) return Promise.resolve();
-
-        // Add the ticks to the routes.
-        routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
-          const route = routes.get(routeId);
-          if (!route) {
-            this.log(
-              `Skipping ${ticks.size} tick(s) for missing route ${routeId}`,
-              true
-            );
-            return;
-          }
-          ticks.forEach((tick: Tick, tickId: TickId) => {
-            route.ticks[tickId] = tick;
-          });
-        });
-        // Write the updated routes to Firestore.
-        routes.forEach((route: Route, routeId: RouteId) => {
-          batch.set(this.routeRef(routeId), route);
-        });
-        batch.set(this.userRef, user);
         this.log('Writing updated data to Firestore...');
         return batch.commit();
       })
@@ -260,6 +181,78 @@ export default class Import extends Vue {
       });
   }
 
+  // Requests new ticks from Mountain Project and creates corresponding Tick
+  // objects in |routeTicks|. The user doc is updated to contain the new max
+  // tick ID and written using |batch|.
+  getTicks(
+    routeTicks: Map<RouteId, Map<TickId, Tick>>,
+    batch: firebase.firestore.WriteBatch
+  ): Promise<void> {
+    this.log('Loading user doc...');
+    return this.userRef.get().then(snap => {
+      // FIXME: 118294181
+      const user = snap.exists ? (snap.data() as User) : { maxTickId: 0 };
+      this.log(
+        `Getting ticks newer than ${user.maxTickId} from Mountain Project...`
+      );
+      return getTicks(this.email, this.key, user.maxTickId + 1).then(
+        apiTicks => {
+          this.log(`Got ${apiTicks.length} new tick(s).`);
+          if (!apiTicks.length) return;
+
+          for (const apiTick of apiTicks) {
+            try {
+              const routeId = apiTick.routeId;
+              if (!routeTicks.get(routeId)) {
+                routeTicks.set(routeId, new Map<TickId, Tick>());
+              }
+              routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
+              user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
+            } catch (err) {
+              this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
+            }
+          }
+          batch.set(this.userRef, user);
+        }
+      );
+    });
+  }
+
+  // Loads routes identified by |ids| into |routes|. If a route isn't present
+  // in Firestore, it is imported from Mountain Project. If routes are imported,
+  // their areas are updated using |batch|.
+  getRoutes(
+    ids: RouteId[],
+    routes: Map<RouteId, Route>,
+    batch: firebase.firestore.WriteBatch
+  ): Promise<void> {
+    if (!ids.length) return Promise.resolve();
+
+    return this.loadRoutesFromFirestore(ids, routes).then(missing => {
+      if (!missing.length) return Promise.resolve();
+
+      // Get the missing routes from the Mountain Project API.
+      this.log(`Importing ${missing.length} route(s) from Mountain Project...`);
+      return getRoutes(missing, this.key).then(apiRoutes => {
+        // Create the new routes that we got from the API.
+        this.log(`Got ${apiRoutes.length} route(s).`);
+        const newRoutes = new Map<RouteId, Route>();
+        for (const apiRoute of apiRoutes) {
+          try {
+            const route = createRoute(apiRoute);
+            routes.set(apiRoute.id, route);
+            newRoutes.set(apiRoute.id, route);
+          } catch (err) {
+            this.log(`Skipping invalid route ${apiRoute}: ${err}`, true);
+          }
+        }
+
+        // Load and update Firestore area documents to list the new routes.
+        return this.saveRoutesToAreas(newRoutes, batch);
+      });
+    });
+  }
+
   // Tries to load the routes identified by |ids| from Firestore into |routes|.
   // Returns IDs of missing routes (if any).
   loadRoutesFromFirestore(
@@ -268,6 +261,7 @@ export default class Import extends Vue {
   ): Promise<RouteId[]> {
     // Load routes in parallel, returning IDs of missing routes and 0 for
     // success.
+    this.log(`Loading ${ids.length} route(s) from Firestore...`);
     return Promise.all(
       ids.map(id =>
         this.routeRef(id)
@@ -287,6 +281,8 @@ export default class Import extends Vue {
     batch: firebase.firestore.WriteBatch
   ): Promise<void> {
     if (!routes.size) return Promise.resolve();
+
+    this.log('Updating areas...');
 
     // Figure out which areas are needed.
     const areaLocations = new Map<AreaId, string[]>();
@@ -334,6 +330,38 @@ export default class Import extends Vue {
           batch.set(this.areaRef(areaId), area);
         });
       });
+  }
+
+  // Records the ticks in |routeTicks| to |routes| and sets the updated data in
+  // |batch|.
+  updateRoutes(
+    routeTicks: Map<RouteId, Map<TickId, Tick>>,
+    routes: Map<RouteId, Route>,
+    batch: firebase.firestore.WriteBatch
+  ) {
+    if (!routeTicks.size) return;
+
+    this.log('Updating routes...');
+
+    // Add the ticks to the routes.
+    routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
+      const route = routes.get(routeId);
+      if (!route) {
+        this.log(
+          `Skipping ${ticks.size} tick(s) for missing route ${routeId}`,
+          true
+        );
+        return;
+      }
+      ticks.forEach((tick: Tick, tickId: TickId) => {
+        route.ticks[tickId] = tick;
+      });
+    });
+
+    // Write the updated routes to Firestore.
+    routes.forEach((route: Route, routeId: RouteId) => {
+      batch.set(this.routeRef(routeId), route);
+    });
   }
 
   // Loads, updates, and writes the stats document to include the ticks in
