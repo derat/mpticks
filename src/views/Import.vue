@@ -104,7 +104,7 @@ export default class Import extends Vue {
   // Whether the form contains valid input.
   valid = false;
 
-  // Whether an import is currently ongoing.
+  // Whether an import is in progress.
   importing = false;
 
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
@@ -167,10 +167,15 @@ export default class Import extends Vue {
             // Create the new routes that we got from the API.
             this.addLog(`Got ${apiRoutes.length} route(s).`);
             const newRoutes = new Map<RouteId, Route>();
-            for (const r of apiRoutes) {
-              const route = createRoute(r);
-              routes.set(r.id, route);
-              newRoutes.set(r.id, route);
+            for (const apiRoute of apiRoutes) {
+              try {
+                const route = createRoute(apiRoute);
+                routes.set(apiRoute.id, route);
+                newRoutes.set(apiRoute.id, route);
+              } catch (err) {
+                console.error(`Skipping invalid route ${apiRoute}: ${err}`);
+                this.addLog(`Skipping invalid route ${apiRoute}: ${err}`);
+              }
             }
             // Load and update Firestore area documents to list the new routes.
             this.addLog('Updating areas for new routes...');
@@ -184,6 +189,7 @@ export default class Import extends Vue {
         // Add the ticks to the routes.
         routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
           ticks.forEach((tick: Tick, tickId: TickId) => {
+            // TODO: Need to handle missing routes here.
             routes.get(routeId)!.ticks[tickId] = tick;
           });
         });
@@ -349,14 +355,15 @@ function createTick(apiTick: ApiTick): Tick {
     throw new Error('Invalid date');
   }
 
-  return {
-    date: apiTick.date,
-    pitches: apiTick.pitches || -1,
+  const tick: Tick = {
+    date: apiTick.date.replace(/-/g, ''),
     style: getTickStyle(apiTick.style, apiTick.leadStyle),
-    notes: apiTick.notes || '',
-    stars: apiTick.userStars || -1,
-    grade: apiTick.userRating || '',
   };
+  if (apiTick.pitches > -1) tick.pitches = apiTick.pitches;
+  if (apiTick.notes) tick.notes = apiTick.notes;
+  if (apiTick.userStars > -1) tick.stars = apiTick.userStars;
+  if (apiTick.userRating) tick.grade = apiTick.userRating;
+  return tick;
 }
 
 // Converts the |type| value from an ApiRoute object to the RouteType enum used
@@ -372,15 +379,20 @@ function getRouteType(apiType: string): RouteType {
 // endpoint. Throws an error if key information is missing.
 function createRoute(apiRoute: ApiRoute): Route {
   if (!apiRoute.id) throw new Error('Missing route ID');
+  if (!apiRoute.name) throw new Error('Missing name');
+  if (!apiRoute.location || !apiRoute.location.length) {
+    throw new Error('Missing location');
+  }
 
-  return {
-    name: apiRoute.name || '',
+  const route: Route = {
+    name: apiRoute.name,
     type: getRouteType(apiRoute.type || ''),
     location: apiRoute.location,
     grade: apiRoute.rating || '',
-    pitches: apiRoute.pitches || -1,
     ticks: {},
   };
+  if (apiRoute.pitches > 0) route.pitches = apiRoute.pitches;
+  return route;
 }
 
 // Recursively walks |map| in order to add an area identified by |id|.

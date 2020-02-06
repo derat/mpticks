@@ -93,7 +93,7 @@ export function makeApiTick(tickId: TickId, routeId: RouteId): ApiTick {
 export function makeTick(tickId: TickId, routeId: RouteId): Tick {
   const apiTick = makeApiTick(tickId, routeId);
   return {
-    date: apiTick.date,
+    date: apiTick.date.replace(/-/g, ''),
     pitches: apiTick.pitches,
     // This needs to match the logic in makeApiTick.
     style: [

@@ -22,12 +22,12 @@ export enum TickStyle {
 
 // A map value in Route's |ticks| field.
 export interface Tick {
-  date: string; // 'YYYY-MM-DD'
-  pitches: number;
+  date: string; // 'YYYYMMDD'
   style: TickStyle;
-  notes: string;
-  stars: number; // optional user-supplied score: 1 is 'bomb', 5 is 4-star
-  grade: string; // optional user-supplied grade, e.g. '5.11a'
+  pitches?: number;
+  notes?: string;
+  stars?: number; // user-supplied score: 1 is 'bomb', 5 is 4-star
+  grade?: string; // user-supplied grade, e.g. '5.11a'
 }
 
 // Corresponds to the |type| field returned by the get-routes API endpoint. In
@@ -50,7 +50,7 @@ export interface Route {
   type: RouteType;
   location: string[]; // e.g. ['Colorado', 'Boulder', ...]
   grade: string; // e.g. '5.11a'
-  pitches: number;
+  pitches?: number;
   // We would ideally use Map instead of Record here and in the rest of this
   // file, but all of these types need to get serialized and deserialized by
   // Firestore, which only expects simple types and objects (unless you write
