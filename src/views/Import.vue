@@ -64,8 +64,8 @@
     <v-row>
       <v-col cols="12" md="8">
         <v-textarea
-          v-model="log"
           label="Log"
+          :value="logMessages.join('\n')"
           outlined
           readonly
           rows="8"
@@ -99,7 +99,7 @@ export default class Import extends Vue {
   // Models for UI components.
   email = '';
   key = '';
-  log = '';
+  logMessages: string[] = [];
 
   // Whether the form contains valid input.
   valid = false;
@@ -123,21 +123,21 @@ export default class Import extends Vue {
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = firebase.firestore().batch();
 
-    this.addLog('Loading user doc to see where we left off...');
+    this.log('Loading user doc to see where we left off...');
     this.userRef
       .get()
       .then(snap => {
         if (snap.exists) {
           user = snap.data() as User;
-          this.addLog(`Last tick was ${user.maxTickId}.`);
+          this.log(`Last tick was ${user.maxTickId}.`);
         } else {
-          this.addLog('No user doc; will import all ticks.');
+          this.log('No user doc; will import all ticks.');
         }
-        this.addLog('Getting new ticks from Mountain Project...');
+        this.log('Getting new ticks from Mountain Project...');
         return getTicks(this.email, this.key, user.maxTickId + 1);
       })
       .then(apiTicks => {
-        this.addLog(`Got ${apiTicks.length} new tick(s).`);
+        this.log(`Got ${apiTicks.length} new tick(s).`);
         if (!apiTicks.length) return Promise.resolve();
 
         for (const apiTick of apiTicks) {
@@ -149,23 +149,22 @@ export default class Import extends Vue {
             routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
             user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
           } catch (err) {
-            console.log(`Skipping invalid tick ${apiTick}: ${err}`);
-            this.addLog(`Skipping invalid tick ${apiTick}: ${err}`);
+            this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
           }
         }
 
         const routeIds = Array.from(routeTicks.keys());
-        this.addLog(`Loading ${routeIds.length} route(s) from Firestore...`);
+        this.log(`Loading ${routeIds.length} route(s) from Firestore...`);
         return this.loadRoutesFromFirestore(routeIds, routes).then(missing => {
           if (!missing.length) return Promise.resolve();
 
           // Get the missing routes from the Mountain Project API.
-          this.addLog(
+          this.log(
             `Getting ${missing.length} route(s) from Mountain Project...`
           );
           return getRoutes(missing, this.key).then(apiRoutes => {
             // Create the new routes that we got from the API.
-            this.addLog(`Got ${apiRoutes.length} route(s).`);
+            this.log(`Got ${apiRoutes.length} route(s).`);
             const newRoutes = new Map<RouteId, Route>();
             for (const apiRoute of apiRoutes) {
               try {
@@ -173,12 +172,11 @@ export default class Import extends Vue {
                 routes.set(apiRoute.id, route);
                 newRoutes.set(apiRoute.id, route);
               } catch (err) {
-                console.error(`Skipping invalid route ${apiRoute}: ${err}`);
-                this.addLog(`Skipping invalid route ${apiRoute}: ${err}`);
+                this.log(`Skipping invalid route ${apiRoute}: ${err}`, true);
               }
             }
             // Load and update Firestore area documents to list the new routes.
-            this.addLog('Updating areas for new routes...');
+            this.log('Updating areas for new routes...');
             return this.saveRoutesToAreas(newRoutes, batch);
           });
         });
@@ -188,9 +186,16 @@ export default class Import extends Vue {
 
         // Add the ticks to the routes.
         routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
+          const route = routes.get(routeId);
+          if (!route) {
+            this.log(
+              `Skipping ${ticks.size} tick(s) for missing route ${routeId}`,
+              true
+            );
+            return;
+          }
           ticks.forEach((tick: Tick, tickId: TickId) => {
-            // TODO: Need to handle missing routes here.
-            routes.get(routeId)!.ticks[tickId] = tick;
+            route.ticks[tickId] = tick;
           });
         });
         // Write the updated routes to Firestore.
@@ -198,22 +203,23 @@ export default class Import extends Vue {
           batch.set(this.routeRef(routeId), route);
         });
         batch.set(this.userRef, user);
-        this.addLog('Writing updated data to Firestore...');
+        this.log('Writing updated data to Firestore...');
         return batch.commit();
       })
       .then(() => {
-        this.addLog('Import complete.');
+        this.log('Import complete.');
       })
       .catch(err => {
-        this.addLog(`Import failed: ${err}`);
+        this.log(`Import failed: ${err}`, true);
       })
       .finally(() => {
         this.importing = false;
       });
   }
 
-  addLog(msg: string) {
-    this.log += (this.log ? '\n' : '') + msg;
+  log(msg: string, isErr = false) {
+    this.logMessages.push(msg);
+    if (isErr) console.error(msg);
   }
 
   // Tries to load the routes identified by |ids| from Firestore into |routes|.
