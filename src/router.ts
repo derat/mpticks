@@ -7,6 +7,7 @@ import firebase from '@/firebase';
 
 import Import from '@/views/Import.vue';
 import Login from '@/views/Login.vue';
+import Stats from '@/views/Stats.vue';
 import Ticks from '@/views/Ticks.vue';
 
 export enum When {
@@ -27,6 +28,12 @@ export const routes = [
     path: '/ticks',
     component: Ticks,
     meta: { title: 'Ticks', when: When.LOGGED_IN },
+  },
+  {
+    name: 'stats',
+    path: '/stats',
+    component: Stats,
+    meta: { title: 'Stats', when: When.LOGGED_IN },
   },
   {
     name: 'import',

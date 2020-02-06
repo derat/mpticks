@@ -66,6 +66,7 @@ export default class App extends Vue {
     this.navItems = [
       { title: 'Log in', icon: 'account_circle', to: 'login' },
       { title: 'Ticks', icon: 'check', to: 'ticks' },
+      { title: 'Stats', icon: 'assessment', to: 'stats' },
       { title: 'Import', icon: 'import_export', to: 'import' },
       {
         title: 'Log out',
