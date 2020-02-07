@@ -21,7 +21,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
-import { makeRoute, makeRouteSummary, makeTick } from '@/testdata';
+import { testRoute, testRouteSummary, testTick } from '@/testdata';
 
 import Ticks from './Ticks.vue';
 
@@ -41,10 +41,10 @@ describe('Ticks', () => {
   const routeId2: RouteId = 2;
   const routeId3: RouteId = 3;
 
-  const tick1: Tick = makeTick(tickId1, routeId1);
-  const tick2: Tick = makeTick(tickId2, routeId2);
-  const tick3: Tick = makeTick(tickId3, routeId2);
-  const tick4: Tick = makeTick(tickId4, routeId3);
+  const tick1: Tick = testTick(tickId1, routeId1);
+  const tick2: Tick = testTick(tickId2, routeId2);
+  const tick3: Tick = testTick(tickId3, routeId2);
+  const tick4: Tick = testTick(tickId4, routeId3);
 
   const area1 = 'California';
   const subArea1 = 'Yosemite';
@@ -53,9 +53,9 @@ describe('Ticks', () => {
   const area2 = 'Colorado';
   const areaId2 = makeAreaId([area2]);
 
-  const route1: Route = makeRoute(routeId1, [tickId1], [area1, subArea1]);
-  const route2: Route = makeRoute(routeId2, [tickId2, tickId3], [area2]);
-  const route3: Route = makeRoute(routeId3, [tickId4], [area2]);
+  const route1: Route = testRoute(routeId1, [tickId1], [area1, subArea1]);
+  const route2: Route = testRoute(routeId2, [tickId2, tickId3], [area2]);
+  const route3: Route = testRoute(routeId3, [tickId4], [area2]);
 
   beforeEach(async () => {
     MockFirebase.reset();
@@ -71,12 +71,12 @@ describe('Ticks', () => {
       },
     });
     MockFirebase.setDoc(`users/${testUid}/areas/${areaId1}`, {
-      routes: { [routeId1]: makeRouteSummary(routeId1) },
+      routes: { [routeId1]: testRouteSummary(routeId1) },
     });
     MockFirebase.setDoc(`users/${testUid}/areas/${areaId2}`, {
       routes: {
-        [routeId2]: makeRouteSummary(routeId2),
-        [routeId3]: makeRouteSummary(routeId3),
+        [routeId2]: testRouteSummary(routeId2),
+        [routeId3]: testRouteSummary(routeId3),
       },
     });
     MockFirebase.setDoc(`users/${testUid}/routes/${routeId1}`, route1);

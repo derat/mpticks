@@ -87,7 +87,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import firebase from '@/firebase';
-import { ApiRoute, ApiTick, getRoutes, getTicks } from '@/api';
+import { getRoutes, getTicks } from '@/api';
 import {
   Area,
   AreaId,
@@ -95,13 +95,12 @@ import {
   makeAreaId,
   Route,
   RouteId,
-  RouteType,
   Tick,
   TickCounts,
   TickId,
-  TickStyle,
   User,
 } from '@/models';
+import { createTick, createRoute, addAreaToAreaMap } from '@/convert';
 import { parseDate, getDayOfWeek } from '@/dateutil';
 
 @Component
@@ -442,108 +441,6 @@ export default class Import extends Vue {
   get tickCountsRef() {
     return this.userRef.collection('stats').doc('tickCounts');
   }
-}
-
-// Converts the |style| and |leadStyle| values from an ApiTick object to the
-// TickStyle enum used in a Tick object.
-function getTickStyle(style: string, leadStyle: string): TickStyle {
-  switch (style) {
-    case 'Solo':
-      return TickStyle.SOLO;
-    case 'TR':
-      return TickStyle.TOP_ROPE;
-    case 'Follow':
-      return TickStyle.FOLLOW;
-    case 'Lead': {
-      switch (leadStyle) {
-        case 'Onsight':
-          return TickStyle.LEAD_ONSIGHT;
-        case 'Flash':
-          return TickStyle.LEAD_FLASH;
-        case 'Redpoint':
-          return TickStyle.LEAD_REDPOINT;
-        case 'Pinkpoint':
-          return TickStyle.LEAD_PINKPOINT;
-        case 'Fell/Hung':
-          return TickStyle.LEAD_FELL_HUNG;
-        default:
-          return TickStyle.LEAD;
-      }
-    }
-    case 'Send':
-      return TickStyle.SEND;
-    case 'Flash':
-      return TickStyle.FLASH;
-    case 'Attempt':
-      return TickStyle.ATTEMPT;
-    default:
-      return TickStyle.UNKNOWN;
-  }
-}
-
-// Creates a Tick describing the supplied tick returned by the get-ticks API
-// endpoint. Throws an error if key information is missing.
-function createTick(apiTick: ApiTick): Tick {
-  if (!apiTick.tickId) throw new Error('Missing tick ID');
-  if (!apiTick.routeId) throw new Error('Missing route ID');
-  if (
-    typeof apiTick.date != 'string' ||
-    !apiTick.date.match(/^\d{4}-\d\d-\d\d$/)
-  ) {
-    throw new Error('Invalid date');
-  }
-
-  const tick: Tick = {
-    date: apiTick.date.replace(/-/g, ''),
-    style: getTickStyle(apiTick.style, apiTick.leadStyle),
-  };
-  if (apiTick.pitches > -1) tick.pitches = apiTick.pitches;
-  if (apiTick.notes) tick.notes = apiTick.notes;
-  if (apiTick.userStars > -1) tick.stars = apiTick.userStars;
-  if (apiTick.userRating) tick.grade = apiTick.userRating;
-  return tick;
-}
-
-// Converts the |type| value from an ApiRoute object to the RouteType enum used
-// by the Route object.
-function getRouteType(apiType: string): RouteType {
-  if (apiType.indexOf('Sport') != -1) return RouteType.SPORT;
-  if (apiType.indexOf('Trad') != -1) return RouteType.TRAD;
-  if (apiType.indexOf('Boulder') != -1) return RouteType.BOULDER;
-  return RouteType.OTHER;
-}
-
-// Creates a Route describing the supplied route returned by the get-routes API
-// endpoint. Throws an error if key information is missing.
-function createRoute(apiRoute: ApiRoute): Route {
-  if (!apiRoute.id) throw new Error('Missing route ID');
-  if (!apiRoute.name) throw new Error('Missing name');
-  if (!apiRoute.location || !apiRoute.location.length) {
-    throw new Error('Missing location');
-  }
-
-  const route: Route = {
-    name: apiRoute.name,
-    type: getRouteType(apiRoute.type || ''),
-    location: apiRoute.location,
-    grade: apiRoute.rating || '',
-    ticks: {},
-  };
-  if (apiRoute.pitches > 0) route.pitches = apiRoute.pitches;
-  return route;
-}
-
-// Recursively walks |map| in order to add an area identified by |id|.
-// |location| contains the area's location components, e.g.
-// ['Colorado', 'Boulder', 'Boulder Canyon', 'Castle Rock'].
-function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
-  const name = location[0];
-  if (!map.children) map.children = {};
-  if (!map.children[name]) map.children[name] = {};
-
-  // If we're down to the final component, we're done. Otherwise, recurse.
-  if (location.length == 1) map.children[name]!.areaId = id;
-  else addAreaToAreaMap(id, location.slice(1), map.children[name]!);
 }
 </script>
 

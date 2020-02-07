@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// This file defines objects stored in Firestore.
+
 export type RouteId = number;
 export type TickId = number;
 
@@ -66,16 +68,32 @@ export interface Tick {
   grade?: string; // user-supplied grade, e.g. '5.11a'
 }
 
-// Corresponds to the |type| field returned by the get-routes API endpoint. In
-// addition to a choice between these three types, Mountain Project offers a
-// 'Toprope' checkbox. I'm not bothering with it since it doesn't seem useful in
-// the context of ticks -- the TickStyle enum already describes the user's
-// climbing style.
+// Corresponds to the |type| field returned by the get-routes API endpoint.
+//
+// Mountain Project's route-editing page offers a 'Route Type' section with
+// 'Sport', 'Trad', and 'Other' radio buttons and a 'Toprope' checkbox, along
+// with a 'Rating' section with 'Rock' (YDS), 'Boulder' (V scale), 'Ice' (WI,
+// AI), 'Aid' (A/C), 'Mixed' (M), and 'Snow' (easy/moderate/steep) dropdowns.
+//
+// The get-routes endpoint appears to map these to a comma-separated list that
+// can contain (at least) 'Sport', 'Trad', 'TR', 'Boulder', 'Ice', 'Alpine',
+// 'Aid', 'Mixed', and 'Snow'.
+//
+// I'm not interested in trying to catalog all of these. The only use I can
+// think of for the route type here is showing the user how many ticks they have
+// for each type, and that doesn't work if a route can have multiple types.
+// Instead, each route just gets a single type chosen from its list.
 export enum RouteType {
-  SPORT = 0,
-  TRAD = 1,
-  BOULDER = 2,
-  OTHER = 3,
+  OTHER = 0,
+  SPORT = 1,
+  TRAD = 2,
+  BOULDER = 3,
+  ICE = 4,
+  ALPINE = 5,
+  MIXED = 6,
+  SNOW = 8,
+  AID = 7,
+  TOP_ROPE = 8,
 }
 
 // A document in the 'routes' subcollection under a user document.

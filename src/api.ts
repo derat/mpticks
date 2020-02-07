@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// This file defines types and methods for getting information from the Mountain
+// Project Data API (https://www.mountainproject.com/data).
+
 import axios from 'axios';
 
 // Exposed for unit tests.
@@ -62,7 +65,7 @@ export function getTicks(
 export interface ApiRoute {
   id: number;
   name: string;
-  type: string; // comma-separated list of 'Sport', 'Trad', 'Boulder', 'TR', 'Other'
+  type: string; // comma-separated list; see RouteType in src/models.ts
   rating: string; // actually the grade, e.g. '5.11a'
   stars: number; // 1 is 'bomb', 5 is 4-star
   starVotes: number;

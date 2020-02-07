@@ -15,7 +15,7 @@ import {
   maxRoutesPerRequest,
 } from './api';
 
-import { makeApiRoute, makeApiTick } from '@/testdata';
+import { testApiRoute, testApiTick } from '@/testdata';
 
 // Arbitrary data to use in tests.
 const email = 'user@example.org';
@@ -37,7 +37,7 @@ describe('getTicks', () => {
     // https://stackoverflow.com/a/29559488
     return [...Array(count).keys()].map(i => {
       const tickId = startId - i;
-      return makeApiTick(tickId, 100 + tickId /* routeId */);
+      return testApiTick(tickId, 100 + tickId /* routeId */);
     });
   }
 
@@ -112,7 +112,7 @@ describe('getRoutes', () => {
     mockAxios
       .onGet(getRoutesUrl, { params: { key, routeIds: routeIds.join(',') } })
       .replyOnce(200, {
-        routes: routeIds.map(id => makeApiRoute(id)),
+        routes: routeIds.map(id => testApiRoute(id)),
         success: true,
       });
   }
@@ -121,7 +121,7 @@ describe('getRoutes', () => {
     const ids = [123, 456, 789];
     handleGetRoutes(ids);
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
+      expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });
   });
@@ -130,7 +130,7 @@ describe('getRoutes', () => {
     const ids = [...Array(maxRoutesPerRequest).keys()].map(i => i + 1);
     handleGetRoutes(ids);
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
+      expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });
   });
@@ -142,7 +142,7 @@ describe('getRoutes', () => {
     handleGetRoutes(ids.slice(max, 2 * max));
     handleGetRoutes(ids.slice(2 * max));
     getRoutes(ids, key).then(routes => {
-      expect(routes).toEqual(ids.map(id => makeApiRoute(id)));
+      expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });
   });

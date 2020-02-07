@@ -14,7 +14,7 @@ import {
 } from '@/models';
 
 // Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
-export function makeApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
+export function testApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
   if (!location) location = [`Location ${routeId}`];
   return {
     id: routeId,
@@ -36,36 +36,36 @@ export function makeApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
 }
 
 // Returns a Route with arbitrary but consistent (for |routeId|) data.
-export function makeRoute(
+export function testRoute(
   routeId: RouteId,
   tickIds: TickId[],
   location?: string[]
 ): Route {
-  const apiRoute = makeApiRoute(routeId, location);
+  const apiRoute = testApiRoute(routeId, location);
   return {
     name: apiRoute.name,
-    // This needs to match the logic in makeApiRoute.
+    // This needs to match the logic in testApiRoute.
     type: [RouteType.SPORT, RouteType.TRAD, RouteType.OTHER][routeId % 3],
     location: apiRoute.location,
     grade: apiRoute.rating,
     pitches: apiRoute.pitches,
     // https://stackoverflow.com/a/26265095
     ticks: tickIds.reduce(
-      (m, id) => ((m[id] = makeTick(id, routeId)), m),
+      (m, id) => ((m[id] = testTick(id, routeId)), m),
       {} as Record<TickId, Tick>
     ),
   };
 }
 
 // Returns a RouteSummary with arbitrary but consistent (for |id|) data.
-export function makeRouteSummary(id: RouteId): RouteSummary {
-  const route = makeRoute(id, []);
+export function testRouteSummary(id: RouteId): RouteSummary {
+  const route = testRoute(id, []);
   return { name: route.name, grade: route.grade };
 }
 
 // Returns an ApiTick with arbitrary but consistent (for |tickId|) data.
-export function makeApiTick(tickId: TickId, routeId: RouteId): ApiTick {
-  const apiRoute = makeApiRoute(routeId, []);
+export function testApiTick(tickId: TickId, routeId: RouteId): ApiTick {
+  const apiRoute = testApiRoute(routeId, []);
 
   // Ladies and gentlemen, JavaScript: https://stackoverflow.com/a/34290167
   const d = new Date(2020, 0, 1);
@@ -90,12 +90,12 @@ export function makeApiTick(tickId: TickId, routeId: RouteId): ApiTick {
 }
 
 // Returns a Tick with arbitrary but consistent (for |tickId|) data.
-export function makeTick(tickId: TickId, routeId: RouteId): Tick {
-  const apiTick = makeApiTick(tickId, routeId);
+export function testTick(tickId: TickId, routeId: RouteId): Tick {
+  const apiTick = testApiTick(tickId, routeId);
   return {
     date: apiTick.date.replace(/-/g, ''),
     pitches: apiTick.pitches,
-    // This needs to match the logic in makeApiTick.
+    // This needs to match the logic in testApiTick.
     style: [
       TickStyle.LEAD_FLASH,
       TickStyle.LEAD_REDPOINT,
