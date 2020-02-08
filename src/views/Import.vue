@@ -86,7 +86,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import firebase from '@/firebase';
+
+import firebase from 'firebase/app';
+import app from '@/firebase';
+
 import { areaMapRef, areaRef, userRef, routeRef, tickCountsRef } from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
@@ -162,7 +165,7 @@ export default class Import extends Vue {
 
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
-    const batch = firebase.firestore().batch();
+    const batch = app.firestore().batch();
 
     this.importing = true;
     this.getTicks(routeTicks, batch)
@@ -196,32 +199,28 @@ export default class Import extends Vue {
       .get()
       .then(snap => {
         // FIXME: 118294181
-        const user = snap.exists ? (snap.data() as User) : { maxTickId: 0 };
+        let maxTickId = snap.exists ? (snap.data() as User).maxTickId || 0 : 0;
         this.log(
-          `Getting ticks newer than ${user.maxTickId} from Mountain Project...`
+          `Getting ticks newer than ${maxTickId} from Mountain Project...`
         );
-        return getTicks(this.email, this.key, user.maxTickId + 1).then(
-          apiTicks => {
-            this.log(`Got ${apiTicks.length} new tick(s).`);
-            if (!apiTicks.length) return;
+        return getTicks(this.email, this.key, maxTickId + 1).then(apiTicks => {
+          this.log(`Got ${apiTicks.length} new tick(s).`);
+          if (!apiTicks.length) return;
 
-            for (const apiTick of apiTicks) {
-              try {
-                const routeId = apiTick.routeId;
-                if (!routeTicks.get(routeId)) {
-                  routeTicks.set(routeId, new Map<TickId, Tick>());
-                }
-                routeTicks
-                  .get(routeId)!
-                  .set(apiTick.tickId, createTick(apiTick));
-                user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
-              } catch (err) {
-                this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
+          for (const apiTick of apiTicks) {
+            try {
+              const routeId = apiTick.routeId;
+              if (!routeTicks.get(routeId)) {
+                routeTicks.set(routeId, new Map<TickId, Tick>());
               }
+              routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
+              maxTickId = Math.max(maxTickId, apiTick.tickId);
+            } catch (err) {
+              this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
             }
-            batch.set(userRef(), user);
           }
-        );
+          batch.set(userRef(), { maxTickId }, { merge: true });
+        });
       });
   }
 
@@ -253,6 +252,15 @@ export default class Import extends Vue {
             this.log(`Skipping invalid route ${apiRoute}: ${err}`, true);
           }
         }
+
+        // Increment the total route count.
+        batch.set(
+          userRef(),
+          {
+            numRoutes: firebase.firestore.FieldValue.increment(newRoutes.size),
+          },
+          { merge: true }
+        );
 
         // Load and update Firestore area documents to list the new routes.
         return this.saveRoutesToAreas(newRoutes, batch);

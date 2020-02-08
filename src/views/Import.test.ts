@@ -105,7 +105,10 @@ describe('Import', () => {
 
     const r1 = testRoute(rid1, [tid1], loc);
     const t1 = testTick(tid1, rid1);
-    expect(MockFirebase.getDoc(userPath)).toEqual({ maxTickId: tid1 });
+    expect(MockFirebase.getDoc(userPath)).toEqual({
+      maxTickId: tid1,
+      numRoutes: 1,
+    });
     expect(MockFirebase.getDoc(`${userPath}/routes/${rid1}`)).toEqual(r1);
     expect(MockFirebase.getDoc(`${userPath}/areas/${aid}`)).toEqual({
       routes: { [rid1]: testRouteSummary(rid1) },
@@ -130,7 +133,7 @@ describe('Import', () => {
     // Start out with a single route with a single tick.
     const r1 = testRoute(rid1, [tid1], loc);
     const t1 = testTick(tid1, rid1);
-    MockFirebase.setDoc(userPath, { maxTickId: tid1 });
+    MockFirebase.setDoc(userPath, { maxTickId: tid1, numRoutes: 1 });
     MockFirebase.setDoc(`${userPath}/routes/${rid1}`, r1);
     MockFirebase.setDoc(`${userPath}/areas/${aid}`, {
       routes: { [rid1]: testRouteSummary(rid1) },
@@ -161,7 +164,10 @@ describe('Import', () => {
     handleGetRoutes([testApiRoute(rid2, loc2)]);
     await doImport();
 
-    expect(MockFirebase.getDoc(userPath)).toEqual({ maxTickId: tid3 });
+    expect(MockFirebase.getDoc(userPath)).toEqual({
+      maxTickId: tid3,
+      numRoutes: 2,
+    });
     expect(MockFirebase.getDoc(`${userPath}/routes/${rid1}`)).toEqual(
       testRoute(rid1, [tid1, tid2], loc)
     );
