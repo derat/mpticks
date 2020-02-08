@@ -118,3 +118,25 @@ export function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
   if (location.length == 1) map.children[name]!.areaId = id;
   else addAreaToAreaMap(id, location.slice(1), map.children[name]!);
 }
+
+// Placeholder for weird/missing regions.
+export const unknownRegion = 'Unknown';
+
+// Returns a region (generally a U.S. state or a country) for the supplied
+// Mountain Project area.
+//
+// Mountain Project's area hierarchy is a U.S.-centric mess. See
+// https://www.mountainproject.com/route-guide:
+//
+// - Every U.S. state has its own top-level area.
+// - Everything else goes under an 'International' top-level area.
+// - 'International' mostly contains continents ('Africa', 'Asia', etc.) which
+//   themselves contain countries, but also includes 'Antarctica' and
+//   'Australia'.
+export function getRegion(loc: string[]): string {
+  if (!loc.length || loc[0] == 'In Progress') return unknownRegion;
+  if (loc[0] != 'International') return loc[0]; // U.S. state
+  if (loc.length < 2) return unknownRegion;
+  if (['Antarctica', 'Australia'].indexOf(loc[1]) != -1) return loc[1];
+  return loc.length >= 3 ? loc[2] : loc[1];
+}

@@ -104,7 +104,12 @@ import {
   TickId,
   User,
 } from '@/models';
-import { createTick, createRoute, addAreaToAreaMap } from '@/convert';
+import {
+  addAreaToAreaMap,
+  createTick,
+  createRoute,
+  getRegion,
+} from '@/convert';
 import { parseDate, getDayOfWeek } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 
@@ -129,6 +134,9 @@ export default class Import extends Vue {
   // localStorage item names.
   readonly emailItem = 'importEmail';
   readonly keyItem = 'importKey';
+
+  // Number of routes to store in the TickCounts stats object.
+  readonly numTopRoutes = 20;
 
   get importButtonLabel() {
     return this.importing ? 'Importing...' : 'Import';
@@ -380,7 +388,8 @@ export default class Import extends Vue {
   }
 
   // Loads, updates, and writes the stats document to include the ticks in
-  // |routeTicks|. |routes| is used to get route information.
+  // |routeTicks|. |routes| is used to get route information; the ticks in
+  // |routeTicks| should already be incorporated.
   updateStats(
     routeTicks: Map<RouteId, Map<TickId, Tick>>,
     routes: Map<RouteId, Route>,
@@ -389,23 +398,22 @@ export default class Import extends Vue {
     if (!routeTicks.size) return Promise.resolve();
 
     this.log('Updating stats...');
-
-    let counts: TickCounts = {
-      dates: {},
-      daysOfWeek: {},
-      grades: {},
-      latLongs: {},
-      routePitches: {},
-      routeTypes: {},
-      tickPitches: {},
-      tickStyles: {},
-      topAreas: {},
-    };
-
     return tickCountsRef()
       .get()
       .then(snap => {
-        if (snap.exists) counts = snap.data()! as TickCounts;
+        const counts: TickCounts = {
+          dates: {},
+          daysOfWeek: {},
+          grades: {},
+          latLongs: {},
+          regions: {},
+          routePitches: {},
+          routeTypes: {},
+          tickPitches: {},
+          tickStyles: {},
+          topRoutes: {},
+        };
+        if (snap.exists) Object.assign(counts, snap.data()!);
 
         const inc = (
           map: Record<string | number, number>,
@@ -420,8 +428,14 @@ export default class Import extends Vue {
           const route = routes.get(routeId);
           if (!route) return;
 
+          // Overwrite old per-route counts. These should only increase since we
+          // never remove ticks.
+          counts.topRoutes[`${routeId}|${route.name}`] = Object.keys(
+            route.ticks
+          ).length;
+
           const latLong = truncateLatLong(route.lat, route.long);
-          const topArea = route.location.length ? route.location[0] : 'Unknown';
+          const region = getRegion(route.location);
           ticks.forEach((tick: Tick, tickId: TickId) => {
             const tickPitches =
               typeof tick.pitches !== 'undefined'
@@ -432,13 +446,23 @@ export default class Import extends Vue {
             inc(counts.daysOfWeek, getDayOfWeek(parseDate(tick.date)));
             inc(counts.grades, route.grade);
             inc(counts.latLongs, latLong);
+            inc(counts.regions, region);
             inc(counts.routePitches, route.pitches);
             inc(counts.routeTypes, route.type);
             inc(counts.tickPitches, tickPitches);
             inc(counts.tickStyles, tick.style);
-            inc(counts.topAreas, topArea);
           });
         });
+
+        // Preserve the top routes. We're able to keep this up-to-date without
+        // needing to maintain counts for all routes since all routes with new
+        // ticks were added with their updated counts in the above loop over
+        // |routeTicks|.
+        counts.topRoutes = Object.fromEntries(
+          Object.entries(counts.topRoutes)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, this.numTopRoutes)
+        );
 
         batch.set(tickCountsRef(), counts);
       });

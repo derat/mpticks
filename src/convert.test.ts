@@ -2,7 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { createRoute, createTick, getRouteType, getTickStyle } from '@/convert';
+import {
+  createRoute,
+  createTick,
+  getRegion,
+  getRouteType,
+  getTickStyle,
+  unknownRegion,
+} from '@/convert';
 import { RouteType, TickStyle } from '@/models';
 import { testApiRoute, testApiTick, testRoute, testTick } from '@/testdata';
 
@@ -70,6 +77,43 @@ describe('getTickStyle', () => {
       ['', '', TickStyle.UNKNOWN],
     ] as [string, string, TickStyle][]).forEach(([style, leadStyle, exp]) => {
       expect(getTickStyle(style, leadStyle)).toEqual(exp);
+    });
+  });
+});
+
+describe('getRegion', () => {
+  it('converts area locations to regions', () => {
+    ([
+      // States should be returned.
+      [['Colorado'], 'Colorado'],
+      [['Colorado', 'Some Area'], 'Colorado'],
+      [['Colorado', 'Flatirons', 'North', 'Baby Giraffe'], 'Colorado'],
+      // Handle international areas that don't have countries under them.
+      [['International', 'Australia', 'Sydney'], 'Australia'],
+      [['International', 'Antarctica', 'Holtanna'], 'Antarctica'],
+      // Countries (or territories) should be returned otherwise.
+      [['International', 'Asia', 'Georgia', 'Chiatura'], 'Georgia'],
+      [
+        [
+          'International',
+          'North America',
+          'Puerto Rico',
+          'Nuevo Bayamón',
+          'Dante',
+        ],
+        'Puerto Rico',
+      ],
+      // If the country is missing, use the continent. I don't know whether this
+      // is expected to ever happen.
+      [['International', 'Asia'], 'Asia'],
+      [['International', 'South America'], 'South America'],
+      // Handle unexpected data.
+      [['In Progress', 'Banburries'], unknownRegion],
+      [['In Progress'], unknownRegion],
+      [['International'], unknownRegion],
+      [[], unknownRegion],
+    ] as [string[], string][]).forEach(([loc, region]) => {
+      expect(getRegion(loc)).toEqual(region);
     });
   });
 });

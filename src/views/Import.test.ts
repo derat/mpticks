@@ -121,11 +121,12 @@ describe('Import', () => {
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
       latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
+      regions: { [loc[0]]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
       tickStyles: { [t1.style]: 1 },
-      topAreas: { [loc[0]]: 1 },
+      topRoutes: { [`${rid1}|${r1.name}`]: 1 },
     });
   });
 
@@ -146,11 +147,12 @@ describe('Import', () => {
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
       latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
+      regions: { [loc[0]]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
       tickStyles: { [t1.style]: 1 },
-      topAreas: { [loc[0]]: 1 },
+      topRoutes: { [`${rid1}|${r1.name}`]: 1 },
     });
 
     // Report a second route in a subarea of the first route's area, and new
@@ -197,12 +199,13 @@ describe('Import', () => {
         [truncateLatLong(r1.lat, r1.long)]: 2,
         [truncateLatLong(r2.lat, r2.long)]: 1,
       },
+      regions: { [loc[0]]: 3 },
       routePitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
       routeTypes: { [r1.type]: 2, [r2.type]: 1 },
       // TODO: This is hacky and just works because the ticks use route pitches.
       tickPitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
       tickStyles: { [t1.style]: 1, [t2.style]: 1, [t3.style]: 1 },
-      topAreas: { [loc[0]]: 3 },
+      topRoutes: { [`${rid1}|${r1.name}`]: 2, [`${rid2}|${r2.name}`]: 1 },
     });
   });
 });

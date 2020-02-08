@@ -182,9 +182,10 @@ export interface TickCounts {
   daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   grades: Record<string, number>;
   latLongs: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
+  regions: Record<string, number>; // 'California', 'China', etc.
   routePitches: Record<number, number>;
   routeTypes: Record<number, number>; // RouteType (TS doesn't allow enum keys)
   tickPitches: Record<number, number>;
   tickStyles: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
-  topAreas: Record<string, number>; // 'California', 'International', etc.
+  topRoutes: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
 }
