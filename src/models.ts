@@ -167,6 +167,9 @@ export interface AreaMap {
 export interface User {
   // The maximum tick ID that has been imported.
   maxTickId: TickId;
+  // The number of routes that have been imported (i.e. the number of distinct
+  // routes with ticks).
+  numRoutes: number;
 }
 
 // The 'tickCounts' document in the 'stats' subcollection. Contains tick counts
