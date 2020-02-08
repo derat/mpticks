@@ -87,6 +87,13 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import firebase from '@/firebase';
+import {
+  areaMapRef,
+  areaRef,
+  userRef,
+  routeRef,
+  tickCountsRef,
+} from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
   Area,
@@ -190,33 +197,37 @@ export default class Import extends Vue {
     batch: firebase.firestore.WriteBatch
   ): Promise<void> {
     this.log('Loading user doc...');
-    return this.userRef.get().then(snap => {
-      // FIXME: 118294181
-      const user = snap.exists ? (snap.data() as User) : { maxTickId: 0 };
-      this.log(
-        `Getting ticks newer than ${user.maxTickId} from Mountain Project...`
-      );
-      return getTicks(this.email, this.key, user.maxTickId + 1).then(
-        apiTicks => {
-          this.log(`Got ${apiTicks.length} new tick(s).`);
-          if (!apiTicks.length) return;
+    return userRef()
+      .get()
+      .then(snap => {
+        // FIXME: 118294181
+        const user = snap.exists ? (snap.data() as User) : { maxTickId: 0 };
+        this.log(
+          `Getting ticks newer than ${user.maxTickId} from Mountain Project...`
+        );
+        return getTicks(this.email, this.key, user.maxTickId + 1).then(
+          apiTicks => {
+            this.log(`Got ${apiTicks.length} new tick(s).`);
+            if (!apiTicks.length) return;
 
-          for (const apiTick of apiTicks) {
-            try {
-              const routeId = apiTick.routeId;
-              if (!routeTicks.get(routeId)) {
-                routeTicks.set(routeId, new Map<TickId, Tick>());
+            for (const apiTick of apiTicks) {
+              try {
+                const routeId = apiTick.routeId;
+                if (!routeTicks.get(routeId)) {
+                  routeTicks.set(routeId, new Map<TickId, Tick>());
+                }
+                routeTicks
+                  .get(routeId)!
+                  .set(apiTick.tickId, createTick(apiTick));
+                user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
+              } catch (err) {
+                this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
               }
-              routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
-              user.maxTickId = Math.max(user.maxTickId, apiTick.tickId);
-            } catch (err) {
-              this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
             }
+            batch.set(userRef(), user);
           }
-          batch.set(this.userRef, user);
-        }
-      );
-    });
+        );
+      });
   }
 
   // Loads routes identified by |ids| into |routes|. If a route isn't present
@@ -265,7 +276,7 @@ export default class Import extends Vue {
     this.log(`Loading ${ids.length} route(s) from Firestore...`);
     return Promise.all(
       ids.map(id =>
-        this.routeRef(id)
+        routeRef(id)
           .get()
           .then(snap => {
             if (!snap.exists) return id;
@@ -295,7 +306,7 @@ export default class Import extends Vue {
     let areaMap: AreaMap = {};
 
     // Load the area map from Firestore so new areas can be added to it.
-    return this.areaMapRef
+    return areaMapRef()
       .get()
       .then(snap => {
         if (snap.exists) areaMap = snap.data() as AreaMap;
@@ -304,7 +315,7 @@ export default class Import extends Vue {
         // Try to load each area from Firestore.
         Promise.all(
           Array.from(areaLocations).map(([areaId, location]) =>
-            this.areaRef(areaId)
+            areaRef(areaId)
               .get()
               .then(snap => {
                 if (snap.exists) {
@@ -326,9 +337,9 @@ export default class Import extends Vue {
           };
         });
         // Queue up writes.
-        batch.set(this.areaMapRef, areaMap);
+        batch.set(areaMapRef(), areaMap);
         areas.forEach((area: Area, areaId: AreaId) => {
-          batch.set(this.areaRef(areaId), area);
+          batch.set(areaRef(areaId), area);
         });
       });
   }
@@ -361,7 +372,7 @@ export default class Import extends Vue {
 
     // Write the updated routes to Firestore.
     routes.forEach((route: Route, routeId: RouteId) => {
-      batch.set(this.routeRef(routeId), route);
+      batch.set(routeRef(routeId), route);
     });
   }
 
@@ -387,59 +398,40 @@ export default class Import extends Vue {
       tickStyles: {},
     };
 
-    return this.tickCountsRef.get().then(snap => {
-      if (snap.exists) counts = snap.data()! as TickCounts;
+    return tickCountsRef()
+      .get()
+      .then(snap => {
+        if (snap.exists) counts = snap.data()! as TickCounts;
 
-      routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
-        const route = routes.get(routeId);
-        if (!route) return;
-        const areaId = makeAreaId(route.location);
-        ticks.forEach((tick: Tick, tickId: TickId) => {
-          const dayOfWeek = getDayOfWeek(parseDate(tick.date));
+        routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
+          const route = routes.get(routeId);
+          if (!route) return;
+          const areaId = makeAreaId(route.location);
+          ticks.forEach((tick: Tick, tickId: TickId) => {
+            const dayOfWeek = getDayOfWeek(parseDate(tick.date));
 
-          // https://stackoverflow.com/a/13298258/6882947
-          counts.areas[areaId] = ++counts.areas[areaId] || 1;
-          counts.dates[tick.date] = ++counts.dates[tick.date] || 1;
-          counts.daysOfWeek[dayOfWeek] = ++counts.daysOfWeek[dayOfWeek] || 1;
-          counts.grades[route.grade] = ++counts.grades[route.grade] || 1;
-          if (typeof route.pitches !== 'undefined') {
-            counts.routePitches[route.pitches] =
-              ++counts.routePitches[route.pitches] || 1;
-          }
-          counts.routeTypes[route.type] = ++counts.routeTypes[route.type] || 1;
-          if (typeof tick.pitches !== 'undefined') {
-            counts.tickPitches[tick.pitches] =
-              ++counts.tickPitches[tick.pitches] || 1;
-          }
-          counts.tickStyles[tick.style] = ++counts.tickStyles[tick.style] || 1;
+            // https://stackoverflow.com/a/13298258/6882947
+            counts.areas[areaId] = ++counts.areas[areaId] || 1;
+            counts.dates[tick.date] = ++counts.dates[tick.date] || 1;
+            counts.daysOfWeek[dayOfWeek] = ++counts.daysOfWeek[dayOfWeek] || 1;
+            counts.grades[route.grade] = ++counts.grades[route.grade] || 1;
+            if (typeof route.pitches !== 'undefined') {
+              counts.routePitches[route.pitches] =
+                ++counts.routePitches[route.pitches] || 1;
+            }
+            counts.routeTypes[route.type] =
+              ++counts.routeTypes[route.type] || 1;
+            if (typeof tick.pitches !== 'undefined') {
+              counts.tickPitches[tick.pitches] =
+                ++counts.tickPitches[tick.pitches] || 1;
+            }
+            counts.tickStyles[tick.style] =
+              ++counts.tickStyles[tick.style] || 1;
+          });
         });
+
+        batch.set(tickCountsRef(), counts);
       });
-
-      batch.set(this.tickCountsRef, counts);
-    });
-  }
-
-  get userRef() {
-    return firebase
-      .firestore()
-      .collection('users')
-      .doc(firebase.auth().currentUser!.uid);
-  }
-
-  routeRef(id: RouteId) {
-    return this.userRef.collection('routes').doc(id.toString());
-  }
-
-  areaRef(id: AreaId) {
-    return this.userRef.collection('areas').doc(id);
-  }
-
-  get areaMapRef() {
-    return this.areaRef('map');
-  }
-
-  get tickCountsRef() {
-    return this.userRef.collection('stats').doc('tickCounts');
   }
 }
 </script>

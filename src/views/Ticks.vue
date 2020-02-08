@@ -31,7 +31,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import firebase from '@/firebase';
+import { areaMapRef, areaRef, routeRef } from '@/docs';
 import {
   Area,
   AreaId,
@@ -61,7 +61,7 @@ interface Item {
   readonly children: Item[] | undefined;
 
   // Called to dynamically populate |children| when the item is clicked.
-  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void>;
+  loadChildren(): Promise<void>;
 }
 
 class TickItem implements Item {
@@ -95,7 +95,7 @@ class TickItem implements Item {
     return this.tick.notes || '';
   }
 
-  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
+  loadChildren(): Promise<void> {
     // Not reached since |children| is undefined.
     throw new Error('Ticks have no children');
   }
@@ -115,10 +115,8 @@ class RouteItem implements Item {
     this.routeId = routeId;
   }
 
-  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
-    return userRef
-      .collection('routes')
-      .doc(this.routeId.toString())
+  loadChildren(): Promise<void> {
+    return routeRef(this.routeId)
       .get()
       .then(snap => {
         if (!snap.exists) return;
@@ -156,10 +154,8 @@ class AreaItem implements Item {
     this.children = this.areaId ? [] : this.childAreas;
   }
 
-  loadChildren(userRef: firebase.firestore.DocumentReference): Promise<void> {
-    return userRef
-      .collection('areas')
-      .doc(this.areaId!)
+  loadChildren(): Promise<void> {
+    return areaRef(this.areaId!)
       .get()
       .then(snap => {
         if (!snap.exists) return;
@@ -183,9 +179,7 @@ export default class Ticks extends Vue {
   ready = false;
 
   mounted() {
-    this.userRef
-      .collection('areas')
-      .doc('map')
+    areaMapRef()
       .get()
       .then(snap => {
         this.ready = true;
@@ -198,14 +192,7 @@ export default class Ticks extends Vue {
   }
 
   loadItem(item: Item): Promise<void> {
-    return item.loadChildren(this.userRef);
-  }
-
-  get userRef(): firebase.firestore.DocumentReference {
-    return firebase
-      .firestore()
-      .collection('users')
-      .doc(firebase.auth().currentUser!.uid);
+    return item.loadChildren();
   }
 }
 </script>
