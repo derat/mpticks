@@ -106,6 +106,11 @@ export function createRoute(apiRoute: ApiRoute): Route {
   return route;
 }
 
+// Generates an AreaId based on the supplied location components.
+export function makeAreaId(location: string[]) {
+  return location.join('|');
+}
+
 // Recursively walks |map| in order to add an area identified by |id|.
 // |location| contains the area's location components, e.g.
 // ['Colorado', 'Boulder', 'Boulder Canyon', 'Castle Rock'].

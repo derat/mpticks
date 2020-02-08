@@ -128,11 +128,6 @@ export interface RouteSummary {
 // subcollection.
 export type AreaId = string;
 
-// Generates an AreaId based on the supplied location components.
-export function makeAreaId(location: string[]) {
-  return location.join('|');
-}
-
 // A document in the 'areas' subcollection under a user document. Specifically,
 // this is a location (to use Mountain Project's terminology) that includes one
 // or more routes.
@@ -189,3 +184,6 @@ export interface TickCounts {
   tickStyles: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
   topRoutes: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
 }
+
+// Number of routes to store in TickCounts.
+export const numTopRoutes = 20;

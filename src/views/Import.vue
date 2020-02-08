@@ -96,7 +96,7 @@ import {
   Area,
   AreaId,
   AreaMap,
-  makeAreaId,
+  numTopRoutes,
   Route,
   RouteId,
   Tick,
@@ -108,6 +108,7 @@ import {
   addAreaToAreaMap,
   createTick,
   createRoute,
+  makeAreaId,
   getRegion,
 } from '@/convert';
 import { parseDate, getDayOfWeek } from '@/dateutil';
@@ -134,9 +135,6 @@ export default class Import extends Vue {
   // localStorage item names.
   readonly emailItem = 'importEmail';
   readonly keyItem = 'importKey';
-
-  // Number of routes to store in the TickCounts stats object.
-  readonly numTopRoutes = 20;
 
   get importButtonLabel() {
     return this.importing ? 'Importing...' : 'Import';
@@ -461,7 +459,7 @@ export default class Import extends Vue {
         counts.topRoutes = Object.fromEntries(
           Object.entries(counts.topRoutes)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, this.numTopRoutes)
+            .slice(0, numTopRoutes)
         );
 
         batch.set(tickCountsRef(), counts);

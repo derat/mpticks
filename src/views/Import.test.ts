@@ -16,7 +16,8 @@ import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 import flushPromises from 'flush-promises';
 
 import { ApiRoute, ApiTick, getRoutesUrl, getTicksUrl } from '@/api';
-import { AreaId, makeAreaId, Route, RouteId, Tick, TickId } from '@/models';
+import { AreaId, numTopRoutes, Route, RouteId, Tick, TickId } from '@/models';
+import { makeAreaId } from '@/convert';
 import {
   testApiRoute,
   testApiTick,
@@ -207,5 +208,27 @@ describe('Import', () => {
       tickStyles: { [t1.style]: 1, [t2.style]: 1, [t3.style]: 1 },
       topRoutes: { [`${rid1}|${r1.name}`]: 2, [`${rid2}|${r2.name}`]: 1 },
     });
+  });
+
+  it('updates top routes', async () => {
+    // Start out with a full set of route counts.
+    const topRoutes = Object.fromEntries(
+      [...Array(numTopRoutes).keys()].map(i => [`${i + 1}|${i + 1}`, i + 1])
+    );
+    MockFirebase.setDoc(tickCountsPath, { topRoutes });
+
+    // Report a new route with a large number of ticks.
+    const routeId = 100;
+    const numTicks = 30;
+    const tickIds = [...Array(numTicks).keys()].map(i => i + 100);
+    const route = testRoute(routeId, tickIds, loc);
+    handleGetTicks(tickIds.map(id => testApiTick(id, routeId)));
+    handleGetRoutes([testApiRoute(routeId, loc)]);
+    await doImport();
+
+    // The new route should've pushed out the old route with the least ticks.
+    delete topRoutes['1|1'];
+    topRoutes[`${routeId}|${route.name}`] = numTicks;
+    expect(MockFirebase.getDoc(tickCountsPath)!.topRoutes).toEqual(topRoutes);
   });
 });

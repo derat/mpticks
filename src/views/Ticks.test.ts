@@ -12,7 +12,6 @@ import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 import Vue from 'vue';
 import flushPromises from 'flush-promises';
 import {
-  makeAreaId,
   Route,
   RouteId,
   RouteType,
@@ -21,6 +20,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
+import { makeAreaId } from '@/convert';
 import { testRoute, testRouteSummary, testTick } from '@/testdata';
 
 import Ticks from './Ticks.vue';
