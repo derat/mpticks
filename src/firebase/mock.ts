@@ -92,8 +92,8 @@ class MockDocumentReference {
       new MockDocumentSnapshot(MockFirebase.getDoc(this.path))
     );
   }
-  set(data: DocData) {
-    return Promise.resolve(MockFirebase.setDoc(this.path, data));
+  set(data: DocData, options?: firebase.firestore.SetOptions) {
+    return Promise.resolve(MockFirebase.setDoc(this.path, data.options));
   }
   update(props: DocData) {
     return Promise.resolve(MockFirebase._updateDoc(this.path, props));
@@ -125,7 +125,11 @@ class MockCollectionReference {
 
 // Operations that can be executed as part of a MockWriteBatch.
 class BatchSet {
-  constructor(public path: string, public data: DocData) {}
+  constructor(
+    public path: string,
+    public data: DocData,
+    public options?: firebase.firestore.SetOptions
+  ) {}
 }
 class BatchUpdate {
   constructor(public path: string, public props: DocData) {}
@@ -137,8 +141,12 @@ class BatchUpdate {
 class MockWriteBatch {
   _ops: (BatchUpdate | BatchSet)[] = [];
 
-  set(ref: DocumentReference, data: DocData) {
-    this._ops.push(new BatchSet(ref.path, data));
+  set(
+    ref: DocumentReference,
+    data: DocData,
+    options?: firebase.firestore.SetOptions
+  ) {
+    this._ops.push(new BatchSet(ref.path, data, options));
   }
   update(ref: DocumentReference, props: DocData) {
     this._ops.push(new BatchUpdate(ref.path, props));
@@ -147,7 +155,7 @@ class MockWriteBatch {
     return new Promise(resolve => {
       for (const op of this._ops) {
         if (op instanceof BatchSet) {
-          MockFirebase.setDoc(op.path, op.data);
+          MockFirebase.setDoc(op.path, op.data, op.options);
         } else if (op instanceof BatchUpdate) {
           MockFirebase._updateDoc(op.path, op.props);
         } else {
@@ -171,7 +179,12 @@ export class MockUser {
 }
 
 // Sentinel value for firebase.firestore.FieldValue.delete().
-const mockDeleteSentinel = {};
+const mockFieldValueDeleteSentinel = {};
+
+// Class returned by firebase.firestore.FieldValue.increment().
+class MockFieldValueIncrement {
+  constructor(public amount: number) {}
+}
 
 // Holds data needed to simulate (a tiny bit of) Firebase's functionality.
 export const MockFirebase = new (class {
@@ -196,8 +209,35 @@ export const MockFirebase = new (class {
   }
 
   // Sets the document at |path| to |data|.
-  setDoc(path: string, data: DocData) {
-    this._docs[path] = deepCopy(data);
+  setDoc(path: string, data: DocData, options?: firebase.firestore.SetOptions) {
+    // Extract any field increments that are in the doc data.
+    const extractIncs = (data: DocData): firebase.firestore.UpdateData => {
+      const incs: firebase.firestore.UpdateData = {};
+      for (const prop of Object.keys(data)) {
+        const val = data[prop];
+        if (val instanceof MockFieldValueIncrement) {
+          incs[prop] = val;
+          delete data[prop];
+        } else if (typeof val === 'object') {
+          Object.entries(extractIncs(val)).forEach(([fieldPath, inc]) => {
+            incs[`${prop}.${fieldPath}`] = inc;
+          });
+        }
+      }
+      return incs;
+    };
+    const incs = extractIncs(data);
+
+    // TODO: Also support |options.mergeFields| if needed.
+    const oldData = this._docs[path] || {};
+    const newData = {
+      ...(options && options.merge ? this._docs[path] : {}),
+      ...deepCopy(data),
+    };
+    this._docs[path] = newData;
+
+    // Now apply the field increments.
+    if (Object.keys(incs).length) this._updateDoc(path, incs);
   }
 
   // Returns the document at |path|. Primarily used to simulate actual document
@@ -216,7 +256,8 @@ export const MockFirebase = new (class {
   // Updates portions of the document at |path|. This is used to implement
   // firebase.firestore.DocumentReference.update.
   _updateDoc(path: string, props: firebase.firestore.UpdateData) {
-    const doc = this._docs[path] || {};
+    const doc = this._docs[path];
+    if (!doc) throw new Error(`Document at ${path} doesn't exist`);
     for (let prop of Object.keys(props)) {
       let obj = doc; // final object to set property on
       const data = props[prop]; // data to set
@@ -229,7 +270,14 @@ export const MockFirebase = new (class {
           : (obj[first] = {});
         prop = prop.slice(i + 1);
       }
-      data === mockDeleteSentinel ? delete obj[prop] : (obj[prop] = data);
+      if (data === mockFieldValueDeleteSentinel) {
+        delete obj[prop];
+      } else if (data instanceof MockFieldValueIncrement) {
+        if (typeof obj[prop] === 'undefined') obj[prop] = 0;
+        obj[prop] += data.amount;
+      } else {
+        obj[prop] = data;
+      }
     }
     this.setDoc(path, doc);
   }
@@ -269,10 +317,11 @@ jest.mock('firebase/app', () => {
     }),
   };
 
-  // Also set sentinel value for deleting fields and static Timestamp.fromMillis
-  // function, both of which live on the firestore method.
+  // Also set special field values and static Timestamp.fromMillis function, all
+  // of which live on the firestore method.
   (app.firestore as any).FieldValue = {
-    delete: () => mockDeleteSentinel,
+    delete: () => mockFieldValueDeleteSentinel,
+    increment: (amount: number) => new MockFieldValueIncrement(amount),
   };
   // Probably there's some way to use the real Timestamp implementation here
   // instead, but I'm not sure how to get at it.
