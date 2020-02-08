@@ -9,6 +9,16 @@
     <div v-show="ready">
       <v-row>
         <v-col class="ma-3">
+          <div>All time: {{ ticksTotal }}</div>
+          <div>Last 5 years: {{ ticks5Years }}</div>
+          <div>Last year: {{ ticksYear }}</div>
+          <div>Last 90 days: {{ ticks90Days }}</div>
+          <div>Last 30 days: {{ ticks30Days }}</div>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col class="ma-3">
           <canvas id="month-chart" />
         </v-col>
       </v-row>
@@ -36,7 +46,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Chart from 'chart.js';
 import { tickCountsRef } from '@/docs';
-import { parseDate } from '@/dateutil';
+import { formatDate, parseDate } from '@/dateutil';
 import { TickCounts } from '@/models';
 import Spinner from '@/components/Spinner.vue';
 
@@ -50,12 +60,22 @@ enum Trim {
 export default class Stats extends Vue {
   ready = false;
 
+  ticksTotal = 0;
+  ticks5Years = 0;
+  ticksYear = 0;
+  ticks90Days = 0;
+  ticks30Days = 0;
+
   mounted() {
     tickCountsRef()
       .get()
       .then(snap => {
         this.ready = true;
-        if (snap.exists) this.drawCharts(snap.data()! as TickCounts);
+        if (snap.exists) {
+          const counts: TickCounts = snap.data()! as TickCounts;
+          this.updateCounts(counts);
+          this.drawCharts(counts);
+        }
       });
   }
 
@@ -69,9 +89,7 @@ export default class Stats extends Vue {
       date.getMonth() <= endDate.getMonth();
       date.setMonth(date.getMonth() + 1)
     ) {
-      monthLabels.push(
-        `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}`
-      );
+      monthLabels.push(formatDate(date, '%Y-%m'));
     }
     this.drawChart(
       'month-chart',
@@ -187,6 +205,50 @@ export default class Stats extends Vue {
           yAxes: [{ ticks: { beginAtZero: true } }],
         },
       },
+    });
+  }
+
+  updateCounts(counts: TickCounts) {
+    type DateFunc = (d: Date) => void;
+    const getDate = (f: DateFunc): string => {
+      const date = new Date();
+      f(date);
+      return formatDate(date, '%Y%m%d'); // matches Tick.date format
+    };
+
+    const dateToday = getDate((d: Date) => {});
+    const date5Years = getDate((d: Date) => {
+      d.setFullYear(d.getFullYear() - 5);
+    });
+    const dateYear = getDate((d: Date) => {
+      d.setFullYear(d.getFullYear() - 1);
+    });
+    const date90Days = getDate((d: Date) => {
+      d.setDate(d.getDate() - 90);
+    });
+    const date30Days = getDate((d: Date) => {
+      d.setDate(d.getDate() - 30);
+    });
+
+    this.ticksTotal = 0;
+    this.ticks5Years = 0;
+    this.ticksYear = 0;
+    this.ticks90Days = 0;
+    this.ticks30Days = 0;
+
+    Object.keys(counts.dates).forEach(date => {
+      const count = counts.dates[date];
+      this.ticksTotal += count;
+
+      if (date > dateToday) return;
+      if (date <= date5Years) return;
+      this.ticks5Years += count;
+      if (date <= dateYear) return;
+      this.ticksYear += count;
+      if (date <= date90Days) return;
+      this.ticks90Days += count;
+      if (date <= date30Days) return;
+      this.ticks30Days += count;
     });
   }
 }

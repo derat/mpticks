@@ -12,6 +12,7 @@ import {
   TickId,
   TickStyle,
 } from '@/models';
+import { formatDate } from '@/dateutil';
 
 // Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
 export function testApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
@@ -69,14 +70,9 @@ export function testRouteSummary(id: RouteId): RouteSummary {
 export function testApiTick(tickId: TickId, routeId: RouteId): ApiTick {
   const apiRoute = testApiRoute(routeId, []);
 
-  // Ladies and gentlemen, JavaScript: https://stackoverflow.com/a/34290167
   const d = new Date(2020, 0, 1);
   d.setDate(tickId);
-  const date = [
-    d.getFullYear(),
-    ('0' + (d.getMonth() + 1)).slice(-2),
-    ('0' + d.getDate()).slice(-2),
-  ].join('-');
+  const date = formatDate(d, '%Y-%m-%d');
 
   return {
     routeId,

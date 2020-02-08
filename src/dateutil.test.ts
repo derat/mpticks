@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { parseDate, getDayOfWeek } from './dateutil';
+import { formatDate, getDayOfWeek, parseDate } from './dateutil';
 
 describe('parseDate', () => {
   it('parses dates with two-digit values', () => {
@@ -25,6 +25,26 @@ describe('parseDate', () => {
     expect(() => parseDate('202001012')).toThrow();
     expect(() => parseDate('2020-01-01')).toThrow();
     expect(() => parseDate('abcdefgh')).toThrow();
+  });
+});
+
+describe('formatDate', () => {
+  it('formats single-digit numbers correctly', () => {
+    const date = new Date(2019, 0, 2);
+    expect(formatDate(date, '%Y-%m-%d')).toBe('2019-01-02');
+    expect(formatDate(date, '%Y%m%d')).toBe('20190102');
+    expect(formatDate(date, '%Y%m')).toBe('201901');
+  });
+
+  it('formats two-digit numbers correctly', () => {
+    const date = new Date(2019, 9, 23);
+    expect(formatDate(date, '%Y-%m-%d')).toBe('2019-10-23');
+    expect(formatDate(date, '%Y%m%d')).toBe('20191023');
+    expect(formatDate(date, '%Y%m')).toBe('201910');
+  });
+
+  it('throws errors for invalid format codes', () => {
+    expect(() => formatDate(new Date(), '%a')).toThrow();
   });
 });
 
