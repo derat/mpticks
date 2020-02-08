@@ -30,8 +30,8 @@ export function testApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
     imgSmall: '',
     imgSmallMed: '',
     imgMedium: '',
-    longitude: 0,
-    latitude: 0,
+    longitude: routeId,
+    latitude: routeId + 1,
   };
 }
 
@@ -47,6 +47,8 @@ export function testRoute(
     // This needs to match the logic in testApiRoute.
     type: [RouteType.SPORT, RouteType.TRAD, RouteType.OTHER][routeId % 3],
     location: apiRoute.location,
+    lat: apiRoute.latitude,
+    long: apiRoute.longitude,
     grade: apiRoute.rating,
     pitches: apiRoute.pitches,
     // https://stackoverflow.com/a/26265095

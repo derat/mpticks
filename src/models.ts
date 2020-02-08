@@ -103,6 +103,8 @@ export interface Route {
   name: string;
   type: RouteType;
   location: string[]; // e.g. ['Colorado', 'Boulder', ...]
+  lat: number;
+  long: number;
   grade: string; // e.g. '5.11a'
   pitches?: number;
   // We would ideally use Map instead of Record here and in the rest of this
@@ -173,12 +175,13 @@ export interface User {
 // Think long and hard before adding any new properties here, as existing
 // documents in Firestore won't include them.
 export interface TickCounts {
-  areas: Record<AreaId, number>;
   dates: Record<string, number>; // 'YYYYMMDD'
   daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   grades: Record<string, number>;
+  latLongs: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
   routePitches: Record<number, number>;
   routeTypes: Record<number, number>; // RouteType (TS doesn't allow enum keys)
   tickPitches: Record<number, number>;
   tickStyles: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
+  topAreas: Record<string, number>; // 'California', 'International', etc.
 }

@@ -25,6 +25,7 @@ import {
   testTick,
 } from '@/testdata';
 import { parseDate, getDayOfWeek } from '@/dateutil';
+import { truncateLatLong } from '@/geoutil';
 
 import Import from './Import.vue';
 
@@ -113,14 +114,15 @@ describe('Import', () => {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
     expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
-      areas: { [aid]: 1 },
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
+      latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
       tickStyles: { [t1.style]: 1 },
+      topAreas: { [loc[0]]: 1 },
     });
   });
 
@@ -137,14 +139,15 @@ describe('Import', () => {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
     MockFirebase.setDoc(tickCountsPath, {
-      areas: { [aid]: 1 },
       dates: { [t1.date]: 1 },
       daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       grades: { [r1.grade]: 1 },
+      latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
       routePitches: { [r1.pitches!]: 1 },
       routeTypes: { [r1.type]: 1 },
       tickPitches: { [t1.pitches!]: 1 },
       tickStyles: { [t1.style]: 1 },
+      topAreas: { [loc[0]]: 1 },
     });
 
     // Report a second route in a subarea of the first route's area, and new
@@ -177,7 +180,6 @@ describe('Import', () => {
       },
     });
     expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
-      areas: { [aid]: 2, [aid2]: 1 },
       dates: { [t1.date]: 1, [t2.date]: 1, [t3.date]: 1 },
       daysOfWeek: {
         [getDayOfWeek(parseDate(t1.date))]: 1,
@@ -185,11 +187,16 @@ describe('Import', () => {
         [getDayOfWeek(parseDate(t3.date))]: 1,
       },
       grades: { [r1.grade]: 2, [r2.grade]: 1 },
+      latLongs: {
+        [truncateLatLong(r1.lat, r1.long)]: 2,
+        [truncateLatLong(r2.lat, r2.long)]: 1,
+      },
       routePitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
       routeTypes: { [r1.type]: 2, [r2.type]: 1 },
       // TODO: This is hacky and just works because the ticks use route pitches.
       tickPitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
       tickStyles: { [t1.style]: 1, [t2.style]: 1, [t3.style]: 1 },
+      topAreas: { [loc[0]]: 3 },
     });
   });
 });

@@ -87,13 +87,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import firebase from '@/firebase';
-import {
-  areaMapRef,
-  areaRef,
-  userRef,
-  routeRef,
-  tickCountsRef,
-} from '@/docs';
+import { areaMapRef, areaRef, userRef, routeRef, tickCountsRef } from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
   Area,
@@ -109,6 +103,7 @@ import {
 } from '@/models';
 import { createTick, createRoute, addAreaToAreaMap } from '@/convert';
 import { parseDate, getDayOfWeek } from '@/dateutil';
+import { truncateLatLong } from '@/geoutil';
 
 @Component
 export default class Import extends Vue {
@@ -388,14 +383,15 @@ export default class Import extends Vue {
     this.log('Updating stats...');
 
     let counts: TickCounts = {
-      areas: {},
       dates: {},
       daysOfWeek: {},
       grades: {},
+      latLongs: {},
       routePitches: {},
       routeTypes: {},
       tickPitches: {},
       tickStyles: {},
+      topAreas: {},
     };
 
     return tickCountsRef()
@@ -403,30 +399,36 @@ export default class Import extends Vue {
       .then(snap => {
         if (snap.exists) counts = snap.data()! as TickCounts;
 
+        const inc = (
+          map: Record<string | number, number>,
+          key: string | number | undefined
+        ) => {
+          if (typeof key === 'undefined') return;
+          // https://stackoverflow.com/a/13298258/6882947
+          map[key] = ++map[key] || 1;
+        };
+
         routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
           const route = routes.get(routeId);
           if (!route) return;
-          const areaId = makeAreaId(route.location);
-          ticks.forEach((tick: Tick, tickId: TickId) => {
-            const dayOfWeek = getDayOfWeek(parseDate(tick.date));
 
-            // https://stackoverflow.com/a/13298258/6882947
-            counts.areas[areaId] = ++counts.areas[areaId] || 1;
-            counts.dates[tick.date] = ++counts.dates[tick.date] || 1;
-            counts.daysOfWeek[dayOfWeek] = ++counts.daysOfWeek[dayOfWeek] || 1;
-            counts.grades[route.grade] = ++counts.grades[route.grade] || 1;
-            if (typeof route.pitches !== 'undefined') {
-              counts.routePitches[route.pitches] =
-                ++counts.routePitches[route.pitches] || 1;
-            }
-            counts.routeTypes[route.type] =
-              ++counts.routeTypes[route.type] || 1;
-            if (typeof tick.pitches !== 'undefined') {
-              counts.tickPitches[tick.pitches] =
-                ++counts.tickPitches[tick.pitches] || 1;
-            }
-            counts.tickStyles[tick.style] =
-              ++counts.tickStyles[tick.style] || 1;
+          const latLong = truncateLatLong(route.lat, route.long);
+          const topArea = route.location.length ? route.location[0] : 'Unknown';
+          ticks.forEach((tick: Tick, tickId: TickId) => {
+            const tickPitches =
+              typeof tick.pitches !== 'undefined'
+                ? tick.pitches
+                : route.pitches;
+
+            inc(counts.dates, tick.date);
+            inc(counts.daysOfWeek, getDayOfWeek(parseDate(tick.date)));
+            inc(counts.grades, route.grade);
+            inc(counts.latLongs, latLong);
+            inc(counts.routePitches, route.pitches);
+            inc(counts.routeTypes, route.type);
+            inc(counts.tickPitches, tickPitches);
+            inc(counts.tickStyles, tick.style);
+            inc(counts.topAreas, topArea);
           });
         });
 

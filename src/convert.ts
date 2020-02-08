@@ -97,6 +97,8 @@ export function createRoute(apiRoute: ApiRoute): Route {
     name: apiRoute.name,
     type: getRouteType(apiRoute.type || ''),
     location: apiRoute.location,
+    lat: apiRoute.latitude,
+    long: apiRoute.longitude,
     grade: apiRoute.rating || '',
     ticks: {},
   };
