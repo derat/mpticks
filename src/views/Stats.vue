@@ -8,26 +8,31 @@
        into it from mounted(). -->
     <div v-show="ready">
       <v-row>
-        <v-col class="ma-3">
-          <div v-for="item in dateCounts" :key="item.label">
-            {{ item.label }}:
-            <span v-for="(count, i) in item.counts" :key="i">
-              {{ count }}
-            </span>
-          </div>
+        <v-col cols="6">
+          <v-data-table
+            :headers="dateHeaders"
+            :items="dateItems"
+            :mobile-breakpoint="NaN"
+            dense
+            disable-filtering
+            disable-pagination
+            disable-sort
+            hide-default-footer
+          />
         </v-col>
-      </v-row>
 
-      <v-row>
-        <v-col class="ma-3">
-          <div v-for="(item, i) in topRoutes" :key="i">
-            {{ item.label }}: {{ item.count }}
-          </div>
+        <v-col cols="6">
+          <v-data-table
+            :headers="routeHeaders"
+            :items="routeItems"
+            :mobile-breakpoint="NaN"
+            dense
+            disable-filtering
+            disable-pagination
+            disable-sort
+            hide-default-footer
+          />
         </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col class="ma-3"> </v-col>
       </v-row>
 
       <v-row>
@@ -69,17 +74,22 @@ enum Trim {
   ZEROS_AT_ENDS,
 }
 
-interface CountItem {
-  label: string;
-  counts: number[];
-}
-
 @Component({ components: { Spinner } })
 export default class Stats extends Vue {
   ready = false;
 
   tickCounts: TickCounts | null = null;
   userDoc: User | null = null;
+
+  readonly dateHeaders = [
+    { text: 'Period', value: 'period' },
+    { text: 'Ticks', value: 'ticks', align: 'right' },
+    { text: 'Days Out', value: 'daysOut', align: 'right' },
+  ];
+  readonly routeHeaders = [
+    { text: 'Route', value: 'route' },
+    { text: 'Ticks', value: 'ticks', align: 'right' },
+  ];
 
   mounted() {
     Promise.all([
@@ -232,7 +242,7 @@ export default class Stats extends Vue {
     });
   }
 
-  get dateCounts(): CountItem[] {
+  get dateItems() {
     if (!this.tickCounts) return [];
 
     type DateFunc = (d: Date) => void;
@@ -244,12 +254,12 @@ export default class Stats extends Vue {
     const today = getDate(() => {});
 
     return ([
-      ['All time', '00000000'],
-      ['Last 5 years', getDate(d => d.setFullYear(d.getFullYear() - 5))],
-      ['Last year', getDate(d => d.setFullYear(d.getFullYear() - 1))],
-      ['Last 90 days', getDate(d => d.setDate(d.getDate() - 90))],
       ['Last 30 days', getDate(d => d.setDate(d.getDate() - 30))],
-    ] as [string, string][]).map(([label, start]) => {
+      ['Last 90 days', getDate(d => d.setDate(d.getDate() - 90))],
+      ['Last year', getDate(d => d.setFullYear(d.getFullYear() - 1))],
+      ['Last 5 years', getDate(d => d.setFullYear(d.getFullYear() - 5))],
+      ['All time', '00000000'],
+    ] as [string, string][]).map(([period, start]) => {
       let ticks = 0;
       let daysOut = 0;
       Object.keys(this.tickCounts!.dates)
@@ -259,7 +269,7 @@ export default class Stats extends Vue {
           ticks += num;
           if (num) daysOut++;
         });
-      return { label, counts: [ticks, daysOut] };
+      return { period, ticks, daysOut };
     });
   }
 
@@ -267,15 +277,15 @@ export default class Stats extends Vue {
     return this.userDoc ? this.userDoc.numRoutes : 0;
   }
 
-  get topRoutes(): CountItem[] {
+  get routeItems() {
     if (!this.tickCounts) return [];
 
     return Object.entries(this.tickCounts.topRoutes)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([key, count]) => {
+      .slice(0, 5) // matches number of rows from dateItems()
+      .map(([key, ticks]) => {
         const parts = key.split('|');
-        return { label: parts.slice(1).join('|'), count: count as number };
+        return { route: parts.slice(1).join('|'), ticks: ticks as number };
       });
   }
 }
