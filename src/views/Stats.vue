@@ -55,6 +55,11 @@
           <canvas id="route-type-chart" />
         </v-col>
       </v-row>
+      <v-row>
+        <v-col class="ma-3">
+          <canvas id="tick-style-chart" />
+        </v-col>
+      </v-row>
     </div>
     <Spinner v-if="!ready" />
   </div>
@@ -65,7 +70,14 @@ import { Component, Vue } from 'vue-property-decorator';
 import Chart from 'chart.js';
 import { tickCountsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
-import { RouteType, RouteTypeToString, TickCounts, User } from '@/models';
+import {
+  RouteType,
+  RouteTypeToString,
+  TickCounts,
+  TickStyle,
+  TickStyleToString,
+  User,
+} from '@/models';
 import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
@@ -128,7 +140,7 @@ export default class Stats extends Vue {
     this.drawChart(
       'month-chart',
       monthLabels,
-      (key: string) => `${key.substring(0, 4)}-${key.substring(4, 6)}`,
+      k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
       this.tickCounts.dates,
       Trim.NONE
     );
@@ -145,7 +157,7 @@ export default class Stats extends Vue {
     this.drawChart(
       'day-of-week-chart',
       dayOfWeekLabels,
-      (key: string) => dayOfWeekLabels[parseInt(key) - 1],
+      k => dayOfWeekLabels[parseInt(k) - 1],
       this.tickCounts.daysOfWeek,
       Trim.NONE
     );
@@ -185,8 +197,19 @@ export default class Stats extends Vue {
     this.drawChart(
       'route-type-chart',
       routeTypeLabels,
-      (key: string) => routeTypeLabels[parseInt(key)],
+      k => routeTypeLabels[parseInt(k)],
       this.tickCounts.routeTypes,
+      Trim.ALL_ZEROS
+    );
+
+    const tickStyleLabels = Object.values(TickStyle)
+      .filter(v => typeof v === 'number')
+      .map(v => TickStyleToString(v));
+    this.drawChart(
+      'tick-style-chart',
+      tickStyleLabels,
+      k => tickStyleLabels[parseInt(k)],
+      this.tickCounts.tickStyles,
       Trim.ALL_ZEROS
     );
   }
