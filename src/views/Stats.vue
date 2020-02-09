@@ -65,7 +65,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import Chart from 'chart.js';
 import { tickCountsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
-import { TickCounts, User } from '@/models';
+import { RouteType, RouteTypeToString, TickCounts, User } from '@/models';
 import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
@@ -177,19 +177,11 @@ export default class Stats extends Vue {
       Trim.ZEROS_AT_ENDS
     );
 
-    // Order needs to match the RouteType enum.
-    const routeTypeLabels = [
-      'Other',
-      'Sport',
-      'Trad',
-      'Boulder',
-      'Ice',
-      'Alpine',
-      'Mixed',
-      'Snow',
-      'Aid',
-      'Top-rope',
-    ];
+    // Number enum objects map both from key to value and from value to key.
+    // Extract the values here.
+    const routeTypeLabels = Object.values(RouteType)
+      .filter(v => typeof v === 'number')
+      .map(v => RouteTypeToString(v));
     this.drawChart(
       'route-type-chart',
       routeTypeLabels,

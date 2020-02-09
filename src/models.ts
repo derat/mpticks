@@ -96,6 +96,33 @@ export enum RouteType {
   TOP_ROPE = 8,
 }
 
+export function RouteTypeToString(t: RouteType): string {
+  switch (t) {
+    case RouteType.OTHER:
+      return 'Other';
+    case RouteType.SPORT:
+      return 'Sport';
+    case RouteType.TRAD:
+      return 'Trad';
+    case RouteType.BOULDER:
+      return 'Boulder';
+    case RouteType.ICE:
+      return 'Ice';
+    case RouteType.ALPINE:
+      return 'Alpine';
+    case RouteType.MIXED:
+      return 'Mixed';
+    case RouteType.SNOW:
+      return 'Snow';
+    case RouteType.AID:
+      return 'Aid';
+    case RouteType.TOP_ROPE:
+      return 'Top-rope';
+    default:
+      return 'Unknown';
+  }
+}
+
 // A document in the 'routes' subcollection under a user document.
 // This contains detailed information about the route itself, along with all of
 // the user's ticks for the route.
