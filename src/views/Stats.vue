@@ -9,12 +9,25 @@
     <div v-show="ready">
       <v-row>
         <v-col class="ma-3">
-          <div>All time: {{ ticksTotal }}</div>
-          <div>Last 5 years: {{ ticks5Years }}</div>
-          <div>Last year: {{ ticksYear }}</div>
-          <div>Last 90 days: {{ ticks90Days }}</div>
-          <div>Last 30 days: {{ ticks30Days }}</div>
+          <div v-for="item in dateCounts" :key="item.label">
+            {{ item.label }}:
+            <span v-for="(count, i) in item.counts" :key="i">
+              {{ count }}
+            </span>
+          </div>
         </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col class="ma-3">
+          <div v-for="(item, i) in topRoutes" :key="i">
+            {{ item.label }}: {{ item.count }}
+          </div>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col class="ma-3"> </v-col>
       </v-row>
 
       <v-row>
@@ -45,9 +58,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Chart from 'chart.js';
-import { tickCountsRef } from '@/docs';
+import { tickCountsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
-import { TickCounts } from '@/models';
+import { TickCounts, User } from '@/models';
 import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
@@ -56,31 +69,42 @@ enum Trim {
   ZEROS_AT_ENDS,
 }
 
+interface CountItem {
+  label: string;
+  counts: number[];
+}
+
 @Component({ components: { Spinner } })
 export default class Stats extends Vue {
   ready = false;
 
-  ticksTotal = 0;
-  ticks5Years = 0;
-  ticksYear = 0;
-  ticks90Days = 0;
-  ticks30Days = 0;
+  tickCounts: TickCounts | null = null;
+  userDoc: User | null = null;
 
   mounted() {
-    tickCountsRef()
-      .get()
-      .then(snap => {
-        this.ready = true;
-        if (snap.exists) {
-          const counts: TickCounts = snap.data()! as TickCounts;
-          this.updateCounts(counts);
-          this.drawCharts(counts);
-        }
-      });
+    Promise.all([
+      tickCountsRef()
+        .get()
+        .then(snap => {
+          if (snap.exists) {
+            this.tickCounts = snap.data()! as TickCounts;
+            this.drawCharts();
+          }
+        }),
+      userRef()
+        .get()
+        .then(snap => {
+          if (snap.exists) this.userDoc = snap.data()! as User;
+        }),
+    ]).then(() => {
+      this.ready = true;
+    });
   }
 
-  drawCharts(counts: TickCounts) {
-    const sortedDates = Object.keys(counts.dates).sort();
+  drawCharts() {
+    if (!this.tickCounts) return;
+
+    const sortedDates = Object.keys(this.tickCounts.dates).sort();
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
     const monthLabels: string[] = [];
     for (
@@ -95,7 +119,7 @@ export default class Stats extends Vue {
       'month-chart',
       monthLabels,
       (key: string) => `${key.substring(0, 4)}-${key.substring(4, 6)}`,
-      counts.dates,
+      this.tickCounts.dates,
       Trim.NONE
     );
 
@@ -112,7 +136,7 @@ export default class Stats extends Vue {
       'day-of-week-chart',
       dayOfWeekLabels,
       (key: string) => dayOfWeekLabels[parseInt(key) - 1],
-      counts.daysOfWeek,
+      this.tickCounts.daysOfWeek,
       Trim.NONE
     );
 
@@ -139,7 +163,7 @@ export default class Stats extends Vue {
         if (minor.length == 2 && !letter) label += 'a';
         return label;
       },
-      counts.grades,
+      this.tickCounts.grades,
       Trim.ZEROS_AT_ENDS
     );
 
@@ -160,7 +184,7 @@ export default class Stats extends Vue {
       'route-type-chart',
       routeTypeLabels,
       (key: string) => routeTypeLabels[parseInt(key)],
-      counts.routeTypes,
+      this.tickCounts.routeTypes,
       Trim.ALL_ZEROS
     );
   }
@@ -208,48 +232,51 @@ export default class Stats extends Vue {
     });
   }
 
-  updateCounts(counts: TickCounts) {
+  get dateCounts(): CountItem[] {
+    if (!this.tickCounts) return [];
+
     type DateFunc = (d: Date) => void;
     const getDate = (f: DateFunc): string => {
       const date = new Date();
       f(date);
       return formatDate(date, '%Y%m%d'); // matches Tick.date format
     };
+    const today = getDate(() => {});
 
-    const dateToday = getDate((d: Date) => {});
-    const date5Years = getDate((d: Date) => {
-      d.setFullYear(d.getFullYear() - 5);
+    return ([
+      ['All time', '00000000'],
+      ['Last 5 years', getDate(d => d.setFullYear(d.getFullYear() - 5))],
+      ['Last year', getDate(d => d.setFullYear(d.getFullYear() - 1))],
+      ['Last 90 days', getDate(d => d.setDate(d.getDate() - 90))],
+      ['Last 30 days', getDate(d => d.setDate(d.getDate() - 30))],
+    ] as [string, string][]).map(([label, start]) => {
+      let ticks = 0;
+      let daysOut = 0;
+      Object.keys(this.tickCounts!.dates)
+        .filter(date => date > start && date <= today)
+        .forEach(date => {
+          const num = this.tickCounts!.dates[date];
+          ticks += num;
+          if (num) daysOut++;
+        });
+      return { label, counts: [ticks, daysOut] };
     });
-    const dateYear = getDate((d: Date) => {
-      d.setFullYear(d.getFullYear() - 1);
-    });
-    const date90Days = getDate((d: Date) => {
-      d.setDate(d.getDate() - 90);
-    });
-    const date30Days = getDate((d: Date) => {
-      d.setDate(d.getDate() - 30);
-    });
+  }
 
-    this.ticksTotal = 0;
-    this.ticks5Years = 0;
-    this.ticksYear = 0;
-    this.ticks90Days = 0;
-    this.ticks30Days = 0;
+  get numRoutes(): number {
+    return this.userDoc ? this.userDoc.numRoutes : 0;
+  }
 
-    Object.keys(counts.dates).forEach(date => {
-      const count = counts.dates[date];
-      this.ticksTotal += count;
+  get topRoutes(): CountItem[] {
+    if (!this.tickCounts) return [];
 
-      if (date > dateToday) return;
-      if (date <= date5Years) return;
-      this.ticks5Years += count;
-      if (date <= dateYear) return;
-      this.ticksYear += count;
-      if (date <= date90Days) return;
-      this.ticks90Days += count;
-      if (date <= date30Days) return;
-      this.ticks30Days += count;
-    });
+    return Object.entries(this.tickCounts.topRoutes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([key, count]) => {
+        const parts = key.split('|');
+        return { label: parts.slice(1).join('|'), count: count as number };
+      });
   }
 }
 </script>
