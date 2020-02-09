@@ -148,4 +148,16 @@ subcollection under each user document. The document corresponds to the
     `'105924807|The Nose'`. Only a limited number of the most-climbed routes are
     present.
 
+#### `imports` subcollection
+
+Original imported Mountain Project data is stored in documents in the `imports`
+subcollection under each user document. The documents correspond to the
+`ImportedTicks` and `ImportedRoutes` interfaces, which just contain `ApiTicks`
+and `ApiRoutes` objects. Documents are given names corresponding to the start
+time of the import and suffixed by the data type and index, e.g.
+
+*   `2020-02-09T13:34:03.195Z.routes.0`
+*   `2020-02-09T13:34:03.195Z.ticks.0`
+*   `2020-02-09T13:34:03.195Z.ticks.1`
+
 [ISO 8601 day of week]: https://en.wikipedia.org/wiki/ISO_week_date

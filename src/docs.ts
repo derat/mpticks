@@ -37,3 +37,9 @@ export function tickCountsRef() {
     .collection('stats')
     .doc('tickCounts');
 }
+
+export function importsRef(doc: string) {
+  return userRef()
+    .collection('imports')
+    .doc(doc);
+}

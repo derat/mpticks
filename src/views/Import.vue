@@ -90,12 +90,21 @@ import { Component, Vue } from 'vue-property-decorator';
 import firebase from 'firebase/app';
 import app from '@/firebase';
 
-import { areaMapRef, areaRef, userRef, routeRef, tickCountsRef } from '@/docs';
+import {
+  areaMapRef,
+  areaRef,
+  importsRef,
+  userRef,
+  routeRef,
+  tickCountsRef,
+} from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
   Area,
   AreaId,
   AreaMap,
+  importedRoutesBatchSize,
+  importedTicksBatchSize,
   numTopRoutes,
   Route,
   RouteId,
@@ -125,8 +134,9 @@ export default class Import extends Vue {
   // Whether the form contains valid input.
   valid = false;
 
-  // Whether an import is in progress.
-  importing = false;
+  // Time at which the current import started in toISOString() format, e.g.
+  // '2020-02-09T13:34:03.195Z'. Empty when not importing.
+  importStartTime = '';
 
   // Rules for input fields.
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
@@ -135,6 +145,10 @@ export default class Import extends Vue {
   // localStorage item names.
   readonly emailItem = 'importEmail';
   readonly keyItem = 'importKey';
+
+  get importing() {
+    return !!this.importStartTime;
+  }
 
   get importButtonLabel() {
     return this.importing ? 'Importing...' : 'Import';
@@ -173,7 +187,7 @@ export default class Import extends Vue {
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
     const batch = app.firestore().batch();
 
-    this.importing = true;
+    this.importStartTime = new Date().toISOString();
     this.getTicks(routeTicks, batch)
       .then(() => this.getRoutes(Array.from(routeTicks.keys()), routes, batch))
       .then(() => this.updateRoutes(routeTicks, routes, batch))
@@ -189,7 +203,7 @@ export default class Import extends Vue {
         this.log(`Import failed: ${err}`, true);
       })
       .finally(() => {
-        this.importing = false;
+        this.importStartTime = '';
       });
   }
 
@@ -204,11 +218,8 @@ export default class Import extends Vue {
     return userRef()
       .get()
       .then(snap => {
-        // FIXME: 118294181
         let maxTickId = snap.exists ? (snap.data() as User).maxTickId || 0 : 0;
-        this.log(
-          `Getting ticks newer than ${maxTickId} from Mountain Project...`
-        );
+        this.log(`Importing ticks newer than ${maxTickId}...`);
         return getTicks(this.email, this.key, maxTickId + 1).then(apiTicks => {
           this.log(`Got ${apiTicks.length} new tick(s).`);
           if (!apiTicks.length) return;
@@ -226,6 +237,16 @@ export default class Import extends Vue {
             }
           }
           batch.set(userRef(), { maxTickId }, { merge: true });
+
+          // Save the original data from the API "just in case".
+          for (let i = 0; i * importedTicksBatchSize < apiTicks.length; i++) {
+            batch.set(importsRef(`${this.importStartTime}.ticks.${i}`), {
+              ticks: apiTicks.slice(
+                i * importedTicksBatchSize,
+                (i + 1) * importedTicksBatchSize
+              ),
+            });
+          }
         });
       });
   }
@@ -267,6 +288,16 @@ export default class Import extends Vue {
           },
           { merge: true }
         );
+
+        // Save the original data from Mountain Project.
+        for (let i = 0; i * importedRoutesBatchSize < apiRoutes.length; i++) {
+          batch.set(importsRef(`${this.importStartTime}.routes.${i}`), {
+            routes: apiRoutes.slice(
+              i * importedRoutesBatchSize,
+              (i + 1) * importedRoutesBatchSize
+            ),
+          });
+        }
 
         // Load and update Firestore area documents to list the new routes.
         return this.saveRoutesToAreas(newRoutes, batch);

@@ -4,6 +4,8 @@
 
 // This file defines objects stored in Firestore.
 
+import { ApiRoute, ApiTick } from '@/api';
+
 export type RouteId = number;
 export type TickId = number;
 
@@ -214,3 +216,16 @@ export interface TickCounts {
 
 // Number of routes to store in TickCounts.
 export const numTopRoutes = 20;
+
+// Documents in the 'imports' subcollection.
+export interface ImportedTicks {
+  ticks: ApiTick[];
+}
+export interface ImportedRoutes {
+  routes: ApiRoute[];
+}
+
+// Maximum number of entries to store in each ImportedTicks and ImportedRoutes
+// document.
+export const importedTicksBatchSize = 200;
+export const importedRoutesBatchSize = 200;
