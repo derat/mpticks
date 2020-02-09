@@ -77,6 +77,8 @@ names corresponding to Firebase user IDs and correspond to the `User` interface:
 
 *   `maxTickId`: Number field containing the maximum tick ID that has been
     imported.
+*   `numRoutes`: Number field containing the number of routes that have been
+    imported (and hence climbed).
 
 #### `routes` subcollection
 
@@ -88,14 +90,16 @@ correspond to the `Route` interface:
 *   `type` - Number field containing a `RouteType` enum value.
 *   `location` - String array field containing the route's location, e.g.
     `['Colorado', 'Boulder', 'Boulder Canyon', 'Avalon']`.
+*   `lat` - Number field containing the route's latitude.
+*   `long` - Number field containing the route's longitude.
 *   `grade` - String field containing the route's grade, e.g. `'5.9'`.
 *   `pitches` - Number field containing the number of pitches.
 *   `ticks` - Map field keyed by Mountain Project tick ID. Values are maps
     corresponding to the `Tick` interface:
     *   `date` - String field containing tick date as `YYYYMMDD`, e.g.
         `'20200101'`.
-    *   `pitches` - Number field containing climbed pitches.
     *   `style` - Number field containing a `TickStyle` enum value.
+    *   `pitches` - Number field containing climbed pitches.
     *   `notes` - String field containing user-supplied notes.
     *   `stars` - String field containing user-supplied score for the route: 1
         is 'bomb', 5 is 4-star.
@@ -128,15 +132,20 @@ Aggregate tick counts are stored in a `tickCounts` document in the `stats`
 subcollection under each user document. The document corresponds to the
 `TickCounts` interface:
 
-*   `areas` - Map field keyed by area document IDs (i.e. pipe-separated area
-    locations).
 *   `dates` - Map field keyed by date as `YYYYMMDD`.
 *   `daysOfWeek` - Map field keyed by [ISO 8601 day of week] where `1` is Monday
     and `7` is Sunday.
-*   `grades` - Map field keyed by route grades, e.g. `'5.9'` or `'V3'`.
+*   `grades` - Map field keyed by route grade, e.g. `'5.9'` or `'V3'`.
+*   `latLongs` - Map field keyed by comma-separated route latitude and longitude
+    rounded to one decimal place of precision, e.g. `'39.9,-105.0'`.
+*   `regions` - Map field keyed by route region (U.S. state/territory or
+    country).
 *   `routePitches` - Map field keyed by total pitches in route.
 *   `routeTypes` - Map field keyed by `RouteType` enum values.
 *   `tickPitches` - Map field keyed by climbed pitches.
 *   `tickStyles` - Map field keyed by `TickStyle` enum values.
+*   `topRoutes` - Map field keyed by pipe-separated Route ID and name, e.g.
+    `'105924807|The Nose'`. Only a limited number of the most-climbed routes are
+    present.
 
 [ISO 8601 day of week]: https://en.wikipedia.org/wiki/ISO_week_date
