@@ -4,11 +4,11 @@
 
 <template>
   <div>
-    <!-- Using v-show instead of v-if so the canvas will exist when we try to draw
-       into it from mounted(). -->
+    <!-- Using v-show instead of v-if so the canvas will exist when we try to
+         draw into it from mounted(). -->
     <div v-show="ready">
       <v-row class="mx-1">
-        <v-col cols="6">
+        <v-col cols="12" sm="6" lg="4">
           <v-data-table
             :headers="dateHeaders"
             :items="dateItems"
@@ -20,32 +20,31 @@
             hide-default-footer
           />
         </v-col>
-        <v-col cols="6">
-          <canvas id="year-chart" class="small-chart" />
-        </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="month-chart" />
-        </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="day-of-week-chart" />
+        <v-col cols="12" sm="6" lg="4">
+          <canvas id="year-pitches-chart" />
         </v-col>
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="6">
-          <canvas id="route-type-chart" class="small-chart" />
+        <v-col cols="12" lg="8">
+          <canvas id="year-month-pitches-chart" />
         </v-col>
-        <v-col cols="6">
-          <div class="total-routes">Total routes: {{ numRoutes }}</div>
+      </v-row>
+
+      <v-row class="mx-1">
+        <v-col cols="12" sm="6" lg="4">
+          <canvas id="month-pitches-chart" />
+        </v-col>
+        <v-col cols="12" sm="6" lg="4">
+          <canvas id="day-of-week-pitches-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row class="mx-1">
+        <v-col cols="12" sm="6" lg="4">
           <v-data-table
-            :headers="routeHeaders"
-            :items="routeItems"
+            :headers="routeTypeHeaders"
+            :items="routeTypeItems"
             :mobile-breakpoint="NaN"
             dense
             disable-filtering
@@ -54,16 +53,35 @@
             hide-default-footer
           />
         </v-col>
-      </v-row>
-
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="grade-chart" />
+        <v-col cols="12" sm="6" lg="4">
+          <v-data-table
+            :headers="topRouteHeaders"
+            :items="topRouteItems"
+            :mobile-breakpoint="NaN"
+            dense
+            disable-filtering
+            disable-pagination
+            disable-sort
+            hide-default-footer
+          />
+          <div class="total-routes">
+            <span class="label">Total Routes:</span> {{ numRoutes }}
+          </div>
         </v-col>
       </v-row>
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="tick-style-chart" />
+
+      <v-row class="mx-1">
+        <v-col cols="12" lg="8">
+          <canvas id="grade-ticks-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row class="mx-1">
+        <v-col cols="12" sm="6" lg="4">
+          <canvas id="pitches-ticks-chart" />
+        </v-col>
+        <v-col cols="12" sm="6" lg="4">
+          <canvas id="tick-style-ticks-chart" />
         </v-col>
       </v-row>
     </div>
@@ -78,7 +96,6 @@ import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
   Counts,
-  RouteType,
   RouteTypeToString,
   TickStyle,
   TickStyleToString,
@@ -87,9 +104,19 @@ import {
 import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
-  NONE,
   ALL_ZEROS,
   ZEROS_AT_ENDS,
+}
+
+interface ChartOptions {
+  id: string; // ID of canvas element
+  title: string;
+  labels: string[]; // labels for values in the order they'll be shown
+  labelFunc: (key: string) => string; // maps |counts| keys to |labels|
+  counts: Record<string | number, number>; // data to display
+  units: string;
+  trim?: Trim;
+  aspectRatio?: number; // default is 2
 }
 
 @Component({ components: { Spinner } })
@@ -101,11 +128,16 @@ export default class Stats extends Vue {
 
   readonly dateHeaders = [
     { text: 'Period', value: 'period' },
-    { text: 'Pitches', value: 'pitches', align: 'right' },
-    { text: 'Ticks', value: 'ticks', align: 'right' },
-    { text: 'Days Out', value: 'daysOut', align: 'right' },
+    { text: 'Pitches', value: 'pitches', align: 'end' },
+    { text: 'Ticks', value: 'ticks', align: 'end' },
+    { text: 'Days Out', value: 'daysOut', align: 'end' },
   ];
-  readonly routeHeaders = [
+  readonly routeTypeHeaders = [
+    { text: 'Type', value: 'routeType' },
+    { text: 'Ticks', value: 'ticks', align: 'right' },
+    { text: 'Percent', value: 'percent', align: 'right' },
+  ];
+  readonly topRouteHeaders = [
     { text: 'Route', value: 'route' },
     { text: 'Ticks', value: 'ticks', align: 'right' },
   ];
@@ -133,26 +165,10 @@ export default class Stats extends Vue {
   drawCharts() {
     if (!this.counts) return;
 
+    const isPhone = this.$vuetify.breakpoint.xsOnly;
+
     const sortedDates = Object.keys(this.counts.datePitches).sort();
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
-
-    const monthLabels: string[] = [];
-    for (
-      let date = parseDate(sortedDates[0]);
-      date.getFullYear() < endDate.getFullYear() ||
-      date.getMonth() <= endDate.getMonth();
-      date.setMonth(date.getMonth() + 1)
-    ) {
-      monthLabels.push(formatDate(date, '%Y-%m'));
-    }
-    this.drawChart(
-      'month-chart',
-      monthLabels,
-      k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
-      this.counts.datePitches,
-      'Pitches',
-      Trim.NONE
-    );
 
     const yearLabels: string[] = [];
     for (
@@ -162,32 +178,66 @@ export default class Stats extends Vue {
     ) {
       yearLabels.push(formatDate(date, '%Y'));
     }
-    this.drawChart(
-      'year-chart',
-      yearLabels,
-      k => k.substring(0, 4),
-      this.counts.datePitches,
-      'Pitches',
-      Trim.NONE
-    );
+    this.drawChart({
+      id: 'year-pitches-chart',
+      title: 'Pitches by Year',
+      labels: yearLabels,
+      labelFunc: k => k.substring(0, 4),
+      counts: this.counts.datePitches,
+      units: 'Pitches',
+    });
 
-    const dayOfWeekLabels = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+    const yearMonthLabels: string[] = [];
+    for (
+      let date = parseDate(sortedDates[0]);
+      date.getFullYear() < endDate.getFullYear() ||
+      date.getMonth() <= endDate.getMonth();
+      date.setMonth(date.getMonth() + 1)
+    ) {
+      yearMonthLabels.push(formatDate(date, '%Y-%m'));
+    }
+    this.drawChart({
+      id: 'year-month-pitches-chart',
+      title: 'Pitches by Year and Month',
+      labels: yearMonthLabels,
+      labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
+      counts: this.counts.datePitches,
+      units: 'Pitches',
+      aspectRatio: isPhone ? undefined : 3,
+    });
+
+    const monthLabels: string[] = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
-    this.drawChart(
-      'day-of-week-chart',
-      dayOfWeekLabels,
-      k => dayOfWeekLabels[parseInt(k) - 1],
-      this.counts.dayOfWeekPitches,
-      'Pitches',
-      Trim.NONE
-    );
+    this.drawChart({
+      id: 'month-pitches-chart',
+      title: 'Pitches by Month',
+      labels: monthLabels,
+      labelFunc: k => monthLabels[parseInt(k.substring(4, 6)) - 1],
+      counts: this.counts.datePitches,
+      units: 'Pitches',
+    });
+
+    const dayOfWeekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    this.drawChart({
+      id: 'day-of-week-pitches-chart',
+      title: 'Pitches by Day of Week',
+      labels: dayOfWeekLabels,
+      labelFunc: k => dayOfWeekLabels[parseInt(k) - 1],
+      counts: this.counts.dayOfWeekPitches,
+      units: 'Pitches',
+    });
 
     const gradeLabels: string[] = [];
     for (let i = 0; i <= 15; i++) {
@@ -199,10 +249,11 @@ export default class Stats extends Vue {
         });
       }
     }
-    this.drawChart(
-      'grade-chart',
-      gradeLabels,
-      (key: string) => {
+    this.drawChart({
+      id: 'grade-ticks-chart',
+      title: 'Ticks by Grade',
+      labels: gradeLabels,
+      labelFunc: (key: string) => {
         const m = key.match(/^5\.(\d+)([a-d]?).*/);
         if (!m) return '';
 
@@ -212,58 +263,64 @@ export default class Stats extends Vue {
         if (minor.length == 2 && !letter) label += 'a';
         return label;
       },
-      this.counts.gradeTicks,
-      'Ticks',
-      Trim.ZEROS_AT_ENDS
-    );
-
-    // Number enum objects map both from key to value and from value to key.
-    // Extract the values here.
-    const routeTypeLabels = Object.values(RouteType)
-      .filter(v => typeof v === 'number')
-      .map(v => RouteTypeToString(v));
-    this.drawChart(
-      'route-type-chart',
-      routeTypeLabels,
-      k => routeTypeLabels[parseInt(k)],
-      this.counts.routeTypeTicks,
-      'Ticks',
-      Trim.ALL_ZEROS
-    );
-
-    const tickStyleLabels = Object.values(TickStyle)
-      .filter(v => typeof v === 'number')
-      .map(v => TickStyleToString(v));
-    this.drawChart(
-      'tick-style-chart',
-      tickStyleLabels,
-      k => tickStyleLabels[parseInt(k)],
-      this.counts.tickStyleTicks,
-      'Ticks',
-      Trim.ALL_ZEROS
-    );
-  }
-
-  drawChart(
-    id: string,
-    labels: string[],
-    labelFunc: (key: string) => string,
-    counts: Record<string | number, number>,
-    unit: string,
-    trim: Trim = Trim.NONE
-  ) {
-    const values: Record<string, number> = {};
-    labels.forEach(label => (values[label] = 0));
-
-    Object.entries(counts).forEach(([key, count]) => {
-      const label = labelFunc(key.toString());
-      if (label) values[label] += count;
+      counts: this.counts.gradeTicks,
+      units: 'Ticks',
+      trim: Trim.ZEROS_AT_ENDS,
+      aspectRatio: isPhone ? undefined : 3,
     });
 
-    if (trim == Trim.ZEROS_AT_ENDS) {
+    const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
+      (a, b) => parseInt(a) - parseInt(b)
+    );
+    this.drawChart({
+      id: 'pitches-ticks-chart',
+      title: 'Ticks by Pitches',
+      labels: pitchesLabels,
+      labelFunc: k => k,
+      counts: this.counts.pitchesTicks,
+      units: 'Pitches',
+      trim: Trim.ALL_ZEROS,
+    });
+
+    const tickStyleLabels = [
+      TickStyle.LEAD,
+      TickStyle.LEAD_ONSIGHT,
+      TickStyle.LEAD_FLASH,
+      TickStyle.LEAD_REDPOINT,
+      TickStyle.LEAD_PINKPOINT,
+      TickStyle.LEAD_FELL_HUNG,
+      TickStyle.FOLLOW,
+      TickStyle.TOP_ROPE,
+      TickStyle.SOLO,
+      TickStyle.SEND,
+      TickStyle.FLASH,
+      TickStyle.ATTEMPT,
+    ].map(v => TickStyleToString(v));
+    this.drawChart({
+      id: 'tick-style-ticks-chart',
+      title: 'Ticks by Style',
+      labels: tickStyleLabels,
+      labelFunc: k => TickStyleToString(parseInt(k)),
+      counts: this.counts.tickStyleTicks,
+      units: 'Ticks',
+      trim: Trim.ALL_ZEROS,
+    });
+  }
+
+  drawChart(options: ChartOptions) {
+    const values: Record<string, number> = {};
+    const labels = [...options.labels];
+    options.labels.forEach(label => (values[label] = 0));
+
+    Object.entries(options.counts).forEach(([key, count]) => {
+      const label = options.labelFunc(key.toString());
+      if (label && values.hasOwnProperty(label)) values[label] += count;
+    });
+
+    if (options.trim == Trim.ZEROS_AT_ENDS) {
       while (labels.length && !values[labels[0]]) labels.shift();
       while (labels.length && !values[labels[labels.length - 1]]) labels.pop();
-    } else if (trim == Trim.ALL_ZEROS) {
+    } else if (options.trim == Trim.ALL_ZEROS) {
       let i = labels.length;
       while (i--) {
         if (values[labels[i]] == 0) labels.splice(i, 1);
@@ -272,15 +329,20 @@ export default class Stats extends Vue {
 
     const data: number[] = labels.map(l => values[l]);
 
-    const canvas = document.getElementById(id) as HTMLCanvasElement;
+    const canvas = document.getElementById(options.id) as HTMLCanvasElement;
     new Chart(canvas, {
       type: 'bar',
       data: {
         labels,
-        datasets: [{ label: unit, data }],
+        datasets: [{ label: options.units, data }],
       },
       options: {
+        aspectRatio: options.aspectRatio || 2,
         legend: { display: false },
+        title: {
+          display: true,
+          text: options.title,
+        },
         scales: {
           xAxes: [{ gridLines: { drawOnChartArea: false } }],
           yAxes: [{ ticks: { beginAtZero: true } }],
@@ -326,12 +388,29 @@ export default class Stats extends Vue {
     return this.userDoc ? this.userDoc.numRoutes : 0;
   }
 
-  get routeItems() {
+  get routeTypeItems() {
+    if (!this.counts) return [];
+
+    const total = Object.values(this.counts.routeTypeTicks).reduce(
+      (a, b) => a + b
+    );
+    return Object.entries(this.counts.routeTypeTicks)
+      .sort((a, b) => b[1] - a[1])
+      .map(([key, ticks]) => {
+        return {
+          routeType: RouteTypeToString(parseInt(key)),
+          ticks,
+          percent: `${((ticks / total) * 100).toFixed(1)}%`,
+        };
+      });
+  }
+
+  get topRouteItems() {
     if (!this.counts) return [];
 
     return Object.entries(this.counts.routeTicks)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5) // matches number of rows from dateItems()
+      .slice(0, 10)
       .map(([key, ticks]) => {
         const parts = key.split('|');
         return { route: parts.slice(1).join('|'), ticks: ticks as number };
@@ -341,7 +420,12 @@ export default class Stats extends Vue {
 </script>
 
 <style scoped>
-.small-chart {
-  margin-top: 20px;
+.total-routes {
+  font-size: 14px;
+  padding: 16px 0 6px 16px;
+}
+.total-routes .label {
+  color: rgb(0, 0, 0, 0.6);
+  font-weight: 700;
 }
 </style>
