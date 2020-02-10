@@ -15,8 +15,23 @@ import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 
 import flushPromises from 'flush-promises';
 
-import { ApiRoute, ApiTick, getRoutesUrl, getTicksUrl } from '@/api';
-import { AreaId, numTopRoutes, Route, RouteId, Tick, TickId } from '@/models';
+import {
+  ApiRoute,
+  ApiTick,
+  getRoutesUrl,
+  getTicksUrl,
+  maxRoutesPerRequest,
+} from '@/api';
+import {
+  AreaId,
+  importedRoutesBatchSize,
+  importedTicksBatchSize,
+  numTopRoutes,
+  Route,
+  RouteId,
+  Tick,
+  TickId,
+} from '@/models';
 import { makeAreaId } from '@/convert';
 import {
   testApiRoute,
@@ -93,10 +108,13 @@ describe('Import', () => {
   }
 
   function handleGetRoutes(routes: ApiRoute[]) {
-    const routeIds = routes.map(r => r.id).join(',');
-    mockAxios
-      .onGet(getRoutesUrl, { params: { routeIds, key } })
-      .replyOnce(200, { routes, success: true });
+    for (let i = 0; i < routes.length; i += maxRoutesPerRequest) {
+      const routesSlice = routes.slice(i, i + maxRoutesPerRequest);
+      const routeIds = routesSlice.map(r => r.id).join(',');
+      mockAxios
+        .onGet(getRoutesUrl, { params: { routeIds, key } })
+        .replyOnce(200, { routes: routesSlice, success: true });
+    }
   }
 
   it('fetches and saves new data', async () => {
@@ -230,5 +248,54 @@ describe('Import', () => {
     delete topRoutes['1|1'];
     topRoutes[`${routeId}|${route.name}`] = numTicks;
     expect(MockFirebase.getDoc(tickCountsPath)!.topRoutes).toEqual(topRoutes);
+  });
+
+  it('saves original data', async () => {
+    const numItems = 450;
+    const startRouteId = 1;
+    const startTickId = 1000;
+    const apiRoutes = [...Array(numItems).keys()].map(i =>
+      testApiRoute(i + startRouteId, loc)
+    );
+    const apiTicks = [...Array(numItems).keys()].map(i =>
+      testApiTick(i + startTickId, i + startRouteId)
+    );
+    handleGetTicks(apiTicks);
+    handleGetRoutes(apiRoutes);
+    await doImport();
+
+    let numSavedRoutes = 0;
+    const routesRegExp = new RegExp(`^${userPath}/imports/.*\.routes`);
+    MockFirebase.listDocs()
+      .filter(p => p.match(routesRegExp))
+      .sort()
+      .map(p => MockFirebase.getDoc(p)!.routes)
+      .forEach((savedRoutes, i) => {
+        numSavedRoutes += savedRoutes.length;
+        expect(savedRoutes).toEqual(
+          apiRoutes.slice(
+            i * importedRoutesBatchSize,
+            (i + 1) * importedRoutesBatchSize
+          )
+        );
+      });
+    expect(numSavedRoutes).toBe(numItems);
+
+    let numSavedTicks = 0;
+    const ticksRegExp = new RegExp(`^${userPath}/imports/.*\.ticks`);
+    MockFirebase.listDocs()
+      .filter(p => p.match(ticksRegExp))
+      .sort()
+      .map(p => MockFirebase.getDoc(p)!.ticks)
+      .forEach((savedTicks, i) => {
+        numSavedTicks += savedTicks.length;
+        expect(savedTicks).toEqual(
+          apiTicks.slice(
+            i * importedTicksBatchSize,
+            (i + 1) * importedTicksBatchSize
+          )
+        );
+      });
+    expect(numSavedTicks).toBe(numItems);
   });
 });
