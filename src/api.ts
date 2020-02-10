@@ -15,13 +15,13 @@ export const getRoutesUrl = 'https://www.mountainproject.com/data/get-routes';
 export interface ApiTick {
   routeId: number;
   date: string; // 'YYYY-MM-DD'
-  pitches: number;
+  pitches: number; // seems to be 1 if unset in corresponding route
   notes: string;
   style: string; // 'Solo', 'TR', 'Follow', 'Lead', 'Flash', 'Send', 'Attempt', ''
   leadStyle: string; // 'Onsight', 'Flash', 'Redpoint', 'Pinkpoint', 'Fell/Hung', ''
   tickId: number;
-  userStars: number; // 1 is 'bomb', 5 is 4-star
-  userRating: string; // optional user-supplied grade, e.g. '5.11a'
+  userStars: number; // 1 is 'bomb', 5 is 4-star; -1 if unset
+  userRating: string; // user-supplied grade or empty string if unset
 }
 
 // The result of a get-ticks API call.
@@ -69,7 +69,7 @@ export interface ApiRoute {
   rating: string; // actually the grade, e.g. '5.11a'
   stars: number; // 1 is 'bomb', 5 is 4-star
   starVotes: number;
-  pitches: number;
+  pitches: number | string; // number or empty string
   location: string[];
   url: string;
   imgSqSmall: string;

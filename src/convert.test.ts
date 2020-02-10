@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import { ApiRoute, ApiTick } from '@/api';
 import {
   createRoute,
   createTick,
@@ -21,6 +22,46 @@ describe('createRoute', () => {
       testRoute(routeId, [], location)
     );
   });
+
+  it('sanitizes data', () => {
+    expect(
+      createRoute({
+        id: 1,
+        name: 'Name',
+        type: '',
+        rating: '',
+        stars: 1,
+        starVotes: 2,
+        pitches: '',
+        location: ['Here'],
+        url: '',
+        imgSqSmall: '',
+        imgSmall: '',
+        imgSmallMed: '',
+        imgMedium: '',
+        longitude: 0,
+        latitude: 0,
+      })
+    ).toEqual({
+      name: 'Name',
+      type: RouteType.OTHER,
+      location: ['Here'],
+      lat: 0,
+      long: 0,
+      grade: '',
+      ticks: {},
+    });
+  });
+
+  it('throws errors for missing fields', () => {
+    [
+      { name: 'Name', location: [] },
+      { id: 3, location: [] },
+      { id: 3, name: 'Name' },
+    ].forEach(o => {
+      expect(() => createRoute((o as unknown) as ApiRoute)).toThrow();
+    });
+  });
 });
 
 describe('createTick', () => {
@@ -30,6 +71,37 @@ describe('createTick', () => {
     expect(createTick(testApiTick(tickId, routeId))).toEqual(
       testTick(tickId, routeId)
     );
+  });
+
+  it('sanitizes data', () => {
+    expect(
+      createTick({
+        routeId: 1,
+        date: '2019-10-31',
+        pitches: 1,
+        notes: '',
+        style: '',
+        leadStyle: '',
+        tickId: 10,
+        userStars: -1,
+        userRating: '',
+      })
+    ).toEqual({
+      date: '20191031',
+      style: TickStyle.UNKNOWN,
+      pitches: 1,
+    });
+  });
+
+  it('throws errors for missing or malformed fields', () => {
+    [
+      { routeId: 2, date: '2019-01-01' },
+      { tickId: 1, date: '2019-01-01' },
+      { tickId: 1, routeId: 2 },
+      { tickId: 1, routeId: 2, date: 'bogus' },
+    ].forEach(o => {
+      expect(() => createTick((o as unknown) as ApiTick)).toThrow();
+    });
   });
 });
 

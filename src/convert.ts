@@ -60,10 +60,11 @@ export function createTick(apiTick: ApiTick): Tick {
   const tick: Tick = {
     date: apiTick.date.replace(/-/g, ''),
     style: getTickStyle(apiTick.style, apiTick.leadStyle),
+    // The web UI forces this to be at least 1, so enforce the same here.
+    pitches: apiTick.pitches > 0 ? apiTick.pitches : 1,
   };
-  if (apiTick.pitches > -1) tick.pitches = apiTick.pitches;
   if (apiTick.notes) tick.notes = apiTick.notes;
-  if (apiTick.userStars > -1) tick.stars = apiTick.userStars;
+  if (apiTick.userStars > 0) tick.stars = apiTick.userStars;
   if (apiTick.userRating) tick.grade = apiTick.userRating;
   return tick;
 }
@@ -102,7 +103,8 @@ export function createRoute(apiRoute: ApiRoute): Route {
     grade: apiRoute.rating || '',
     ticks: {},
   };
-  if (apiRoute.pitches > 0) route.pitches = apiRoute.pitches;
+  // If a route's pitches are unset, Mountain Project returns an empty string.
+  if (typeof apiRoute.pitches === 'number') route.pitches = apiRoute.pitches;
   return route;
 }
 

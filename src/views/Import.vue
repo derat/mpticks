@@ -437,6 +437,7 @@ export default class Import extends Vue {
           dayOfWeekTicks: {},
           gradeTicks: {},
           latLongTicks: {},
+          pitchesTicks: {},
           regionTicks: {},
           routeTicks: {},
           routeTypeTicks: {},
@@ -468,17 +469,14 @@ export default class Import extends Vue {
           const region = getRegion(route.location);
           ticks.forEach((tick: Tick, tickId: TickId) => {
             const dayOfWeek = getDayOfWeek(parseDate(tick.date));
-            const pitches =
-              typeof tick.pitches !== 'undefined'
-                ? tick.pitches
-                : route.pitches;
 
-            inc(counts.datePitches, tick.date, pitches);
+            inc(counts.datePitches, tick.date, tick.pitches);
             inc(counts.dateTicks, tick.date);
-            inc(counts.dayOfWeekPitches, dayOfWeek, pitches);
+            inc(counts.dayOfWeekPitches, dayOfWeek, tick.pitches);
             inc(counts.dayOfWeekTicks, dayOfWeek);
             inc(counts.gradeTicks, route.grade);
             inc(counts.latLongTicks, latLong);
+            inc(counts.pitchesTicks, tick.pitches);
             inc(counts.regionTicks, region);
             // |routeTicks| is updated above and below.
             inc(counts.routeTypeTicks, route.type);

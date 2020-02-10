@@ -51,7 +51,7 @@ export function testRoute(
     lat: apiRoute.latitude,
     long: apiRoute.longitude,
     grade: apiRoute.rating,
-    pitches: apiRoute.pitches,
+    pitches: apiRoute.pitches as number,
     // https://stackoverflow.com/a/26265095
     ticks: tickIds.reduce(
       (m, id) => ((m[id] = testTick(id, routeId)), m),
@@ -77,7 +77,7 @@ export function testApiTick(tickId: TickId, routeId: RouteId): ApiTick {
   return {
     routeId,
     date,
-    pitches: apiRoute.pitches,
+    pitches: apiRoute.pitches as number,
     notes: `Notes ${tickId}`,
     style: ['Lead', 'Lead', 'TR', 'Follow', 'Solo'][tickId % 5],
     leadStyle: ['Flash', 'Redpoint', '', '', ''][tickId % 5],

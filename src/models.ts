@@ -64,7 +64,7 @@ export function TickStyleToString(style: TickStyle): string {
 export interface Tick {
   date: string; // 'YYYYMMDD'
   style: TickStyle;
-  pitches?: number;
+  pitches: number;
   notes?: string;
   stars?: number; // user-supplied score: 1 is 'bomb', 5 is 4-star
   grade?: string; // user-supplied grade, e.g. '5.11a'
@@ -208,6 +208,7 @@ export interface Counts {
   dayOfWeekTicks: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   gradeTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   latLongTicks: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
+  pitchesTicks: Record<number, number>; // pitch count from tick
   regionTicks: Record<string, number>; // 'California', 'China', etc.
   routeTicks: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
   routeTypeTicks: Record<number, number>; // RouteType (TS doesn't allow enum keys)
