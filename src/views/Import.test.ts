@@ -58,7 +58,7 @@ describe('Import', () => {
   const testUid = 'test-uid';
   const userPath = `users/${testUid}`;
   const areaMapPath = `${userPath}/areas/map`;
-  const tickCountsPath = `${userPath}/stats/tickCounts`;
+  const countsPath = `${userPath}/stats/counts`;
 
   const email = 'user@example.org';
   const key = 'secret123';
@@ -135,17 +135,17 @@ describe('Import', () => {
     expect(MockFirebase.getDoc(areaMapPath)).toEqual({
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
-      dates: { [t1.date]: 1 },
-      daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
-      grades: { [r1.grade]: 1 },
-      latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
-      regions: { [loc[0]]: 1 },
-      routePitches: { [r1.pitches!]: 1 },
-      routeTypes: { [r1.type]: 1 },
-      tickPitches: { [t1.pitches!]: 1 },
-      tickStyles: { [t1.style]: 1 },
-      topRoutes: { [`${rid1}|${r1.name}`]: 1 },
+    expect(MockFirebase.getDoc(countsPath)).toEqual({
+      datePitches: { [t1.date]: t1.pitches },
+      dateTicks: { [t1.date]: 1 },
+      dayOfWeekPitches: { [getDayOfWeek(parseDate(t1.date))]: t1.pitches },
+      dayOfWeekTicks: { [getDayOfWeek(parseDate(t1.date))]: 1 },
+      gradeTicks: { [r1.grade]: 1 },
+      latLongTicks: { [truncateLatLong(r1.lat, r1.long)]: 1 },
+      regionTicks: { [loc[0]]: 1 },
+      routeTicks: { [`${rid1}|${r1.name}`]: 1 },
+      routeTypeTicks: { [r1.type]: 1 },
+      tickStyleTicks: { [t1.style]: 1 },
     });
   });
 
@@ -161,17 +161,17 @@ describe('Import', () => {
     MockFirebase.setDoc(areaMapPath, {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    MockFirebase.setDoc(tickCountsPath, {
-      dates: { [t1.date]: 1 },
-      daysOfWeek: { [getDayOfWeek(parseDate(t1.date))]: 1 },
-      grades: { [r1.grade]: 1 },
-      latLongs: { [truncateLatLong(r1.lat, r1.long)]: 1 },
-      regions: { [loc[0]]: 1 },
-      routePitches: { [r1.pitches!]: 1 },
-      routeTypes: { [r1.type]: 1 },
-      tickPitches: { [t1.pitches!]: 1 },
-      tickStyles: { [t1.style]: 1 },
-      topRoutes: { [`${rid1}|${r1.name}`]: 1 },
+    MockFirebase.setDoc(countsPath, {
+      datePitches: { [t1.date]: t1.pitches },
+      dateTicks: { [t1.date]: 1 },
+      dayOfWeekPitches: { [getDayOfWeek(parseDate(t1.date))]: t1.pitches },
+      dayOfWeekTicks: { [getDayOfWeek(parseDate(t1.date))]: 1 },
+      gradeTicks: { [r1.grade]: 1 },
+      latLongTicks: { [truncateLatLong(r1.lat, r1.long)]: 1 },
+      regionTicks: { [loc[0]]: 1 },
+      routeTicks: { [`${rid1}|${r1.name}`]: 1 },
+      routeTypeTicks: { [r1.type]: 1 },
+      tickStyleTicks: { [t1.style]: 1 },
     });
 
     // Report a second route in a subarea of the first route's area, and new
@@ -206,34 +206,41 @@ describe('Import', () => {
         [loc[0]]: { areaId: aid2, children: { [loc[1]]: { areaId: aid } } },
       },
     });
-    expect(MockFirebase.getDoc(tickCountsPath)).toEqual({
-      dates: { [t1.date]: 1, [t2.date]: 1, [t3.date]: 1 },
-      daysOfWeek: {
+    expect(MockFirebase.getDoc(countsPath)).toEqual({
+      datePitches: {
+        [t1.date]: t1.pitches,
+        [t2.date]: t2.pitches,
+        [t3.date]: t3.pitches,
+      },
+      dateTicks: { [t1.date]: 1, [t2.date]: 1, [t3.date]: 1 },
+      dayOfWeekPitches: {
+        [getDayOfWeek(parseDate(t1.date))]: t1.pitches,
+        [getDayOfWeek(parseDate(t2.date))]: t2.pitches,
+        [getDayOfWeek(parseDate(t3.date))]: t3.pitches,
+      },
+      dayOfWeekTicks: {
         [getDayOfWeek(parseDate(t1.date))]: 1,
         [getDayOfWeek(parseDate(t2.date))]: 1,
         [getDayOfWeek(parseDate(t3.date))]: 1,
       },
-      grades: { [r1.grade]: 2, [r2.grade]: 1 },
-      latLongs: {
+      gradeTicks: { [r1.grade]: 2, [r2.grade]: 1 },
+      latLongTicks: {
         [truncateLatLong(r1.lat, r1.long)]: 2,
         [truncateLatLong(r2.lat, r2.long)]: 1,
       },
-      regions: { [loc[0]]: 3 },
-      routePitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
-      routeTypes: { [r1.type]: 2, [r2.type]: 1 },
-      // TODO: This is hacky and just works because the ticks use route pitches.
-      tickPitches: { [r1.pitches!]: 2, [r2.pitches!]: 1 },
-      tickStyles: { [t1.style]: 1, [t2.style]: 1, [t3.style]: 1 },
-      topRoutes: { [`${rid1}|${r1.name}`]: 2, [`${rid2}|${r2.name}`]: 1 },
+      regionTicks: { [loc[0]]: 3 },
+      routeTicks: { [`${rid1}|${r1.name}`]: 2, [`${rid2}|${r2.name}`]: 1 },
+      routeTypeTicks: { [r1.type]: 2, [r2.type]: 1 },
+      tickStyleTicks: { [t1.style]: 1, [t2.style]: 1, [t3.style]: 1 },
     });
   });
 
   it('updates top routes', async () => {
     // Start out with a full set of route counts.
-    const topRoutes = Object.fromEntries(
+    const routeTicks = Object.fromEntries(
       [...Array(numTopRoutes).keys()].map(i => [`${i + 1}|${i + 1}`, i + 1])
     );
-    MockFirebase.setDoc(tickCountsPath, { topRoutes });
+    MockFirebase.setDoc(countsPath, { routeTicks });
 
     // Report a new route with a large number of ticks.
     const routeId = 100;
@@ -245,9 +252,9 @@ describe('Import', () => {
     await doImport();
 
     // The new route should've pushed out the old route with the least ticks.
-    delete topRoutes['1|1'];
-    topRoutes[`${routeId}|${route.name}`] = numTicks;
-    expect(MockFirebase.getDoc(tickCountsPath)!.topRoutes).toEqual(topRoutes);
+    delete routeTicks['1|1'];
+    routeTicks[`${routeId}|${route.name}`] = numTicks;
+    expect(MockFirebase.getDoc(countsPath)!.routeTicks).toEqual(routeTicks);
   });
 
   it('saves original data', async () => {

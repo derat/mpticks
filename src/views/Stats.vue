@@ -73,12 +73,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Chart from 'chart.js';
-import { tickCountsRef, userRef } from '@/docs';
+import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
+  Counts,
   RouteType,
   RouteTypeToString,
-  TickCounts,
   TickStyle,
   TickStyleToString,
   User,
@@ -95,11 +95,12 @@ enum Trim {
 export default class Stats extends Vue {
   ready = false;
 
-  tickCounts: TickCounts | null = null;
+  counts: Counts | null = null;
   userDoc: User | null = null;
 
   readonly dateHeaders = [
     { text: 'Period', value: 'period' },
+    { text: 'Pitches', value: 'pitches', align: 'right' },
     { text: 'Ticks', value: 'ticks', align: 'right' },
     { text: 'Days Out', value: 'daysOut', align: 'right' },
   ];
@@ -110,11 +111,11 @@ export default class Stats extends Vue {
 
   mounted() {
     Promise.all([
-      tickCountsRef()
+      countsRef()
         .get()
         .then(snap => {
           if (snap.exists) {
-            this.tickCounts = snap.data()! as TickCounts;
+            this.counts = snap.data()! as Counts;
             this.drawCharts();
           }
         }),
@@ -129,9 +130,9 @@ export default class Stats extends Vue {
   }
 
   drawCharts() {
-    if (!this.tickCounts) return;
+    if (!this.counts) return;
 
-    const sortedDates = Object.keys(this.tickCounts.dates).sort();
+    const sortedDates = Object.keys(this.counts.datePitches).sort();
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
 
     const monthLabels: string[] = [];
@@ -147,7 +148,7 @@ export default class Stats extends Vue {
       'month-chart',
       monthLabels,
       k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
-      this.tickCounts.dates,
+      this.counts.datePitches,
       Trim.NONE
     );
 
@@ -163,7 +164,7 @@ export default class Stats extends Vue {
       'year-chart',
       yearLabels,
       k => k.substring(0, 4),
-      this.tickCounts.dates,
+      this.counts.datePitches,
       Trim.NONE
     );
 
@@ -180,7 +181,7 @@ export default class Stats extends Vue {
       'day-of-week-chart',
       dayOfWeekLabels,
       k => dayOfWeekLabels[parseInt(k) - 1],
-      this.tickCounts.daysOfWeek,
+      this.counts.dayOfWeekTicks,
       Trim.NONE
     );
 
@@ -207,7 +208,7 @@ export default class Stats extends Vue {
         if (minor.length == 2 && !letter) label += 'a';
         return label;
       },
-      this.tickCounts.grades,
+      this.counts.gradeTicks,
       Trim.ZEROS_AT_ENDS
     );
 
@@ -220,7 +221,7 @@ export default class Stats extends Vue {
       'route-type-chart',
       routeTypeLabels,
       k => routeTypeLabels[parseInt(k)],
-      this.tickCounts.routeTypes,
+      this.counts.routeTypeTicks,
       Trim.ALL_ZEROS
     );
 
@@ -231,7 +232,7 @@ export default class Stats extends Vue {
       'tick-style-chart',
       tickStyleLabels,
       k => tickStyleLabels[parseInt(k)],
-      this.tickCounts.tickStyles,
+      this.counts.tickStyleTicks,
       Trim.ALL_ZEROS
     );
   }
@@ -281,7 +282,7 @@ export default class Stats extends Vue {
   }
 
   get dateItems() {
-    if (!this.tickCounts) return [];
+    if (!this.counts) return [];
 
     type DateFunc = (d: Date) => void;
     const getDate = (f: DateFunc): string => {
@@ -298,16 +299,18 @@ export default class Stats extends Vue {
       ['Last 5 years', getDate(d => d.setFullYear(d.getFullYear() - 5))],
       ['All time', '00000000'],
     ] as [string, string][]).map(([period, start]) => {
+      let pitches = 0;
       let ticks = 0;
       let daysOut = 0;
-      Object.keys(this.tickCounts!.dates)
+      Object.keys(this.counts!.dateTicks)
         .filter(date => date > start && date <= today)
         .forEach(date => {
-          const num = this.tickCounts!.dates[date];
-          ticks += num;
-          if (num) daysOut++;
+          const ts = this.counts!.dateTicks[date];
+          ticks += ts || 0;
+          if (ts) daysOut++;
+          pitches += this.counts!.datePitches[date] || 0;
         });
-      return { period, ticks, daysOut };
+      return { period, pitches, ticks, daysOut };
     });
   }
 
@@ -316,9 +319,9 @@ export default class Stats extends Vue {
   }
 
   get routeItems() {
-    if (!this.tickCounts) return [];
+    if (!this.counts) return [];
 
-    return Object.entries(this.tickCounts.topRoutes)
+    return Object.entries(this.counts.routeTicks)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5) // matches number of rows from dateItems()
       .map(([key, ticks]) => {

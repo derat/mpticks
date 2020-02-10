@@ -93,23 +93,23 @@ import app from '@/firebase';
 import {
   areaMapRef,
   areaRef,
+  countsRef,
   importsRef,
   userRef,
   routeRef,
-  tickCountsRef,
 } from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
   Area,
   AreaId,
   AreaMap,
+  Counts,
   importedRoutesBatchSize,
   importedTicksBatchSize,
   numTopRoutes,
   Route,
   RouteId,
   Tick,
-  TickCounts,
   TickId,
   User,
 } from '@/models';
@@ -427,30 +427,31 @@ export default class Import extends Vue {
     if (!routeTicks.size) return Promise.resolve();
 
     this.log('Updating stats...');
-    return tickCountsRef()
+    return countsRef()
       .get()
       .then(snap => {
-        const counts: TickCounts = {
-          dates: {},
-          daysOfWeek: {},
-          grades: {},
-          latLongs: {},
-          regions: {},
-          routePitches: {},
-          routeTypes: {},
-          tickPitches: {},
-          tickStyles: {},
-          topRoutes: {},
+        const counts: Counts = {
+          datePitches: {},
+          dateTicks: {},
+          dayOfWeekPitches: {},
+          dayOfWeekTicks: {},
+          gradeTicks: {},
+          latLongTicks: {},
+          regionTicks: {},
+          routeTicks: {},
+          routeTypeTicks: {},
+          tickStyleTicks: {},
         };
         if (snap.exists) Object.assign(counts, snap.data()!);
 
         const inc = (
           map: Record<string | number, number>,
-          key: string | number | undefined
+          key: string | number | undefined,
+          val: number | undefined = 1
         ) => {
           if (typeof key === 'undefined') return;
           // https://stackoverflow.com/a/13298258/6882947
-          map[key] = ++map[key] || 1;
+          map[key] = map[key] + val || val;
         };
 
         routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
@@ -459,27 +460,29 @@ export default class Import extends Vue {
 
           // Overwrite old per-route counts. These should only increase since we
           // never remove ticks.
-          counts.topRoutes[`${routeId}|${route.name}`] = Object.keys(
+          counts.routeTicks[`${routeId}|${route.name}`] = Object.keys(
             route.ticks
           ).length;
 
           const latLong = truncateLatLong(route.lat, route.long);
           const region = getRegion(route.location);
           ticks.forEach((tick: Tick, tickId: TickId) => {
-            const tickPitches =
+            const dayOfWeek = getDayOfWeek(parseDate(tick.date));
+            const pitches =
               typeof tick.pitches !== 'undefined'
                 ? tick.pitches
                 : route.pitches;
 
-            inc(counts.dates, tick.date);
-            inc(counts.daysOfWeek, getDayOfWeek(parseDate(tick.date)));
-            inc(counts.grades, route.grade);
-            inc(counts.latLongs, latLong);
-            inc(counts.regions, region);
-            inc(counts.routePitches, route.pitches);
-            inc(counts.routeTypes, route.type);
-            inc(counts.tickPitches, tickPitches);
-            inc(counts.tickStyles, tick.style);
+            inc(counts.datePitches, tick.date, pitches);
+            inc(counts.dateTicks, tick.date);
+            inc(counts.dayOfWeekPitches, dayOfWeek, pitches);
+            inc(counts.dayOfWeekTicks, dayOfWeek);
+            inc(counts.gradeTicks, route.grade);
+            inc(counts.latLongTicks, latLong);
+            inc(counts.regionTicks, region);
+            // |routeTicks| is updated above and below.
+            inc(counts.routeTypeTicks, route.type);
+            inc(counts.tickStyleTicks, tick.style);
           });
         });
 
@@ -487,13 +490,13 @@ export default class Import extends Vue {
         // needing to maintain counts for all routes since all routes with new
         // ticks were added with their updated counts in the above loop over
         // |routeTicks|.
-        counts.topRoutes = Object.fromEntries(
-          Object.entries(counts.topRoutes)
+        counts.routeTicks = Object.fromEntries(
+          Object.entries(counts.routeTicks)
             .sort((a, b) => b[1] - a[1])
             .slice(0, numTopRoutes)
         );
 
-        batch.set(tickCountsRef(), counts);
+        batch.set(countsRef(), counts);
       });
   }
 }

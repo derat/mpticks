@@ -128,25 +128,25 @@ area hierarchy and corresponds to the `AreaMap` interface:
 
 #### `stats` subcollection
 
-Aggregate tick counts are stored in a `tickCounts` document in the `stats`
-subcollection under each user document. The document corresponds to the
-`TickCounts` interface:
+Aggregate pitch and tick counts are stored in a `counts` document in the `stats`
+subcollection under each user document. The document corresponds to the `Counts`
+interface:
 
-*   `dates` - Map field keyed by date as `YYYYMMDD`.
-*   `daysOfWeek` - Map field keyed by [ISO 8601 day of week] where `1` is Monday
-    and `7` is Sunday.
-*   `grades` - Map field keyed by route grade, e.g. `'5.9'` or `'V3'`.
-*   `latLongs` - Map field keyed by comma-separated route latitude and longitude
-    rounded to one decimal place of precision, e.g. `'39.9,-105.0'`.
-*   `regions` - Map field keyed by route region (U.S. state/territory or
+*   `datePitches` - Map field keyed by date as `YYYYMMDD`.
+*   `dateTicks` - Like `datePitches` but counting ticks.
+*   `dayOfWeekPitches` - Map field keyed by [ISO 8601 day of week] where `1` is
+    Monday and `7` is Sunday.
+*   `dayOfWeekTicks` - Like `dayOfWeekPitches` but counting ticks.
+*   `gradeTicks` - Map field keyed by route grade, e.g. `'5.9'` or `'V3'`.
+*   `latLongTicks` - Map field keyed by comma-separated route latitude and
+    longitude rounded to one decimal place of precision, e.g. `'39.9,-105.0'`.
+*   `regionTicks` - Map field keyed by route region (U.S. state/territory or
     country).
-*   `routePitches` - Map field keyed by total pitches in route.
-*   `routeTypes` - Map field keyed by `RouteType` enum values.
-*   `tickPitches` - Map field keyed by climbed pitches.
-*   `tickStyles` - Map field keyed by `TickStyle` enum values.
-*   `topRoutes` - Map field keyed by pipe-separated Route ID and name, e.g.
+*   `routeTicks` - Map field keyed by pipe-separated Route ID and name, e.g.
     `'105924807|The Nose'`. Only a limited number of the most-climbed routes are
     present.
+*   `routeTypeTicks` - Map field keyed by `RouteType` enum values.
+*   `tickStyleTicks` - Map field keyed by `TickStyle` enum values.
 
 #### `imports` subcollection
 

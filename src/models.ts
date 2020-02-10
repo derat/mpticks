@@ -196,25 +196,25 @@ export interface User {
   numRoutes: number;
 }
 
-// The 'tickCounts' document in the 'stats' subcollection. Contains tick counts
-// keyed by various values.
+// The 'counts' document in the 'stats' subcollection. Contains tick and pitch
+// counts keyed by various values.
 //
 // Think long and hard before adding any new properties here, as existing
 // documents in Firestore won't include them.
-export interface TickCounts {
-  dates: Record<string, number>; // 'YYYYMMDD'
-  daysOfWeek: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
-  grades: Record<string, number>;
-  latLongs: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
-  regions: Record<string, number>; // 'California', 'China', etc.
-  routePitches: Record<number, number>;
-  routeTypes: Record<number, number>; // RouteType (TS doesn't allow enum keys)
-  tickPitches: Record<number, number>;
-  tickStyles: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
-  topRoutes: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
+export interface Counts {
+  datePitches: Record<string, number>; // 'YYYYMMDD'
+  dateTicks: Record<string, number>; // 'YYYYMMDD'
+  dayOfWeekPitches: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
+  dayOfWeekTicks: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
+  gradeTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
+  latLongTicks: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
+  regionTicks: Record<string, number>; // 'California', 'China', etc.
+  routeTicks: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
+  routeTypeTicks: Record<number, number>; // RouteType (TS doesn't allow enum keys)
+  tickStyleTicks: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
 }
 
-// Number of routes to store in TickCounts.
+// Number of entries to store in Counts.routeTicks.
 export const numTopRoutes = 20;
 
 // Documents in the 'imports' subcollection.

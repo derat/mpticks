@@ -32,10 +32,10 @@ export function areaMapRef() {
   return areaRef('map');
 }
 
-export function tickCountsRef() {
+export function countsRef() {
   return userRef()
     .collection('stats')
-    .doc('tickCounts');
+    .doc('counts');
 }
 
 export function importsRef(doc: string) {
