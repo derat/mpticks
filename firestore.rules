@@ -13,10 +13,13 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if authorized(request, uid);
     }
-    match /users/{uid}/routes/{route} {
+    match /users/{uid}/areas/{area} {
       allow read, write: if authorized(request, uid);
     }
-    match /users/{uid}/areas/{area} {
+    match /users/{uid}/imports/{name} {
+      allow read, write: if authorized(request, uid);
+    }
+    match /users/{uid}/routes/{route} {
       allow read, write: if authorized(request, uid);
     }
     match /users/{uid}/stats/{stat} {
