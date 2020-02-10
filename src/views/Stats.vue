@@ -42,6 +42,7 @@
           <canvas id="route-type-chart" class="small-chart" />
         </v-col>
         <v-col cols="6">
+          <div class="total-routes">Total routes: {{ numRoutes }}</div>
           <v-data-table
             :headers="routeHeaders"
             :items="routeItems"
