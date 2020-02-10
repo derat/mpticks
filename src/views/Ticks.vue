@@ -20,6 +20,7 @@
         <div>
           <span class="tick-date">{{ item.tickDate }}</span>
           <span class="tick-style">{{ item.tickStyle }}</span>
+          <span class="tick-pitches">{{ item.tickPitches }}</span>
         </div>
         <div class="tick-notes">{{ item.tickNotes }}</div>
       </div>
@@ -50,10 +51,6 @@ interface Item {
   readonly id: string; // default 'item-key' property for v-treeview
   readonly name: string;
   readonly icon: string;
-
-  readonly tickDate?: string;
-  readonly tickStyle?: string;
-  readonly tickNotes?: string;
 
   // v-treeview will call loadItem(), which calls loadChildren(), if the
   // |children| property contains an empty array. If it's undefined, the item
@@ -90,6 +87,9 @@ class TickItem implements Item {
   }
   get tickStyle(): string {
     return TickStyleToString(this.tick.style);
+  }
+  get tickPitches(): string {
+    return this.tick.pitches == 1 ? '1 pitch' : `${this.tick.pitches} pitches`;
   }
   get tickNotes(): string {
     return this.tick.notes || '';
@@ -211,6 +211,12 @@ export default class Ticks extends Vue {
   font-size: 11px;
   margin-left: 6px;
   padding: 2px 5px;
+  vertical-align: middle;
+}
+.tick-pitches {
+  font-size: 11px;
+  margin-left: 6px;
+  opacity: 0.8;
   vertical-align: middle;
 }
 .tick-notes {
