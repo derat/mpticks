@@ -102,7 +102,11 @@ describe('Ticks', () => {
       const month = tick.date.substring(4, 6);
       const day = tick.date.substring(6, 8);
       const style = TickStyleToString(tick.style);
-      return `${year}-${month}-${day} ${style} ${tick.notes}`;
+      return (
+        `${year}-${month}-${day} ${style} ` +
+        `${tick.pitches} pitch${tick.pitches == 1 ? '' : 'es'} ` +
+        tick.notes
+      );
     };
 
     // The top-level areas should be shown initially.
