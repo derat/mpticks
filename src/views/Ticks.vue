@@ -220,7 +220,7 @@ export default class Ticks extends Vue {
   vertical-align: middle;
 }
 .tick-notes {
-  white-space: normal;
+  white-space: pre-wrap;
   font-size: 12px;
 }
 </style>
