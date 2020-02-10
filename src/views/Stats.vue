@@ -149,6 +149,7 @@ export default class Stats extends Vue {
       monthLabels,
       k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
       this.counts.datePitches,
+      'Pitches',
       Trim.NONE
     );
 
@@ -165,6 +166,7 @@ export default class Stats extends Vue {
       yearLabels,
       k => k.substring(0, 4),
       this.counts.datePitches,
+      'Pitches',
       Trim.NONE
     );
 
@@ -181,7 +183,8 @@ export default class Stats extends Vue {
       'day-of-week-chart',
       dayOfWeekLabels,
       k => dayOfWeekLabels[parseInt(k) - 1],
-      this.counts.dayOfWeekTicks,
+      this.counts.dayOfWeekPitches,
+      'Pitches',
       Trim.NONE
     );
 
@@ -209,6 +212,7 @@ export default class Stats extends Vue {
         return label;
       },
       this.counts.gradeTicks,
+      'Ticks',
       Trim.ZEROS_AT_ENDS
     );
 
@@ -222,6 +226,7 @@ export default class Stats extends Vue {
       routeTypeLabels,
       k => routeTypeLabels[parseInt(k)],
       this.counts.routeTypeTicks,
+      'Ticks',
       Trim.ALL_ZEROS
     );
 
@@ -233,6 +238,7 @@ export default class Stats extends Vue {
       tickStyleLabels,
       k => tickStyleLabels[parseInt(k)],
       this.counts.tickStyleTicks,
+      'Ticks',
       Trim.ALL_ZEROS
     );
   }
@@ -242,6 +248,7 @@ export default class Stats extends Vue {
     labels: string[],
     labelFunc: (key: string) => string,
     counts: Record<string | number, number>,
+    unit: string,
     trim: Trim = Trim.NONE
   ) {
     const values: Record<string, number> = {};
@@ -269,7 +276,7 @@ export default class Stats extends Vue {
       type: 'bar',
       data: {
         labels,
-        datasets: [{ label: 'Ticks', data }],
+        datasets: [{ label: unit, data }],
       },
       options: {
         legend: { display: false },
