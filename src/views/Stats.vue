@@ -7,7 +7,7 @@
     <!-- Using v-show instead of v-if so the canvas will exist when we try to draw
        into it from mounted(). -->
     <div v-show="ready">
-      <v-row>
+      <v-row class="mx-1">
         <v-col cols="6">
           <v-data-table
             :headers="dateHeaders"
@@ -20,7 +20,27 @@
             hide-default-footer
           />
         </v-col>
+        <v-col cols="6">
+          <canvas id="year-chart" class="small-chart" />
+        </v-col>
+      </v-row>
 
+      <v-row>
+        <v-col class="ma-3">
+          <canvas id="month-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col class="ma-3">
+          <canvas id="day-of-week-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row class="mx-1">
+        <v-col cols="6">
+          <canvas id="route-type-chart" class="small-chart" />
+        </v-col>
         <v-col cols="6">
           <v-data-table
             :headers="routeHeaders"
@@ -37,22 +57,7 @@
 
       <v-row>
         <v-col class="ma-3">
-          <canvas id="month-chart" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="day-of-week-chart" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="ma-3">
           <canvas id="grade-chart" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col class="ma-3">
-          <canvas id="route-type-chart" />
         </v-col>
       </v-row>
       <v-row>
@@ -128,6 +133,7 @@ export default class Stats extends Vue {
 
     const sortedDates = Object.keys(this.tickCounts.dates).sort();
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
+
     const monthLabels: string[] = [];
     for (
       let date = parseDate(sortedDates[0]);
@@ -141,6 +147,22 @@ export default class Stats extends Vue {
       'month-chart',
       monthLabels,
       k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
+      this.tickCounts.dates,
+      Trim.NONE
+    );
+
+    const yearLabels: string[] = [];
+    for (
+      let date = parseDate(sortedDates[0]);
+      date.getFullYear() <= endDate.getFullYear();
+      date.setFullYear(date.getFullYear() + 1)
+    ) {
+      yearLabels.push(formatDate(date, '%Y'));
+    }
+    this.drawChart(
+      'year-chart',
+      yearLabels,
+      k => k.substring(0, 4),
       this.tickCounts.dates,
       Trim.NONE
     );
@@ -249,6 +271,7 @@ export default class Stats extends Vue {
         datasets: [{ label: 'Ticks', data }],
       },
       options: {
+        legend: { display: false },
         scales: {
           xAxes: [{ gridLines: { drawOnChartArea: false } }],
           yAxes: [{ ticks: { beginAtZero: true } }],
@@ -305,3 +328,9 @@ export default class Stats extends Vue {
   }
 }
 </script>
+
+<style scoped>
+.small-chart {
+  margin-top: 20px;
+}
+</style>
