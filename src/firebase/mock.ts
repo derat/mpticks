@@ -253,6 +253,11 @@ export const MockFirebase = new (class {
       : undefined;
   }
 
+  // Returns paths of all documents.
+  listDocs(): string[] {
+    return Object.keys(this._docs);
+  }
+
   // Updates portions of the document at |path|. This is used to implement
   // firebase.firestore.DocumentReference.update.
   _updateDoc(path: string, props: firebase.firestore.UpdateData) {
