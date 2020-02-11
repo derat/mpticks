@@ -5,28 +5,26 @@
 <template>
   <!-- TODO: Display a hint pointing the user at the import view if no ticks are
        present. -->
-  <v-treeview
-    dense
-    :items="items"
-    :load-children="loadItem"
-    open-on-click
-    v-if="ready"
-  >
-    <template v-slot:prepend="{ item }">
-      <v-icon class="tree-icon">{{ item.icon }} </v-icon>
-    </template>
-    <template v-slot:label="{ item }">
-      <div v-if="item.tickDate">
-        <div>
-          <span class="tick-date">{{ item.tickDate }}</span>
-          <span class="tick-style">{{ item.tickStyle }}</span>
-          <span class="tick-pitches">{{ item.tickPitches }}</span>
-        </div>
-        <div class="tick-notes">{{ item.tickNotes }}</div>
-      </div>
-      <span v-else>{{ item.name }}</span>
-    </template>
-  </v-treeview>
+  <v-row v-if="ready">
+    <v-col cols="12" lg="8">
+      <v-treeview dense :items="items" :load-children="loadItem" open-on-click>
+        <template v-slot:prepend="{ item }">
+          <v-icon class="tree-icon">{{ item.icon }} </v-icon>
+        </template>
+        <template v-slot:label="{ item }">
+          <div v-if="item.tickDate">
+            <div>
+              <span class="tick-date">{{ item.tickDate }}</span>
+              <span class="tick-style">{{ item.tickStyle }}</span>
+              <span class="tick-pitches">{{ item.tickPitches }}</span>
+            </div>
+            <div class="tick-notes">{{ item.tickNotes }}</div>
+          </div>
+          <span v-else>{{ item.name }}</span>
+        </template>
+      </v-treeview>
+    </v-col>
+  </v-row>
   <Spinner v-else />
 </template>
 

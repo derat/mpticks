@@ -5,7 +5,7 @@
 <template>
   <div class="mx-3">
     <v-row>
-      <v-col cols="12" md="8">
+      <v-col cols="12" lg="8">
         <p>
           Enter the email address that you use to log in to Mountain Project and
           your private API key displayed at the right side of
@@ -24,7 +24,7 @@
 
     <v-form v-model="valid" @submit.prevent>
       <v-row>
-        <v-col cols="12" md="6" class="py-0">
+        <v-col cols="12" lg="6" class="py-0">
           <v-text-field
             ref="emailField"
             label="Email address"
@@ -34,7 +34,7 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="12" md="6" class="py-0">
+        <v-col cols="12" lg="6" class="py-0">
           <v-text-field
             ref="keyField"
             label="API key"
@@ -44,7 +44,7 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="12" md="8">
+        <v-col cols="12" lg="6">
           <v-checkbox
             label="Remember email and key in browser"
             v-model="remember"
