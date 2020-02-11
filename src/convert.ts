@@ -63,7 +63,24 @@ export function createTick(apiTick: ApiTick): Tick {
     // The web UI forces this to be at least 1, so enforce the same here.
     pitches: apiTick.pitches > 0 ? apiTick.pitches : 1,
   };
-  if (apiTick.notes) tick.notes = apiTick.notes;
+
+  // The Mountain Project website garbles user-supplied notes:
+  // - Newlines get changed to '\r\n'.
+  // - Single quotes get changed to '&#39;'.
+  // - Double quotes get changed to '&#34;'.
+  // - Less-than symbols and everything after them get eaten (as a hacky XSS
+  //   mitigation?).
+  // - Ampersands and greater-than symbols are *not* changed.
+  //
+  // When displaying the tick, the website repairs the escaped quotes.
+  // The Android app doesn't seem to suffer from the same problems.
+  if (apiTick.notes) {
+    tick.notes = apiTick.notes
+      .replace(/\r\n/g, '\n')
+      .replace(/&#39;/g, "'")
+      .replace(/&#34;/g, '"');
+  }
+
   if (apiTick.userStars > 0) tick.stars = apiTick.userStars;
   if (apiTick.userRating) tick.grade = apiTick.userRating;
   return tick;

@@ -73,6 +73,19 @@ describe('createTick', () => {
     );
   });
 
+  it('fixes mangled characters in notes', () => {
+    const tickId = 3;
+    const routeId = 5;
+
+    const apiTick = testApiTick(tickId, routeId);
+    apiTick.notes = '&#39;\r\n&#34;\r\n<>&';
+
+    const tick = testTick(tickId, routeId);
+    tick.notes = '\'\n"\n<>&';
+
+    expect(createTick(apiTick)).toEqual(tick);
+  });
+
   it('sanitizes data', () => {
     expect(
       createTick({
