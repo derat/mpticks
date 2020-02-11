@@ -5,8 +5,11 @@
 <template>
   <!-- TODO: Display a hint pointing the user at the import view if no ticks are
        present. -->
-  <v-row v-if="ready">
-    <v-col cols="12" lg="8">
+  <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
+       to cancel out with padding. All of this seems to result in the page being
+       horizontally scrollable on mobile, so just zero everything out. -->
+  <v-row v-if="ready" class="ma-0">
+    <v-col cols="12" lg="8" class="pa-0">
       <v-treeview dense :items="items" :load-children="loadItem" open-on-click>
         <template v-slot:prepend="{ item }">
           <v-icon class="tree-icon">{{ item.icon }} </v-icon>
