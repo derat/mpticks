@@ -1,0 +1,76 @@
+<!-- Copyright 2020 Daniel Erat. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Mountain Project Tick Cleaner</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js" type="module"></script>
+  </head>
+  <body>
+    <h1 class="title">Mountain Project Tick Cleaner</h1>
+
+    <div id="screen-1">
+      <p class="disclaimer">
+        This extension is unaffiliated with Mountain Project.
+      </p>
+
+      <p>
+        This extension loads your ticks from
+        <a href="https://www.mountainproject.com/" target="_blank">
+          Mountain Project
+        </a>
+        and deletes all but the "best" tick for each route. "Best" is determined
+        by first comparing ticks' styles and then comparing their dates.
+      </p>
+
+      <p>
+        For example, if you led a route several times but fell (entering a style
+        of "Lead" and a lead style of "Fell/Hung") and later redpointed the
+        route ("Lead" and "Redpoint"), then the "Fell/Hung" ticks will be
+        deleted and the "Redpoint" tick preserved.
+      </p>
+
+      <p>
+        If you onsighted a route ("Lead" and "Onsight") and later repeated it
+        several times ("Lead" with an empty lead style), then the ticks with an
+        empty lead style will be deleted and the "Onsight" tick preserved.
+      </p>
+
+      <p>
+        When you click the "Load ticks" button below, this extension will use
+        the
+        <a href="https://www.mountainproject.com/data" target="_blank">
+          Mountain Project Data API
+        </a>
+        to load all of your ticks and then display them in this popup. You'll be
+        able to review the proposed changes before any ticks are deleted.
+      </p>
+
+      <!-- prettier-ignore -->
+      <p>
+        See <a href="https://github.com/derat/mpticks/tree/master/chrome"
+        target="_blank">this extension's GitHub page</a> for more information.
+      </p>
+
+      <button id="load-button">Load ticks</button>
+    </div>
+
+    <div id="screen-2" class="hidden">
+      <p>
+        The crossed-out ticks in the following list will be deleted if you click
+        the "Delete ticks" button at the bottom of the popup.
+      </p>
+      <div id="route-container"></div>
+      <button id="delete-button">Delete ticks</button>
+    </div>
+
+    <div id="screen-3" class="hidden">
+      <p>Deleted <span id="deleted-count"></span> tick(s)!</p>
+    </div>
+
+    <div id="error-message"></div>
+  </body>
+</html>

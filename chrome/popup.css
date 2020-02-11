@@ -1,0 +1,45 @@
+html {
+  width: 516px;
+}
+body {
+  font-family: Arial, Helvetica, sans;
+  font-size: 14px;
+  margin: 8px;
+  width: 500px;
+}
+
+.title {
+  background-color: #336799;
+  color: white;
+  font-size: 20px;
+  margin: -8px -8px 0 -8px;
+  padding: 4px 8px;
+}
+
+.disclaimer {
+  font-size: 12px;
+  font-style: italic;
+}
+
+.hidden {
+  display: none;
+}
+
+#route-container {
+  font-size: 12px;
+  margin: 8px 0 8px 16px;
+}
+.tick-list {
+  margin: 0;
+  padding-left: 24px;
+}
+.tick-list li.delete {
+  color: #888;
+  text-decoration: line-through;
+}
+
+#error-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 12px;
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Mountain Project Tick Cleaner",
+  "short_name": "MP Tick Cleaner",
+  "version": "0.1",
+  "description": "",
+  "manifest_version": 2,
+  "permissions": ["*://*.mountainproject.com/*"],
+  "browser_action": {
+    "default_popup": "popup.html"
+  }
+}
