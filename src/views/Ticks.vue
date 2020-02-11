@@ -15,7 +15,9 @@
           <div v-if="item.tickDate">
             <div>
               <span class="tick-date">{{ item.tickDate }}</span>
-              <span class="tick-style">{{ item.tickStyle }}</span>
+              <span class="tick-style" :class="item.tickStyleClass">{{
+                item.tickStyle
+              }}</span>
               <span class="tick-pitches">{{ item.tickPitches }}</span>
             </div>
             <div class="tick-notes">{{ item.tickNotes }}</div>
@@ -40,6 +42,7 @@ import {
   RouteSummary,
   TickId,
   Tick,
+  TickStyle,
   TickStyleToString,
 } from '@/models';
 import Spinner from '@/components/Spinner.vue';
@@ -85,6 +88,25 @@ class TickItem implements Item {
   }
   get tickStyle(): string {
     return TickStyleToString(this.tick.style);
+  }
+  get tickStyleClass() {
+    return {
+      clean:
+        [
+          TickStyle.SOLO,
+          TickStyle.LEAD,
+          TickStyle.LEAD_ONSIGHT,
+          TickStyle.LEAD_FLASH,
+          TickStyle.LEAD_REDPOINT,
+          TickStyle.LEAD_PINKPOINT,
+          TickStyle.SEND,
+          TickStyle.FLASH,
+        ].indexOf(this.tick.style) != -1,
+      fell:
+        [TickStyle.LEAD_FELL_HUNG, TickStyle.ATTEMPT].indexOf(
+          this.tick.style
+        ) != -1,
+    };
   }
   get tickPitches(): string {
     return this.tick.pitches == 1 ? '1 pitch' : `${this.tick.pitches} pitches`;
@@ -203,13 +225,21 @@ export default class Ticks extends Vue {
   opacity: 0.8;
 }
 .tick-style {
-  background-color: #eee;
-  border: solid 1px #ddd;
+  background-color: #c5cae9; /* indigo.lighten-4 */
+  border: solid 1px #9fa8da; /* indigo.lighten-3 */
   border-radius: 8px;
   font-size: 11px;
   margin-left: 6px;
   padding: 2px 5px;
   vertical-align: middle;
+}
+.tick-style.clean {
+  background-color: #c8e6c9; /* green.lighten-4 */
+  border-color: #a5d6a7; /* green.lighten-3 */
+}
+.tick-style.fell {
+  background-color: #ffcdd2; /* red.lighten-4 */
+  border-color: #ef9a9a; /* red.lighten-3 */
 }
 .tick-pitches {
   font-size: 11px;

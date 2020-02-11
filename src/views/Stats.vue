@@ -334,7 +334,13 @@ export default class Stats extends Vue {
       type: 'bar',
       data: {
         labels,
-        datasets: [{ label: options.units, data }],
+        datasets: [
+          {
+            label: options.units,
+            data,
+            backgroundColor: '#7986CB', // indigo.lighten-2
+          },
+        ],
       },
       options: {
         aspectRatio: options.aspectRatio || 2,
