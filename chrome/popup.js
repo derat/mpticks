@@ -26,7 +26,7 @@ function updateTickList(routeTicks, tickIdsToDelete) {
   while (cont.firstChild) cont.removeChild(cont.firstChild);
 
   Object.keys(routeTicks)
-    .sort((a, b) => parseInt(a) - parseInt(b))
+    .sort((a, b) => parseInt(a) - parseInt(b)) // ascending route ID
     .forEach(routeId => {
       const routeDiv = document.createElement('div');
       routeDiv.appendChild(document.createTextNode(`Route ${routeId}`));
@@ -41,7 +41,7 @@ function updateTickList(routeTicks, tickIdsToDelete) {
         .sort((a, b) => a.date.localeCompare(b.date))
         .forEach(tick => {
           const tickItem = document.createElement('li');
-          if (tickIdsToDelete.has(parseInt(tick.tickId))) {
+          if (tickIdsToDelete.has(tick.tickId)) {
             tickItem.classList.add('delete');
           }
           tickItem.appendChild(
@@ -82,7 +82,7 @@ function onLoadClicked() {
       const routeTicks = groupAndSortTicks(ticks);
       Object.values(routeTicks).forEach(ticks => {
         // Preserve the first/best tick from each route's list.
-        ticks.slice(1).forEach(t => tickIdsToDelete.add(parseInt(t.tickId)));
+        ticks.slice(1).forEach(t => tickIdsToDelete.add(t.tickId));
       });
 
       updateTickList(routeTicks, tickIdsToDelete);
