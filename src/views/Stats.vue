@@ -8,7 +8,7 @@
          draw into it from mounted(). -->
     <div v-show="ready">
       <v-row class="mx-1">
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
             :headers="dateHeaders"
             :items="dateItems"
@@ -20,28 +20,28 @@
             hide-default-footer
           />
         </v-col>
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <canvas id="year-pitches-chart" />
         </v-col>
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="12" lg="8">
+        <v-col cols="12" :lg="lgFullCols">
           <canvas id="year-month-pitches-chart" />
         </v-col>
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <canvas id="month-pitches-chart" />
         </v-col>
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <canvas id="day-of-week-pitches-chart" />
         </v-col>
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
             :headers="routeTypeHeaders"
             :items="routeTypeItems"
@@ -53,7 +53,7 @@
             hide-default-footer
           />
         </v-col>
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
             :headers="topRouteHeaders"
             :items="topRouteItems"
@@ -71,16 +71,16 @@
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="12" lg="8">
+        <v-col cols="12" :lg="lgFullCols">
           <canvas id="grade-ticks-chart" />
         </v-col>
       </v-row>
 
       <v-row class="mx-1">
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <canvas id="pitches-ticks-chart" />
         </v-col>
-        <v-col cols="12" sm="6" lg="4">
+        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <canvas id="tick-style-ticks-chart" />
         </v-col>
       </v-row>
@@ -123,6 +123,14 @@ interface ChartOptions {
 
 @Component({ components: { Spinner } })
 export default class Stats extends Vue {
+  // Columns for half-width charts at the 'sm' and 'lg' breakpoints.
+  readonly smHalfCols = 6;
+  readonly lgHalfCols = 4;
+  // Columns for full-width charts at the 'lg' breakpoint.
+  readonly lgFullCols = 8;
+  // Aspect ratio for full-width charts at the 'sm' breakpoint.
+  readonly smAspectRatio = 3;
+
   ready = false;
 
   counts: Counts | null = null;
@@ -144,6 +152,8 @@ export default class Stats extends Vue {
     { text: 'Ticks', value: 'ticks', align: 'right' },
   ];
 
+  charts: Chart[] = [];
+
   mounted() {
     Promise.all([
       countsRef()
@@ -151,7 +161,7 @@ export default class Stats extends Vue {
         .then(snap => {
           if (snap.exists) {
             this.counts = snap.data()! as Counts;
-            this.drawCharts();
+            this.createCharts();
           }
         }),
       userRef()
@@ -164,10 +174,17 @@ export default class Stats extends Vue {
     });
   }
 
-  drawCharts() {
+  beforeDestroy() {
+    // Not sure if this is necessary, but I'm doing it to be on the safe side.
+    this.charts.forEach(c => c.destroy());
+  }
+
+  createCharts() {
     if (!this.counts) return;
 
-    const isPhone = this.$vuetify.breakpoint.xsOnly;
+    const fullAspectRatio = this.$vuetify.breakpoint.smAndUp
+      ? this.smAspectRatio
+      : undefined;
 
     const sortedDates = Object.keys(this.counts.datePitches).sort();
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
@@ -180,7 +197,7 @@ export default class Stats extends Vue {
     ) {
       yearLabels.push(formatDate(date, '%Y'));
     }
-    this.drawChart({
+    this.addChart({
       id: 'year-pitches-chart',
       title: 'Pitches by Year',
       labels: yearLabels,
@@ -199,14 +216,14 @@ export default class Stats extends Vue {
     ) {
       yearMonthLabels.push(formatDate(date, '%Y-%m'));
     }
-    this.drawChart({
+    this.addChart({
       id: 'year-month-pitches-chart',
       title: 'Pitches by Year and Month',
       labels: yearMonthLabels,
       labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
       counts: this.counts.datePitches,
       units: 'Pitches',
-      aspectRatio: isPhone ? undefined : 3,
+      aspectRatio: fullAspectRatio,
       color: colors.blueGrey.base,
     });
 
@@ -224,7 +241,7 @@ export default class Stats extends Vue {
       'Nov',
       'Dec',
     ];
-    this.drawChart({
+    this.addChart({
       id: 'month-pitches-chart',
       title: 'Pitches by Month',
       labels: monthLabels,
@@ -234,7 +251,7 @@ export default class Stats extends Vue {
     });
 
     const dayOfWeekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    this.drawChart({
+    this.addChart({
       id: 'day-of-week-pitches-chart',
       title: 'Pitches by Day of Week',
       labels: dayOfWeekLabels,
@@ -254,7 +271,7 @@ export default class Stats extends Vue {
         });
       }
     }
-    this.drawChart({
+    this.addChart({
       id: 'grade-ticks-chart',
       title: 'Ticks by Grade',
       labels: gradeLabels,
@@ -271,14 +288,14 @@ export default class Stats extends Vue {
       counts: this.counts.gradeTicks,
       units: 'Ticks',
       trim: Trim.ZEROS_AT_ENDS,
-      aspectRatio: isPhone ? undefined : 3,
+      aspectRatio: fullAspectRatio,
       color: colors.red.lighten2,
     });
 
     const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
       (a, b) => parseInt(a) - parseInt(b)
     );
-    this.drawChart({
+    this.addChart({
       id: 'pitches-ticks-chart',
       title: 'Ticks by Pitches',
       labels: pitchesLabels,
@@ -303,7 +320,7 @@ export default class Stats extends Vue {
       TickStyle.FLASH,
       TickStyle.ATTEMPT,
     ].map(v => TickStyleToString(v));
-    this.drawChart({
+    this.addChart({
       id: 'tick-style-ticks-chart',
       title: 'Ticks by Style',
       labels: tickStyleLabels,
@@ -315,7 +332,7 @@ export default class Stats extends Vue {
     });
   }
 
-  drawChart(options: ChartOptions) {
+  addChart(options: ChartOptions) {
     const values: Record<string, number> = {};
     const labels = [...options.labels];
     options.labels.forEach(label => (values[label] = 0));
@@ -338,31 +355,33 @@ export default class Stats extends Vue {
     const data: number[] = labels.map(l => values[l]);
 
     const canvas = document.getElementById(options.id) as HTMLCanvasElement;
-    new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: options.units,
-            data,
-            backgroundColor: options.color || colors.indigo.lighten2,
+    this.charts.push(
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: options.units,
+              data,
+              backgroundColor: options.color || colors.indigo.lighten2,
+            },
+          ],
+        },
+        options: {
+          aspectRatio: options.aspectRatio || 2,
+          legend: { display: false },
+          title: {
+            display: true,
+            text: options.title,
           },
-        ],
-      },
-      options: {
-        aspectRatio: options.aspectRatio || 2,
-        legend: { display: false },
-        title: {
-          display: true,
-          text: options.title,
+          scales: {
+            xAxes: [{ gridLines: { drawOnChartArea: false } }],
+            yAxes: [{ ticks: { beginAtZero: true, maxTicksLimit: 8 } }],
+          },
         },
-        scales: {
-          xAxes: [{ gridLines: { drawOnChartArea: false } }],
-          yAxes: [{ ticks: { beginAtZero: true, maxTicksLimit: 8 } }],
-        },
-      },
-    });
+      })
+    );
   }
 
   get dateItems() {
