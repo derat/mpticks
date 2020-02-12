@@ -38,8 +38,8 @@ export function countsRef() {
     .doc('counts');
 }
 
-export function importsRef(doc: string) {
-  return userRef()
-    .collection('imports')
-    .doc(doc);
+// Note that this returns a reference to the imports collection rather than an
+// individual doc.
+export function importsRef() {
+  return userRef().collection('imports');
 }

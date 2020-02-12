@@ -107,6 +107,12 @@ export default class App extends Vue {
         icon: 'import_export',
         to: 'import',
       },
+      {
+        type: NavItemType.ITEM,
+        text: 'Export',
+        icon: 'cloud_download',
+        to: 'export',
+      },
       { type: NavItemType.ITEM, text: 'About', icon: 'info', to: 'about' },
       { type: NavItemType.DIVIDER },
       {

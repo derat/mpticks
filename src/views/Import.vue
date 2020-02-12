@@ -240,7 +240,7 @@ export default class Import extends Vue {
 
           // Save the original data from the API "just in case".
           for (let i = 0; i * importedTicksBatchSize < apiTicks.length; i++) {
-            batch.set(importsRef(`${this.importStartTime}.ticks.${i}`), {
+            batch.set(importsRef().doc(`${this.importStartTime}.ticks.${i}`), {
               ticks: apiTicks.slice(
                 i * importedTicksBatchSize,
                 (i + 1) * importedTicksBatchSize
@@ -291,7 +291,7 @@ export default class Import extends Vue {
 
         // Save the original data from Mountain Project.
         for (let i = 0; i * importedRoutesBatchSize < apiRoutes.length; i++) {
-          batch.set(importsRef(`${this.importStartTime}.routes.${i}`), {
+          batch.set(importsRef().doc(`${this.importStartTime}.routes.${i}`), {
             routes: apiRoutes.slice(
               i * importedRoutesBatchSize,
               (i + 1) * importedRoutesBatchSize

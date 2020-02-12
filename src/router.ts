@@ -6,6 +6,7 @@ import VueRouter from 'vue-router';
 import firebase from '@/firebase';
 
 import About from '@/views/About.vue';
+import Export from '@/views/Export.vue';
 import Import from '@/views/Import.vue';
 import Login from '@/views/Login.vue';
 import Stats from '@/views/Stats.vue';
@@ -41,6 +42,12 @@ export const routes = [
     path: '/import',
     component: Import,
     meta: { title: 'Import', when: When.LOGGED_IN },
+  },
+  {
+    name: 'export',
+    path: '/export',
+    component: Export,
+    meta: { title: 'Export', when: When.LOGGED_IN },
   },
   {
     name: 'about',
