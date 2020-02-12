@@ -73,17 +73,20 @@ export default class Export extends Vue {
         const ticks: ApiTick[] = [];
         snapshot.docs.map(doc => {
           if (doc.id.indexOf('.routes.') != -1) {
-            routes.push(...(doc.data() as ImportedRoutes).routes);
+            routes.push(...((doc.data() as ImportedRoutes).routes || []));
           } else if (doc.id.indexOf('.ticks.') != -1) {
-            ticks.push(...(doc.data() as ImportedTicks).ticks);
+            ticks.push(...((doc.data() as ImportedTicks).ticks || []));
           } else {
             console.log(`Skipping unknown document ${doc.id}`);
           }
         });
-        // TODO: Skip empty arrays.
 
-        this.download('ticks.json', ticks);
-        this.download('routes.json', routes);
+        if (ticks.length) this.download('ticks.json', ticks);
+        if (routes.length) this.download('routes.json', routes);
+        if (!ticks.length && !routes.length) {
+          // TODO: Consider displaying a message onscreen.
+          console.log('No ticks or routes found');
+        }
       })
       .finally(() => {
         this.exporting = false;
