@@ -8,7 +8,7 @@
       <v-col cols="12" lg="8">
         <p>
           Enter the email address that you use to log in to Mountain Project and
-          your private API key displayed at the right side of
+          your private API key displayed at the right side or bottom of
           <a target="_blank" href="https://www.mountainproject.com/data"
             >this page</a
           >.
