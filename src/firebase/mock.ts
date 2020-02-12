@@ -54,9 +54,14 @@ function pathID(path: string) {
 
 // Stub implementation of firebase.firestore.DocumentSnapshot.
 class MockDocumentSnapshot {
+  _id: string;
   _data: DocData | undefined;
-  constructor(data: DocData | undefined) {
+  constructor(id: string, data: DocData | undefined) {
+    this._id = id;
     this._data = data;
+  }
+  get id() {
+    return this._id;
   }
   data() {
     return this._data;
@@ -68,6 +73,17 @@ class MockDocumentSnapshot {
   }
   get exists() {
     return this._data !== undefined;
+  }
+}
+
+// Stub implementation of firebase.firestore.QuerySnapshot.
+class MockQuerySnapshot {
+  _docs: MockDocumentSnapshot[];
+  constructor(docs: MockDocumentSnapshot[]) {
+    this._docs = docs;
+  }
+  get docs() {
+    return this._docs;
   }
 }
 
@@ -89,7 +105,7 @@ class MockDocumentReference {
   }
   get() {
     return Promise.resolve(
-      new MockDocumentSnapshot(MockFirebase.getDoc(this.path))
+      new MockDocumentSnapshot(this.id, MockFirebase.getDoc(this.path))
     );
   }
   set(data: DocData, options?: firebase.firestore.SetOptions) {
@@ -120,6 +136,24 @@ class MockCollectionReference {
   doc(path: string) {
     if (path === undefined) path = `${autogenPrefix}${nextAutogenNum++}`;
     return new MockDocumentReference(`${this.path}/${canonicalizePath(path)}`);
+  }
+  get() {
+    return Promise.resolve(
+      new MockQuerySnapshot(
+        MockFirebase.listDocs()
+          .filter(
+            path =>
+              // Document is within this collection.
+              path.startsWith(this.path + '/') &&
+              // Document is not within a subcollection.
+              path.slice(this.path.length + 1).indexOf('/') == -1
+          )
+          .map(
+            path =>
+              new MockDocumentSnapshot(pathID(path), MockFirebase.getDoc(path))
+          )
+      )
+    );
   }
 }
 
@@ -255,7 +289,7 @@ export const MockFirebase = new (class {
 
   // Returns paths of all documents.
   listDocs(): string[] {
-    return Object.keys(this._docs);
+    return Object.keys(this._docs).sort();
   }
 
   // Updates portions of the document at |path|. This is used to implement
