@@ -27,6 +27,9 @@
           </v-list-item>
         </template>
       </v-list>
+      <template v-slot:append>
+        <div class="build mb-2 ml-2">{{ `Build ${buildInfo}` }}</div>
+      </template>
     </v-navigation-drawer>
 
     <v-app-bar color="primary" app>
@@ -131,5 +134,19 @@ export default class App extends Vue {
         this.$router.replace('login');
       });
   }
+
+  get buildInfo(): string {
+    const timestamp = document.documentElement.dataset.buildTime || '';
+    const commit = document.documentElement.dataset.buildCommit || '';
+    return `${timestamp}-${commit.slice(0, 8)}`;
+  }
 }
 </script>
+
+<style scoped>
+.build {
+  color: #aaa;
+  font-size: 11px;
+  padding-left: 2px;
+}
+</style>

@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- Make webpack inject build info so we can access it later:
+     https://stackoverflow.com/a/58839441/6882947 -->
+<html
+  lang="en"
+  data-build-time="<%= new Date().toISOString() %>"
+  data-build-commit="<%- VUE_APP_GIT_COMMIT %>"
+>
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
