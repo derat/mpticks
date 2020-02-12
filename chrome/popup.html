@@ -12,11 +12,11 @@
   <body>
     <h1 class="title">Mountain Project Tick Cleaner</h1>
 
-    <div id="screen-1">
-      <p class="disclaimer">
-        This extension is unaffiliated with Mountain Project.
-      </p>
+    <p class="disclaimer">
+      This extension is unaffiliated with Mountain Project.
+    </p>
 
+    <div id="screen-1">
       <p>
         This extension loads your ticks from
         <a href="https://www.mountainproject.com/" target="_blank">
@@ -60,10 +60,16 @@
 
     <div id="screen-2" class="hidden">
       <p>
-        The crossed-out ticks in the following list will be deleted if you click
-        the "Delete ticks" button at the bottom of the popup.
+        The crossed-out ticks in the following list will be permanently deleted
+        if you click the "Delete ticks" button at the bottom of the popup.
       </p>
       <div id="route-container"></div>
+      <p class="delete-warning">
+        There's no way to undelete ticks, so make sure you've backed them up
+        somewhere before you click this button. You can import ticks into
+        <a href="https://mpticks.web.app/" target="_blank">mpticks</a>, or
+        export them in CSV format from your Ticks page on Mountain Project.
+      </p>
       <button id="delete-button">Delete ticks</button>
     </div>
 

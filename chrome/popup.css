@@ -9,8 +9,8 @@ body {
 }
 
 .title {
-  background-color: #336799;
-  color: white;
+  background-color: #eee;
+  border-bottom: 1px solid #ddd;
   font-size: 20px;
   margin: -8px -8px 0 -8px;
   padding: 4px 8px;
@@ -36,6 +36,9 @@ body {
 .tick-list li.delete {
   color: #888;
   text-decoration: line-through;
+}
+.delete-warning {
+  font-weight: bold;
 }
 
 #error-message {

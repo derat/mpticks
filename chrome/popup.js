@@ -15,21 +15,19 @@ import { groupAndSortTicks } from './ticks.js';
 const useFakeApi = true;
 
 // Contains numeric tick IDs that should be deleted.
-let tickIdsToDelete = [];
+const tickIdsToDelete = new Set();
 
 // Updates the 'route-container' element to list the routes and ticks in
-// |routeTicks|, an object mapping from route ID to array of ticks in
-// best-to-worst order. All but the top tick for each route will be displayed in
-// a crossed-out state.
-function updateTickList(routeTicks) {
+// |routeTicks|, an object mapping from route ID to array of ticks. Ticks with
+// IDs in |tickIdsToDelete|, a Set of numbers, will be displayed in a
+// crossed-out state.
+function updateTickList(routeTicks, tickIdsToDelete) {
   const cont = document.getElementById('route-container');
   while (cont.firstChild) cont.removeChild(cont.firstChild);
 
   Object.keys(routeTicks)
     .sort((a, b) => parseInt(a) - parseInt(b))
     .forEach(routeId => {
-      const bestTickId = routeTicks[routeId][0].tickId;
-
       const routeDiv = document.createElement('div');
       routeDiv.appendChild(document.createTextNode(`Route ${routeId}`));
       routeDiv.classList.add('route');
@@ -43,7 +41,9 @@ function updateTickList(routeTicks) {
         .sort((a, b) => a.date.localeCompare(b.date))
         .forEach(tick => {
           const tickItem = document.createElement('li');
-          if (tick.tickId != bestTickId) tickItem.classList.add('delete');
+          if (tickIdsToDelete.has(parseInt(tick.tickId))) {
+            tickItem.classList.add('delete');
+          }
           tickItem.appendChild(
             document.createTextNode(
               `Tick ${tick.tickId}: ${tick.date} ${tick.style} ${tick.leadStyle}`
@@ -81,12 +81,11 @@ function onLoadClicked() {
     .then(ticks => {
       const routeTicks = groupAndSortTicks(ticks);
       Object.values(routeTicks).forEach(ticks => {
-        ticks
-          .slice(1) // preserve the best tick
-          .forEach(tick => tickIdsToDelete.push(parseInt(tick.tickId)));
+        // Preserve the first/best tick from each route's list.
+        ticks.slice(1).forEach(t => tickIdsToDelete.add(parseInt(t.tickId)));
       });
 
-      updateTickList(routeTicks);
+      updateTickList(routeTicks, tickIdsToDelete);
       document.getElementById('screen-1').classList.add('hidden');
       document.getElementById('screen-2').classList.remove('hidden');
     })
@@ -99,15 +98,15 @@ function onLoadClicked() {
 
 // Handles the 'Delete ticks' button being clicked.
 function onDeleteClicked() {
+  // Save the count first since |tickIdsToDelete| will get mutated.
+  const deleteCount = tickIdsToDelete.size;
+
   const button = document.getElementById('delete-button');
-  button.innerText = `Deleting ${tickIdsToDelete.length} ticks...`;
+  button.innerText = `Deleting ${deleteCount} ticks...`;
   button.disabled = 'disabled';
   hideError();
 
-  // Save the count first since |tickIdsToDelete| will get mutated.
-  const deleteCount = tickIdsToDelete.length;
-
-  (useFakeApi ? fakeDeleteTicks(tickIdsToDelete) : deleteTicks(tickIdsToDelete))
+  (useFakeApi ? fakeDeleteTicks : deleteTicks)(tickIdsToDelete)
     .then(() => {
       document.getElementById('screen-2').classList.add('hidden');
       document.getElementById('screen-3').classList.remove('hidden');

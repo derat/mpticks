@@ -4,17 +4,46 @@
 
 // Fetches |url| and returns a promise for the string response body.
 function getUrl(url) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const xhr = new XMLHttpRequest();
     xhr.onload = () => {
       if (xhr.status != 200) {
-        reject(`Failed to load ${url}: ${xhr.status} ${xhr.statusText}`);
-        return;
+        throw new Error(
+          `Failed to load ${url}: ${xhr.status} ${xhr.statusText}`
+        );
       }
       resolve(xhr.responseText);
     };
     xhr.open('GET', url);
     xhr.send();
+  });
+}
+
+// Delay between deleting ticks.
+const deleteDelayMs = 10;
+
+// Helper function that deletes the ticks in |tickIds| (a Set of numbers) one at
+// a time in an arbitrary order. |deleteFunc| should take a number tick ID and
+// return a promise that is resolved once the tick is deleted. Returns a void
+// promise that is resolved when all ticks are deleted.
+function recursivelyDeleteTicks(tickIds, deleteFunc) {
+  if (!tickIds.size) return Promise.resolve();
+
+  const id = tickIds.values().next().value;
+  console.log(`Deleting tick ${id}`);
+
+  return new Promise(resolve => {
+    deleteFunc(id).then(() => {
+      tickIds.delete(id);
+      if (!tickIds.size) {
+        resolve();
+        return;
+      }
+      window.setTimeout(
+        () => resolve(recursivelyDeleteTicks(tickIds, deleteFunc)),
+        deleteDelayMs
+      );
+    });
   });
 }
 
@@ -45,17 +74,12 @@ export function getTicks(email, key, ticks = []) {
   });
 }
 
-// Deletes the ticks in |tickIds| (an array of numbers) one at a time.
+// Deletes the ticks in |tickIds| (a Set of numbers) and returns a void promise
+// that is resolved once all ticks are deleted.
 export function deleteTicks(tickIds) {
-  if (!tickIds.length) return Promise.resolve();
-  const id = tickIds[0];
-  console.log(`Deleting tick ${id}`);
-  return getUrl(
-    'https://www.mountainproject.com/ajax/delete-tick/' + id.toString()
-  ).then(() => {
-    tickIds.shift();
-    return deleteTicks(tickIds);
-  });
+  return recursivelyDeleteTicks(tickIds, tickId =>
+    getUrl('https://www.mountainproject.com/ajax/delete-tick/' + id.toString())
+  );
 }
 
 // Fake version of getTicks() that returns a promise that's resolved with an
@@ -64,7 +88,7 @@ export function fakeGetTicks() {
   const numTicks = 120;
   const numRoutes = 17;
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const ticks = [];
     for (let i = 1; i <= numTicks; i++) {
       ticks.push({
@@ -79,11 +103,7 @@ export function fakeGetTicks() {
   });
 }
 
-// Fake version of deleteTicks() that returns a promise that's resolved after a
-// short delay.
+// Fake version of deleteTicks() that doesn't delete anything.
 export function fakeDeleteTicks(tickIds) {
-  return new Promise((resolve, reject) => {
-    console.log('Would delete', tickIds);
-    window.setTimeout(() => resolve(), 500);
-  });
+  return recursivelyDeleteTicks(tickIds, tickId => Promise.resolve());
 }
