@@ -4,7 +4,16 @@
 
 <template>
   <div class="login-wrapper">
-    <div id="firebaseui-auth-container" v-show="showUI" />
+    <!-- This uses v-show rather than v-if so that the FirebaseUI containing
+         will be initially available. -->
+    <div v-show="showUI">
+      <v-row class="mx-1">
+        <v-col cols="12" lg="8">
+          <div id="firebaseui-auth-container" />
+          <AboutText short class="mt-8" />
+        </v-col>
+      </v-row>
+    </div>
     <Spinner v-if="!showUI" />
   </div>
 </template>
@@ -17,9 +26,10 @@ import 'firebaseui/dist/firebaseui.css';
 
 import { Component, Vue } from 'vue-property-decorator';
 
+import AboutText from '@/components/AboutText.vue';
 import Spinner from '@/components/Spinner.vue';
 
-@Component({ components: { Spinner } })
+@Component({ components: { AboutText, Spinner } })
 export default class Login extends Vue {
   // True when an OAuth-based flow has redirected back to this view after
   // getting user confirmation.

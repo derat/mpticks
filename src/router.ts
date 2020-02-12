@@ -5,6 +5,7 @@
 import VueRouter from 'vue-router';
 import firebase from '@/firebase';
 
+import About from '@/views/About.vue';
 import Import from '@/views/Import.vue';
 import Login from '@/views/Login.vue';
 import Stats from '@/views/Stats.vue';
@@ -21,7 +22,7 @@ export const routes = [
     name: 'login',
     path: '/login',
     component: Login,
-    meta: { title: 'Log in', when: When.LOGGED_OUT },
+    meta: { title: 'mpticks', when: When.LOGGED_OUT },
   },
   {
     name: 'ticks',
@@ -40,6 +41,12 @@ export const routes = [
     path: '/import',
     component: Import,
     meta: { title: 'Import', when: When.LOGGED_IN },
+  },
+  {
+    name: 'about',
+    path: '/about',
+    component: About,
+    meta: { title: 'About', when: When.LOGGED_IN },
   },
   {
     path: '*',

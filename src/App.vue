@@ -68,6 +68,7 @@ export default class App extends Vue {
       { title: 'Ticks', icon: 'check', to: 'ticks' },
       { title: 'Stats', icon: 'assessment', to: 'stats' },
       { title: 'Import', icon: 'import_export', to: 'import' },
+      { title: 'About', icon: 'info', to: 'about' },
       {
         title: 'Log out',
         icon: 'exit_to_app',
