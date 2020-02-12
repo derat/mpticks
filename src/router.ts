@@ -63,7 +63,6 @@ router.beforeEach((to, from, next) => {
   if (when == When.LOGGED_IN && !loggedIn) {
     next('login');
   } else if (when == When.LOGGED_OUT && loggedIn) {
-    // TODO: Should probably go to import page if they don't have any ticks yet.
     next('ticks');
   } else {
     next();

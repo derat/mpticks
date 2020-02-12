@@ -8,7 +8,7 @@
   <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
        to cancel out with padding. All of this seems to result in the page being
        horizontally scrollable on mobile, so just zero everything out. -->
-  <v-row v-if="ready" class="ma-0">
+  <v-row v-if="ready && haveTicks" class="ma-0">
     <v-col cols="12" lg="8" class="pa-0">
       <v-treeview dense :items="items" :load-children="loadItem" open-on-click>
         <template v-slot:prepend="{ item }">
@@ -30,6 +30,7 @@
       </v-treeview>
     </v-col>
   </v-row>
+  <NoTicks v-else-if="ready && !haveTicks" class="ma-3" />
   <Spinner v-else />
 </template>
 
@@ -48,6 +49,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
+import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
 // Interface for items in the v-treeview.
@@ -195,11 +197,12 @@ class AreaItem implements Item {
   }
 }
 
-@Component({ components: { Spinner } })
+@Component({ components: { NoTicks, Spinner } })
 export default class Ticks extends Vue {
   items: Item[] = [];
 
   ready = false;
+  haveTicks = false;
 
   mounted() {
     areaMapRef()
@@ -207,6 +210,7 @@ export default class Ticks extends Vue {
       .then(snap => {
         this.ready = true;
         if (!snap.exists) return;
+        this.haveTicks = true;
         const map = snap.data() as AreaMap;
         this.items = Object.entries(map.children || {})
           .sort()

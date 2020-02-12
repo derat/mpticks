@@ -25,9 +25,11 @@ import * as firebaseui from 'firebaseui';
 import 'firebaseui/dist/firebaseui.css';
 
 import { Component, Vue } from 'vue-property-decorator';
-
 import AboutText from '@/components/AboutText.vue';
 import Spinner from '@/components/Spinner.vue';
+
+import { userRef } from '@/docs';
+import { User } from '@/models';
 
 @Component({ components: { AboutText, Spinner } })
 export default class Login extends Vue {
@@ -35,9 +37,13 @@ export default class Login extends Vue {
   // getting user confirmation.
   pendingRedirect = false;
 
+  // True when signin is complete and the process is finishing (i.e. checking
+  // user doc in Firestore).
+  completingLogin = false;
+
   get showUI() {
     // Hide the login elements when we don't need anything else from the user.
-    return !this.pendingRedirect;
+    return !this.pendingRedirect && !this.completingLogin;
   }
 
   mounted() {
@@ -59,7 +65,14 @@ export default class Login extends Vue {
       ],
       callbacks: {
         signInSuccessWithAuthResult: () => {
-          this.$router.replace('ticks');
+          this.completingLogin = true;
+
+          userRef()
+            .get()
+            .then(snap => {
+              const hasTicks = snap.exists && !!(snap.data() as User).maxTickId;
+              this.$router.replace(hasTicks ? 'ticks' : 'import');
+            });
 
           // Don't redirect automatically; we handle that above.
           return false;

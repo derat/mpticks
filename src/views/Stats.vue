@@ -6,7 +6,7 @@
   <div>
     <!-- Using v-show instead of v-if so the canvas will exist when we try to
          draw into it from mounted(). -->
-    <div v-show="ready">
+    <div v-show="ready && haveStats">
       <v-row class="mx-1">
         <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
@@ -85,7 +85,8 @@
         </v-col>
       </v-row>
     </div>
-    <Spinner v-if="!ready" />
+    <NoTicks v-if="ready && !haveStats" class="ma-3" />
+    <Spinner v-else-if="!ready" />
   </div>
 </template>
 
@@ -102,6 +103,7 @@ import {
   TickStyleToString,
   User,
 } from '@/models';
+import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
@@ -121,7 +123,7 @@ interface ChartOptions {
   color?: string;
 }
 
-@Component({ components: { Spinner } })
+@Component({ components: { NoTicks, Spinner } })
 export default class Stats extends Vue {
   // Columns for half-width charts at the 'sm' and 'lg' breakpoints.
   readonly smHalfCols = 6;
@@ -132,6 +134,7 @@ export default class Stats extends Vue {
   readonly smAspectRatio = 3;
 
   ready = false;
+  haveStats = false;
 
   counts: Counts | null = null;
   userDoc: User | null = null;
@@ -160,6 +163,7 @@ export default class Stats extends Vue {
         .get()
         .then(snap => {
           if (snap.exists) {
+            this.haveStats = true;
             this.counts = snap.data()! as Counts;
             this.createCharts();
           }

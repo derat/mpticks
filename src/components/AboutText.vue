@@ -59,6 +59,6 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component
 export default class AboutText extends Vue {
-  @Prop(Boolean) readonly short: boolean = false;
+  @Prop(Boolean) readonly short?: boolean;
 }
 </script>
