@@ -91,6 +91,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import colors from 'vuetify/lib/util/colors';
 import Chart from 'chart.js';
 import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
@@ -117,6 +118,7 @@ interface ChartOptions {
   units: string;
   trim?: Trim;
   aspectRatio?: number; // default is 2
+  color?: string;
 }
 
 @Component({ components: { Spinner } })
@@ -185,6 +187,7 @@ export default class Stats extends Vue {
       labelFunc: k => k.substring(0, 4),
       counts: this.counts.datePitches,
       units: 'Pitches',
+      color: colors.green.lighten2,
     });
 
     const yearMonthLabels: string[] = [];
@@ -204,6 +207,7 @@ export default class Stats extends Vue {
       counts: this.counts.datePitches,
       units: 'Pitches',
       aspectRatio: isPhone ? undefined : 3,
+      color: colors.blueGrey.base,
     });
 
     const monthLabels: string[] = [
@@ -237,6 +241,7 @@ export default class Stats extends Vue {
       labelFunc: k => dayOfWeekLabels[parseInt(k) - 1],
       counts: this.counts.dayOfWeekPitches,
       units: 'Pitches',
+      color: colors.brown.lighten2,
     });
 
     const gradeLabels: string[] = [];
@@ -267,6 +272,7 @@ export default class Stats extends Vue {
       units: 'Ticks',
       trim: Trim.ZEROS_AT_ENDS,
       aspectRatio: isPhone ? undefined : 3,
+      color: colors.red.lighten2,
     });
 
     const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
@@ -280,6 +286,7 @@ export default class Stats extends Vue {
       counts: this.counts.pitchesTicks,
       units: 'Pitches',
       trim: Trim.ALL_ZEROS,
+      color: colors.teal.lighten3,
     });
 
     const tickStyleLabels = [
@@ -304,6 +311,7 @@ export default class Stats extends Vue {
       counts: this.counts.tickStyleTicks,
       units: 'Ticks',
       trim: Trim.ALL_ZEROS,
+      color: colors.orange.lighten2,
     });
   }
 
@@ -338,7 +346,7 @@ export default class Stats extends Vue {
           {
             label: options.units,
             data,
-            backgroundColor: '#7986CB', // indigo.lighten-2
+            backgroundColor: options.color || colors.indigo.lighten2,
           },
         ],
       },
@@ -351,7 +359,7 @@ export default class Stats extends Vue {
         },
         scales: {
           xAxes: [{ gridLines: { drawOnChartArea: false } }],
-          yAxes: [{ ticks: { beginAtZero: true } }],
+          yAxes: [{ ticks: { beginAtZero: true, maxTicksLimit: 8 } }],
         },
       },
     });
