@@ -54,7 +54,7 @@ export function getCreds() {
     const m = body.match(
       new RegExp('<a href="/data/get-user\\?email=([^"&]+)&amp;key=([^"]+)"')
     );
-    if (!m) throw new Error('Failed to find email and key');
+    if (!m) throw new Error("Didn't find email/key (are you logged in to MP?)");
     return [m[1], m[2]];
   });
 }
