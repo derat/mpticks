@@ -102,11 +102,17 @@ function onDeleteClicked() {
   const deleteCount = tickIdsToDelete.size;
 
   const button = document.getElementById('delete-button');
-  button.innerText = `Deleting ${deleteCount} ticks...`;
+  button.innerText = `Deleting ticks...`;
   button.disabled = 'disabled';
   hideError();
 
-  (useFakeApi ? fakeDeleteTicks : deleteTicks)(tickIdsToDelete)
+  const status = document.getElementById('delete-status');
+  let numDeleted = 0;
+
+  (useFakeApi ? fakeDeleteTicks : deleteTicks)(tickIdsToDelete, id => {
+    console.log(`Deleted tick ${id}`);
+    status.innerText = `Deleted ${++numDeleted} of ${deleteCount} tick(s)`;
+  })
     .then(() => {
       document.getElementById('screen-2').classList.add('hidden');
       document.getElementById('screen-3').classList.remove('hidden');

@@ -24,23 +24,24 @@ const deleteDelayMs = 10;
 
 // Helper function that deletes the ticks in |tickIds| (a Set of numbers) one at
 // a time in an arbitrary order. |deleteFunc| should take a number tick ID and
-// return a promise that is resolved once the tick is deleted. Returns a void
-// promise that is resolved when all ticks are deleted.
-function recursivelyDeleteTicks(tickIds, deleteFunc) {
+// return a promise that is resolved once the tick is deleted. If |cb| is
+// defined, it is invoked after each successful deletion with the ID of the
+// just-deleted tick. Returns a void promise that is resolved when all ticks are
+// deleted.
+function recursivelyDeleteTicks(tickIds, deleteFunc, cb) {
   if (!tickIds.size) return Promise.resolve();
 
   const id = tickIds.values().next().value;
-  console.log(`Deleting tick ${id}`);
-
   return new Promise(resolve => {
     deleteFunc(id).then(() => {
+      if (cb) cb(id);
       tickIds.delete(id);
       if (!tickIds.size) {
         resolve();
         return;
       }
       window.setTimeout(
-        () => resolve(recursivelyDeleteTicks(tickIds, deleteFunc)),
+        () => resolve(recursivelyDeleteTicks(tickIds, deleteFunc, cb)),
         deleteDelayMs
       );
     });
@@ -75,10 +76,16 @@ export function getTicks(email, key, ticks = []) {
 }
 
 // Deletes the ticks in |tickIds| (a Set of numbers) and returns a void promise
-// that is resolved once all ticks are deleted.
-export function deleteTicks(tickIds) {
-  return recursivelyDeleteTicks(tickIds, tickId =>
-    getUrl('https://www.mountainproject.com/ajax/delete-tick/' + id.toString())
+// that is resolved once all ticks are deleted. If |cb| is defined, it is
+// invoked after each successful deletion with the ID of the just-deleted tick.
+export function deleteTicks(tickIds, cb) {
+  return recursivelyDeleteTicks(
+    tickIds,
+    tickId =>
+      getUrl(
+        'https://www.mountainproject.com/ajax/delete-tick/' + id.toString()
+      ),
+    cb
   );
 }
 
@@ -104,6 +111,6 @@ export function fakeGetTicks() {
 }
 
 // Fake version of deleteTicks() that doesn't delete anything.
-export function fakeDeleteTicks(tickIds) {
-  return recursivelyDeleteTicks(tickIds, tickId => Promise.resolve());
+export function fakeDeleteTicks(tickIds, cb) {
+  return recursivelyDeleteTicks(tickIds, tickId => Promise.resolve(), cb);
 }

@@ -41,6 +41,10 @@ body {
   font-weight: bold;
 }
 
+#delete-status {
+  margin-left: 8px;
+}
+
 #error-message {
   color: red;
   font-weight: bold;
