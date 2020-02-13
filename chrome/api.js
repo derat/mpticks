@@ -100,7 +100,7 @@ export function fakeGetTicks() {
     for (let i = 1; i <= numTicks; i++) {
       ticks.push({
         tickId: i,
-        routeId: (i % numRoutes) + 1,
+        routeId: 1 + Math.floor(Math.random() * numRoutes),
         date: `2020-01-0${(i % 9) + 1}`,
         style: 'Lead',
         leadStyle: ['Onsight', 'Redpoint', 'Fell/Hung'][i % 3],

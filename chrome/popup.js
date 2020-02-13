@@ -28,6 +28,10 @@ function updateTickList(routeTicks, tickIdsToDelete) {
   Object.keys(routeTicks)
     .sort((a, b) => parseInt(a) - parseInt(b)) // ascending route ID
     .forEach(routeId => {
+      const ticks = routeTicks[routeId];
+      // Skip the route if none of its ticks are being deleted.
+      if (!ticks.find(t => tickIdsToDelete.has(t.tickId))) return;
+
       const routeDiv = document.createElement('div');
       routeDiv.appendChild(document.createTextNode(`Route ${routeId}`));
       routeDiv.classList.add('route');
@@ -35,7 +39,7 @@ function updateTickList(routeTicks, tickIdsToDelete) {
 
       const tickList = document.createElement('ul');
       tickList.classList.add('tick-list');
-      routeTicks[routeId]
+      ticks
         // TODO: These should technically also be sorted by tick ID, but this is
         // just the order in which we display the ticks so it's not a big deal.
         .sort((a, b) => a.date.localeCompare(b.date))
