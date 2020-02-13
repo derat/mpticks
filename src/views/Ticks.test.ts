@@ -96,7 +96,7 @@ describe('Ticks', () => {
         .wrappers[index].trigger('click');
       await flushPromises();
     };
-    const routeLabel = (route: Route) => `${route.name} (${route.grade})`;
+    const routeLabel = (route: Route) => `${route.name} ${route.grade} info`;
     const tickLabel = (tick: Tick) => {
       const year = tick.date.substring(0, 4);
       const month = tick.date.substring(4, 6);
