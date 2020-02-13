@@ -169,6 +169,11 @@ export interface RouteSummary {
 //
 // This is used as the document ID for the corresponding AreaMap in the |areas|
 // subcollection.
+//
+// It would be better to use actual area IDs from Mountain Project URLs, e.g.
+// https://www.mountainproject.com/area/105907743/international, but as far as I
+// can tell, the API doesn't expose those anywhere -- get-routes just returns
+// the human-readable location components that are used here.
 export type AreaId = string;
 
 // A document in the 'areas' subcollection under a user document. Specifically,

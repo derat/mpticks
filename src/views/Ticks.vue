@@ -15,9 +15,9 @@
           <v-icon class="tree-icon">{{ item.icon }} </v-icon>
         </template>
         <template v-slot:label="{ item }">
-          <div v-if="item.tickDate">
+          <div v-if="item.tickId">
             <div>
-              <span class="tick-date">{{ item.tickDate }}</span>
+              <span>{{ item.tickDate }}</span>
               <span class="tick-style" :class="item.tickStyleClass">{{
                 item.tickStyle
               }}</span>
@@ -25,7 +25,18 @@
             </div>
             <div class="tick-notes">{{ item.tickNotes }}</div>
           </div>
-          <span v-else>{{ item.name }}</span>
+          <div v-if="item.routeId">
+            <span>{{ item.routeName }}</span>
+            <span class="route-grade">{{ item.routeGrade }}</span>
+            <a
+              class="route-link"
+              :href="`https://www.mountainproject.com/route/${item.routeId}`"
+              target="_blank"
+              @click.stop=""
+              ><v-icon :size="18">info</v-icon></a
+            >
+          </div>
+          <span v-else>{{ item.areaName }}</span>
         </template>
       </v-treeview>
     </v-col>
@@ -55,7 +66,6 @@ import Spinner from '@/components/Spinner.vue';
 // Interface for items in the v-treeview.
 interface Item {
   readonly id: string; // default 'item-key' property for v-treeview
-  readonly name: string;
   readonly icon: string;
 
   // v-treeview will call loadItem(), which calls loadChildren(), if the
@@ -69,9 +79,7 @@ interface Item {
 
 class TickItem implements Item {
   readonly id: string;
-  readonly name: string;
   readonly icon = 'check';
-  readonly isTick = true;
   readonly children = undefined;
 
   readonly tickId: TickId;
@@ -79,8 +87,6 @@ class TickItem implements Item {
 
   constructor(parentId: string, tickId: TickId, tick: Tick) {
     this.id = `${parentId}|tick-${tickId}`;
-    this.name = tick.date;
-    this.isTick = true;
     this.tickId = tickId;
     this.tick = tick;
   }
@@ -128,16 +134,23 @@ class TickItem implements Item {
 
 class RouteItem implements Item {
   readonly id: string;
-  readonly name: string;
   readonly icon = 'view_list';
   children: Item[] = []; // initially empty to force dynamic loading of ticks
 
   readonly routeId: RouteId;
+  readonly routeSummary: RouteSummary;
 
   constructor(parentId: string, routeId: RouteId, summary: RouteSummary) {
     this.id = `${parentId}|${routeId}`;
-    this.name = `${summary.name} (${summary.grade})`;
     this.routeId = routeId;
+    this.routeSummary = summary;
+  }
+
+  get routeName() {
+    return this.routeSummary.name;
+  }
+  get routeGrade() {
+    return this.routeSummary.grade;
   }
 
   loadChildren(): Promise<void> {
@@ -151,24 +164,27 @@ class RouteItem implements Item {
           .map(
             ([tickId, tick]) => new TickItem(this.id, parseInt(tickId), tick)
           )
-          .sort((a, b) => b.name.localeCompare(a.name) || b.tickId - a.tickId);
+          .sort(
+            (a, b) =>
+              b.tickDate.localeCompare(a.tickDate) || b.tickId - a.tickId
+          );
       });
   }
 }
 
 class AreaItem implements Item {
   readonly id: string;
-  readonly name: string;
   readonly icon = 'photo';
   children: Item[]; // dynamically updated after loading the area doc
 
   readonly areaId?: AreaId; // only set if this area contains routes
+  readonly areaName: string;
   readonly childAreas: AreaItem[];
 
   constructor(parentId: string, map: AreaMap, name: string) {
     this.id = parentId + (parentId ? '|' : '') + name;
-    this.name = name;
     this.areaId = map.areaId;
+    this.areaName = name;
 
     // Construct items for child areas, but if we have an ID (indicating that
     // there are routes in this area), leave |children| empty until we're
@@ -191,7 +207,7 @@ class AreaItem implements Item {
               ([routeId, route]) =>
                 new RouteItem(this.id, parseInt(routeId), route)
             )
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => a.routeName.localeCompare(b.routeName))
         );
       });
   }
@@ -231,13 +247,14 @@ export default class Ticks extends Vue {
 .tree-icon {
   opacity: 0.8;
 }
+
 .tick-style {
   background-color: #c5cae9; /* indigo.lighten-4 */
   border: solid 1px #9fa8da; /* indigo.lighten-3 */
   border-radius: 8px;
   font-size: 11px;
   margin-left: 6px;
-  padding: 2px 5px;
+  padding: 2px 5px 1px 5px;
   vertical-align: middle;
 }
 .tick-style.clean {
@@ -257,5 +274,14 @@ export default class Ticks extends Vue {
 .tick-notes {
   white-space: pre-wrap;
   font-size: 12px;
+}
+
+.route-grade {
+  margin-left: 6px;
+  opacity: 0.5;
+}
+.route-link {
+  margin-left: 8px;
+  opacity: 0.6;
 }
 </style>
