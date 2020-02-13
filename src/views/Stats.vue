@@ -111,16 +111,22 @@ enum Trim {
   ZEROS_AT_ENDS,
 }
 
-interface ChartOptions {
+// A set of values to be drawn in a chart.
+interface ChartDataSet {
+  data: Record<string | number, number>; // keys are passed to |labelFunc|
+  units: string;
+  color: string;
+}
+
+// Information about how a chart should be rendered.
+interface ChartConfig {
   id: string; // ID of canvas element
   title: string;
   labels: string[]; // labels for values in the order they'll be shown
-  labelFunc: (key: string) => string; // maps |counts| keys to |labels|
-  counts: Record<string | number, number>; // data to display
-  units: string;
+  labelFunc: (key: string) => string; // maps |dataSets| keys to |labels|
+  dataSets: ChartDataSet[];
   trim?: Trim;
   aspectRatio?: number; // default is 2
-  color?: string;
 }
 
 @Component({ components: { NoTicks, Spinner } })
@@ -206,9 +212,13 @@ export default class Stats extends Vue {
       title: 'Pitches by Year',
       labels: yearLabels,
       labelFunc: k => k.substring(0, 4),
-      counts: this.counts.datePitches,
-      units: 'Pitches',
-      color: colors.green.lighten2,
+      dataSets: [
+        {
+          data: this.counts.datePitches,
+          units: 'Pitches',
+          color: colors.green.lighten2,
+        },
+      ],
     });
 
     const yearMonthLabels: string[] = [];
@@ -225,10 +235,14 @@ export default class Stats extends Vue {
       title: 'Pitches by Year and Month',
       labels: yearMonthLabels,
       labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
-      counts: this.counts.datePitches,
-      units: 'Pitches',
+      dataSets: [
+        {
+          data: this.counts.datePitches,
+          units: 'Pitches',
+          color: colors.blueGrey.base,
+        },
+      ],
       aspectRatio: fullAspectRatio,
-      color: colors.blueGrey.base,
     });
 
     const monthLabels: string[] = [
@@ -250,8 +264,13 @@ export default class Stats extends Vue {
       title: 'Pitches by Month',
       labels: monthLabels,
       labelFunc: k => monthLabels[parseInt(k.substring(4, 6)) - 1],
-      counts: this.counts.datePitches,
-      units: 'Pitches',
+      dataSets: [
+        {
+          data: this.counts.datePitches,
+          units: 'Pitches',
+          color: colors.indigo.lighten2,
+        },
+      ],
     });
 
     const dayOfWeekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -260,9 +279,13 @@ export default class Stats extends Vue {
       title: 'Pitches by Day of Week',
       labels: dayOfWeekLabels,
       labelFunc: k => dayOfWeekLabels[parseInt(k) - 1],
-      counts: this.counts.dayOfWeekPitches,
-      units: 'Pitches',
-      color: colors.brown.lighten2,
+      dataSets: [
+        {
+          data: this.counts.dayOfWeekPitches,
+          units: 'Pitches',
+          color: colors.brown.lighten2,
+        },
+      ],
     });
 
     const gradeLabels: string[] = [];
@@ -289,11 +312,20 @@ export default class Stats extends Vue {
         if (minor.length == 2 && !letter) label += 'a';
         return label;
       },
-      counts: this.counts.gradeTicks,
-      units: 'Ticks',
+      dataSets: [
+        {
+          data: this.counts.gradeCleanTicks,
+          units: 'Clean ticks',
+          color: colors.orange.lighten2,
+        },
+        {
+          data: this.counts.gradeTicks,
+          units: 'All ticks',
+          color: colors.red.lighten2,
+        },
+      ],
       trim: Trim.ZEROS_AT_ENDS,
       aspectRatio: fullAspectRatio,
-      color: colors.red.lighten2,
     });
 
     const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
@@ -304,10 +336,14 @@ export default class Stats extends Vue {
       title: 'Ticks by Pitches',
       labels: pitchesLabels,
       labelFunc: k => k,
-      counts: this.counts.pitchesTicks,
-      units: 'Pitches',
+      dataSets: [
+        {
+          data: this.counts.pitchesTicks,
+          units: 'Ticks',
+          color: colors.teal.lighten3,
+        },
+      ],
       trim: Trim.ALL_ZEROS,
-      color: colors.teal.lighten3,
     });
 
     const tickStyleLabels = [
@@ -329,59 +365,82 @@ export default class Stats extends Vue {
       title: 'Ticks by Style',
       labels: tickStyleLabels,
       labelFunc: k => TickStyleToString(parseInt(k)),
-      counts: this.counts.tickStyleTicks,
-      units: 'Ticks',
+      dataSets: [
+        {
+          data: this.counts.tickStyleTicks,
+          units: 'Ticks',
+          color: colors.blueGrey.base,
+        },
+      ],
       trim: Trim.ALL_ZEROS,
-      color: colors.orange.lighten2,
     });
   }
 
-  addChart(options: ChartOptions) {
-    const values: Record<string, number> = {};
-    const labels = [...options.labels];
-    options.labels.forEach(label => (values[label] = 0));
+  addChart(cfg: ChartConfig) {
+    const labels = [...cfg.labels];
 
-    Object.entries(options.counts).forEach(([key, count]) => {
-      const label = options.labelFunc(key.toString());
-      if (label && values.hasOwnProperty(label)) values[label] += count;
-    });
+    // Aggregate each data set's data into a map from label to value.
+    const dataSetLabelValues: Record<string, number>[] = cfg.dataSets.map(
+      ds => {
+        const values: Record<string, number> = {};
+        labels.forEach(l => (values[l] = 0));
+        Object.entries(ds.data).forEach(([key, val]) => {
+          const label = cfg.labelFunc(key.toString());
+          if (label && values.hasOwnProperty(label)) values[label] += val;
+        });
+        return values;
+      }
+    );
 
-    if (options.trim == Trim.ZEROS_AT_ENDS) {
-      while (labels.length && !values[labels[0]]) labels.shift();
-      while (labels.length && !values[labels[labels.length - 1]]) labels.pop();
-    } else if (options.trim == Trim.ALL_ZEROS) {
+    // Returns true if any data sets have nonzero values for |label|.
+    const labelHasValue = (label: string) =>
+      dataSetLabelValues.map(lv => lv[label]).find(v => !!v);
+
+    // Drop zero-valued labels if requested.
+    if (cfg.trim == Trim.ZEROS_AT_ENDS) {
+      while (labels.length && !labelHasValue(labels[0])) labels.shift();
+      while (labels.length && !labelHasValue(labels[labels.length - 1])) {
+        labels.pop();
+      }
+    } else if (cfg.trim == Trim.ALL_ZEROS) {
       let i = labels.length;
       while (i--) {
-        if (values[labels[i]] == 0) labels.splice(i, 1);
+        if (!labelHasValue(labels[i])) labels.splice(i, 1);
       }
     }
 
-    const data: number[] = labels.map(l => values[l]);
-
-    const canvas = document.getElementById(options.id) as HTMLCanvasElement;
+    const canvas = document.getElementById(cfg.id) as HTMLCanvasElement;
     this.charts.push(
       new Chart(canvas, {
         type: 'bar',
         data: {
           labels,
-          datasets: [
-            {
-              label: options.units,
-              data,
-              backgroundColor: options.color || colors.indigo.lighten2,
-            },
-          ],
+          datasets: cfg.dataSets.map((ds, i) => ({
+            label: ds.units,
+            data: labels.map(label => dataSetLabelValues[i][label]),
+            backgroundColor: ds.color,
+          })),
         },
         options: {
-          aspectRatio: options.aspectRatio || 2,
+          aspectRatio: cfg.aspectRatio || 2,
           legend: { display: false },
           title: {
             display: true,
-            text: options.title,
+            text: cfg.title,
           },
           scales: {
-            xAxes: [{ gridLines: { drawOnChartArea: false } }],
-            yAxes: [{ ticks: { beginAtZero: true, maxTicksLimit: 8 } }],
+            xAxes: [
+              {
+                gridLines: { drawOnChartArea: false },
+                stacked: true,
+              },
+            ],
+            yAxes: [
+              {
+                stacked: false,
+                ticks: { beginAtZero: true, maxTicksLimit: 8 },
+              },
+            ],
           },
         },
       })

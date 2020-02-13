@@ -137,6 +137,9 @@ interface:
 *   `dayOfWeekPitches` - Map field keyed by [ISO 8601 day of week] where `1` is
     Monday and `7` is Sunday.
 *   `dayOfWeekTicks` - Like `dayOfWeekPitches` but counting ticks.
+*   `gradeCleanTicks` - Map field keyed by route grade. Similar to `gradeTicks`,
+    but only "clean" ticks (i.e. no falls or takes) are counted. See the
+    `isCleanTickStyle` function.
 *   `gradeTicks` - Map field keyed by route grade, e.g. `'5.9'` or `'V3'`.
 *   `latLongTicks` - Map field keyed by comma-separated route latitude and
     longitude rounded to one decimal place of precision, e.g. `'39.9,-105.0'`.

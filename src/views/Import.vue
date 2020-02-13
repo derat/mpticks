@@ -106,6 +106,7 @@ import {
   Counts,
   importedRoutesBatchSize,
   importedTicksBatchSize,
+  isCleanTickStyle,
   numTopRoutes,
   Route,
   RouteId,
@@ -435,6 +436,7 @@ export default class Import extends Vue {
           dateTicks: {},
           dayOfWeekPitches: {},
           dayOfWeekTicks: {},
+          gradeCleanTicks: {},
           gradeTicks: {},
           latLongTicks: {},
           pitchesTicks: {},
@@ -474,6 +476,11 @@ export default class Import extends Vue {
             inc(counts.dateTicks, tick.date);
             inc(counts.dayOfWeekPitches, dayOfWeek, tick.pitches);
             inc(counts.dayOfWeekTicks, dayOfWeek);
+            inc(
+              counts.gradeCleanTicks,
+              route.grade,
+              isCleanTickStyle(tick.style) ? 1 : 0
+            );
             inc(counts.gradeTicks, route.grade);
             inc(counts.latLongTicks, latLong);
             inc(counts.pitchesTicks, tick.pitches);

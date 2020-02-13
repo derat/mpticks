@@ -26,6 +26,7 @@ import {
   AreaId,
   importedRoutesBatchSize,
   importedTicksBatchSize,
+  isCleanTickStyle,
   numTopRoutes,
   Route,
   RouteId,
@@ -156,6 +157,7 @@ describe('Import', () => {
       dateTicks: { [t1.date]: 1 },
       dayOfWeekPitches: { [getDayOfWeek(parseDate(t1.date))]: t1.pitches },
       dayOfWeekTicks: { [getDayOfWeek(parseDate(t1.date))]: 1 },
+      gradeCleanTicks: isCleanTickStyle(t1.style) ? { [r1.grade]: 1 } : {},
       gradeTicks: { [r1.grade]: 1 },
       latLongTicks: { [truncateLatLong(r1.lat, r1.long)]: 1 },
       pitchesTicks: { [t1.pitches]: 1 },
@@ -178,12 +180,14 @@ describe('Import', () => {
     MockFirebase.setDoc(areaMapPath, {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
+
     MockFirebase.setDoc(countsPath, {
       datePitches: { [t1.date]: t1.pitches },
       dateTicks: { [t1.date]: 1 },
       dayOfWeekPitches: { [getDayOfWeek(parseDate(t1.date))]: t1.pitches },
       dayOfWeekTicks: { [getDayOfWeek(parseDate(t1.date))]: 1 },
       gradeTicks: { [r1.grade]: 1 },
+      gradeCleanTicks: isCleanTickStyle(t1.style) ? { [r1.grade]: 1 } : {},
       latLongTicks: { [truncateLatLong(r1.lat, r1.long)]: 1 },
       pitchesTicks: { [t1.pitches]: 1 },
       regionTicks: { [loc[0]]: 1 },
@@ -198,6 +202,12 @@ describe('Import', () => {
     const aid2 = makeAreaId(loc2);
     const r2 = testRoute(rid2, [tid3], loc2);
     const ticks = [t1, testTick(tid2, rid1), testTick(tid3, rid2)];
+    // This is a hack that just works since test ticks have unique dates.
+    const dateRoutes = {
+      [ticks[0].date]: r1,
+      [ticks[1].date]: r1,
+      [ticks[2].date]: r2,
+    };
     handleGetTicks([testApiTick(tid2, rid1), testApiTick(tid3, rid2)]);
     handleGetRoutes([testApiRoute(rid2, loc2)]);
     await doImport();
@@ -237,6 +247,11 @@ describe('Import', () => {
       ),
       dayOfWeekTicks: makeTickCounts(ticks, t =>
         getDayOfWeek(parseDate(t.date))
+      ),
+      gradeCleanTicks: makeTickCounts(
+        ticks,
+        t => dateRoutes[t.date].grade,
+        t => (isCleanTickStyle(t.style) ? 1 : 0)
       ),
       gradeTicks: { [r1.grade]: 2, [r2.grade]: 1 },
       latLongTicks: {

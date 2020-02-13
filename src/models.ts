@@ -60,6 +60,20 @@ export function TickStyleToString(style: TickStyle): string {
   }
 }
 
+// Returns true if |style| indicates that the climber didn't fall or hang.
+export function isCleanTickStyle(style: TickStyle): boolean {
+  return (
+    style == TickStyle.SOLO ||
+    style == TickStyle.LEAD ||
+    style == TickStyle.LEAD_ONSIGHT ||
+    style == TickStyle.LEAD_FLASH ||
+    style == TickStyle.LEAD_REDPOINT ||
+    style == TickStyle.LEAD_PINKPOINT ||
+    style == TickStyle.SEND ||
+    style == TickStyle.FLASH
+  );
+}
+
 // A map value in Route's |ticks| field.
 export interface Tick {
   date: string; // 'YYYYMMDD'
@@ -206,6 +220,7 @@ export interface Counts {
   dateTicks: Record<string, number>; // 'YYYYMMDD'
   dayOfWeekPitches: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   dayOfWeekTicks: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
+  gradeCleanTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   gradeTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   latLongTicks: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
   pitchesTicks: Record<number, number>; // pitch count from tick
