@@ -60,7 +60,8 @@ export function TickStyleToString(style: TickStyle): string {
   }
 }
 
-// Returns true if |style| indicates that the climber didn't fall or hang.
+// Returns true if |style| indicates that the climber was either unroped or
+// leading and didn't fall or hang.
 export function isCleanTickStyle(style: TickStyle): boolean {
   return (
     style == TickStyle.SOLO ||
