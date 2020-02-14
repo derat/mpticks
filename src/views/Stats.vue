@@ -63,7 +63,15 @@
             disable-pagination
             disable-sort
             hide-default-footer
-          />
+          >
+            <!-- Override rendering of 'route' values to add a click handler
+                 that jumps to the corresponding route in the Ticks view. -->
+            <template v-slot:item.route="props">
+              <td class="top-route-name" @click="openRoute(props.item.id)">
+                {{ props.value }}
+              </td>
+            </template>
+          </v-data-table>
           <div class="total-routes">
             <span class="label">Total Routes:</span> {{ numRoutes }}
           </div>
@@ -98,6 +106,7 @@ import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
   Counts,
+  RouteId,
   RouteTypeToString,
   TickStyle,
   TickStyleToString,
@@ -509,13 +518,28 @@ export default class Stats extends Vue {
       .slice(0, 10)
       .map(([key, ticks]) => {
         const parts = key.split('|');
-        return { route: parts.slice(1).join('|'), ticks: ticks as number };
+        return {
+          id: parts[0],
+          route: parts.slice(1).join('|'),
+          ticks: ticks as number,
+        };
       });
+  }
+
+  openRoute(routeId: RouteId) {
+    this.$router.push({
+      name: 'ticks',
+      params: { initialRouteId: routeId.toString() },
+    });
   }
 }
 </script>
 
 <style scoped>
+.top-route-name {
+  cursor: pointer;
+}
+
 .total-routes {
   font-size: 14px;
   padding: 16px 0 6px 16px;

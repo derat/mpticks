@@ -3,14 +3,18 @@
      found in the LICENSE file. -->
 
 <template>
-  <!-- TODO: Display a hint pointing the user at the import view if no ticks are
-       present. -->
   <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
        to cancel out with padding. All of this seems to result in the page being
        horizontally scrollable on mobile, so just zero everything out. -->
   <v-row v-if="ready && haveTicks" class="ma-0">
     <v-col cols="12" lg="8" class="pa-0">
-      <v-treeview dense :items="items" :load-children="loadItem" open-on-click>
+      <v-treeview
+        dense
+        :items="items"
+        :load-children="loadItemChildren"
+        :open.sync="openIds"
+        open-on-click
+      >
         <template v-slot:prepend="{ item }">
           <v-icon class="tree-icon">{{ item.icon }} </v-icon>
         </template>
@@ -25,7 +29,7 @@
             </div>
             <div class="tick-notes">{{ item.tickNotes }}</div>
           </div>
-          <div v-if="item.routeId">
+          <div v-if="item.routeId" :id="`route-${item.routeId}`">
             <span>{{ item.routeName }}</span>
             <span class="route-grade">{{ item.routeGrade }}</span>
             <a
@@ -46,7 +50,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 import { areaMapRef, areaRef, routeRef } from '@/docs';
 import {
   Area,
@@ -68,7 +72,7 @@ interface Item {
   readonly id: string; // default 'item-key' property for v-treeview
   readonly icon: string;
 
-  // v-treeview will call loadItem(), which calls loadChildren(), if the
+  // v-treeview will call loadItemChildren(), which calls loadChildren(), if the
   // |children| property contains an empty array. If it's undefined, the item
   // has no children.
   readonly children: Item[] | undefined;
@@ -174,7 +178,6 @@ class RouteItem implements Item {
 
 class AreaItem implements Item {
   readonly id: string;
-  readonly icon = 'photo';
   children: Item[]; // dynamically updated after loading the area doc
 
   readonly areaId?: AreaId; // only set if this area contains routes
@@ -193,6 +196,10 @@ class AreaItem implements Item {
       .sort()
       .map(([childName, child]) => new AreaItem(this.id, child, childName));
     this.children = this.areaId ? [] : this.childAreas;
+  }
+
+  get icon() {
+    return this.childAreas.length ? 'burst_mode' : 'photo';
   }
 
   loadChildren(): Promise<void> {
@@ -215,13 +222,23 @@ class AreaItem implements Item {
 
 @Component({ components: { NoTicks, Spinner } })
 export default class Ticks extends Vue {
+  // If set, the supplied route will be initially opened.
+  @Prop(Number) readonly initialRouteId?: RouteId;
+
   items: Item[] = [];
+
+  // Synchronously bound to v-treeview to reflect the |id| fields of open items.
+  openIds: string[] = [];
+
+  // |id| field of the AreaItem that is the parent to the RouteItem representing
+  // |initialRouteId|. Cleared after the route is opened.
+  initialRouteParentId = '';
 
   ready = false;
   haveTicks = false;
 
   mounted() {
-    areaMapRef()
+    const areasPromise = areaMapRef()
       .get()
       .then(snap => {
         this.ready = true;
@@ -232,10 +249,64 @@ export default class Ticks extends Vue {
           .sort()
           .map(([name, child]) => new AreaItem('', child, name));
       });
+
+    // If we need to start with an initially-open route, start loading it now.
+    const routePromise = this.initialRouteId
+      ? routeRef(this.initialRouteId)
+          .get()
+          .then(snap => (snap.exists ? (snap.data() as Route).location : null))
+      : Promise.resolve(null);
+
+    // After both the route and areas are loaded, we can open the route.
+    Promise.all([routePromise, areasPromise]).then(([location]) => {
+      if (this.initialRouteId && location) {
+        this.openRoute(this.initialRouteId, location);
+      }
+    });
   }
 
-  loadItem(item: Item): Promise<void> {
-    return item.loadChildren();
+  // Asynchronously open the RouteItem identified by |routeId|. The hierarchy of
+  // AreaItems leading to it (identified by |location|) are opened first.
+  openRoute(routeId: RouteId, location: string[]) {
+    // Open the area corresponding to each location component.
+    let id = '';
+    this.openIds.push(...location.map(c => (id += (id ? '|' : '') + c)));
+
+    // We won't be able to open the route until it's present in
+    // |this.items|. Save its parent's ID here so we know when that happens.
+    this.initialRouteParentId = this.openIds[this.openIds.length - 1];
+
+    // Trying to synchronously open the final area item that contains the route
+    // here does nothing. If we open it asynchrously, it works. I suspect that
+    // this is tied to its children being dynamically loaded. If that's the
+    // case, we may have problems if there are other areas higher in the tree
+    // that are also asynchronously loaded because they contain routes.
+    window.setTimeout(() => this.openIds.push(this.initialRouteParentId));
+  }
+
+  // Callback for an item with an empty |children| array being opened.
+  loadItemChildren(item: Item): Promise<void> {
+    return item.loadChildren().then(() => {
+      if (item.id != this.initialRouteParentId) return;
+
+      // If we just added the route that we initially want to display, then we
+      // asynchronously add it to the list of open items.
+      const ids = [
+        // Repeat the parent ID here since v-treeview seems to fail to add
+        // asynchronously-loaded items to the |open| property:
+        // https://github.com/vuetifyjs/vuetify/issues/10583
+        this.initialRouteParentId,
+        `${this.initialRouteParentId}|${this.initialRouteId}`,
+      ];
+      window.setTimeout(() => {
+        // Scroll to the route and expand it.
+        const el = document.getElementById(`route-${this.initialRouteId}`);
+        if (el) el.scrollIntoView({ block: 'center' });
+        this.openIds.push(...ids);
+      });
+
+      this.initialRouteParentId = '';
+    });
   }
 }
 </script>

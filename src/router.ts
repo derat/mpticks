@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import VueRouter from 'vue-router';
+import VueRouter, { Route } from 'vue-router';
 import firebase from '@/firebase';
 
 import About from '@/views/About.vue';
@@ -30,6 +30,12 @@ export const routes = [
     path: '/ticks',
     component: Ticks,
     meta: { title: 'Ticks', when: When.LOGGED_IN },
+    props: (route: Route) => ({
+      initialRouteId:
+        typeof route.params.initialRouteId === 'string'
+          ? parseInt(route.params.initialRouteId)
+          : undefined,
+    }),
   },
   {
     name: 'stats',
