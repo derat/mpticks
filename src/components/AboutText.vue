@@ -46,7 +46,7 @@
       The source code for this site is available on
       <a href="https://github.com/derat/mpticks" target="_blank">GitHub</a>.
       <span v-if="!short"
-        >If you have a questions or comments, don't hesitate to
+        >If you have questions or comments, don't hesitate to
         <a href="mailto:dan-mpticks@erat.org" target="_blank">email me</a
         >.</span
       >
