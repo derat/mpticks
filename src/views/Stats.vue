@@ -3,7 +3,9 @@
      found in the LICENSE file. -->
 
 <template>
-  <div>
+  <div class="mx-3">
+    <Alert :text.sync="errorMsg" />
+
     <!-- Using v-show instead of v-if so the canvas will exist when we try to
          draw into it from mounted(). -->
     <div v-show="ready && haveStats">
@@ -99,9 +101,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
 import colors from 'vuetify/lib/util/colors';
+import { Component, Vue } from 'vue-property-decorator';
+import Alert from '@/components/Alert.vue';
+import NoTicks from '@/components/NoTicks.vue';
+import Spinner from '@/components/Spinner.vue';
+
 import Chart from 'chart.js';
+
 import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
@@ -112,8 +119,6 @@ import {
   TickStyleToString,
   User,
 } from '@/models';
-import NoTicks from '@/components/NoTicks.vue';
-import Spinner from '@/components/Spinner.vue';
 
 enum Trim {
   ALL_ZEROS,
@@ -138,7 +143,7 @@ interface ChartConfig {
   aspectRatio?: number; // default is 2
 }
 
-@Component({ components: { NoTicks, Spinner } })
+@Component({ components: { Alert, NoTicks, Spinner } })
 export default class Stats extends Vue {
   // Columns for half-width charts at the 'sm' and 'lg' breakpoints.
   readonly smHalfCols = 6;
@@ -150,6 +155,7 @@ export default class Stats extends Vue {
 
   ready = false;
   haveStats = false;
+  errorMsg = '';
 
   counts: Counts | null = null;
   userDoc: User | null = null;
@@ -188,9 +194,14 @@ export default class Stats extends Vue {
         .then(snap => {
           if (snap.exists) this.userDoc = snap.data()! as User;
         }),
-    ]).then(() => {
-      this.ready = true;
-    });
+    ])
+      .catch(err => {
+        this.errorMsg = `Failed to load stats: ${err.message}`;
+        throw err;
+      })
+      .finally(() => {
+        this.ready = true;
+      });
   }
 
   beforeDestroy() {

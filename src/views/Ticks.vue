@@ -3,54 +3,62 @@
      found in the LICENSE file. -->
 
 <template>
-  <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
+  <div v-if="ready">
+    <Alert :text.sync="errorMsg" class="mx-3 mb-3" />
+
+    <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
        to cancel out with padding. All of this seems to result in the page being
        horizontally scrollable on mobile, so just zero everything out. -->
-  <v-row v-if="ready && haveTicks" class="ma-0">
-    <v-col cols="12" lg="8" class="pa-0">
-      <v-treeview
-        dense
-        :items="items"
-        :load-children="loadItemChildren"
-        :open.sync="openIds"
-        open-on-click
-      >
-        <template v-slot:prepend="{ item }">
-          <v-icon class="tree-icon">{{ item.icon }} </v-icon>
-        </template>
-        <template v-slot:label="{ item }">
-          <div v-if="item.tickId">
-            <div>
-              <span>{{ item.tickDate }}</span>
-              <span class="tick-style" :class="item.tickStyleClass">{{
-                item.tickStyle
-              }}</span>
-              <span class="tick-pitches">{{ item.tickPitches }}</span>
+    <v-row v-if="haveTicks" class="ma-0">
+      <v-col cols="12" lg="8" class="pa-0">
+        <v-treeview
+          dense
+          :items="items"
+          :load-children="loadItemChildren"
+          :open.sync="openIds"
+          open-on-click
+        >
+          <template v-slot:prepend="{ item }">
+            <v-icon class="tree-icon">{{ item.icon }} </v-icon>
+          </template>
+          <template v-slot:label="{ item }">
+            <div v-if="item.tickId">
+              <div>
+                <span>{{ item.tickDate }}</span>
+                <span class="tick-style" :class="item.tickStyleClass">{{
+                  item.tickStyle
+                }}</span>
+                <span class="tick-pitches">{{ item.tickPitches }}</span>
+              </div>
+              <div class="tick-notes">{{ item.tickNotes }}</div>
             </div>
-            <div class="tick-notes">{{ item.tickNotes }}</div>
-          </div>
-          <div v-if="item.routeId" :id="`route-${item.routeId}`">
-            <span>{{ item.routeName }}</span>
-            <span class="route-grade">{{ item.routeGrade }}</span>
-            <a
-              class="route-link"
-              :href="`https://www.mountainproject.com/route/${item.routeId}`"
-              target="_blank"
-              @click.stop=""
-              ><v-icon :size="18">info</v-icon></a
-            >
-          </div>
-          <span v-else>{{ item.areaName }}</span>
-        </template>
-      </v-treeview>
-    </v-col>
-  </v-row>
-  <NoTicks v-else-if="ready && !haveTicks" class="ma-3" />
+            <div v-if="item.routeId" :id="`route-${item.routeId}`">
+              <span>{{ item.routeName }}</span>
+              <span class="route-grade">{{ item.routeGrade }}</span>
+              <a
+                class="route-link"
+                :href="`https://www.mountainproject.com/route/${item.routeId}`"
+                target="_blank"
+                @click.stop=""
+                ><v-icon :size="18">info</v-icon></a
+              >
+            </div>
+            <span v-else>{{ item.areaName }}</span>
+          </template>
+        </v-treeview>
+      </v-col>
+    </v-row>
+    <NoTicks v-else class="ma-3" />
+  </div>
   <Spinner v-else />
 </template>
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import Alert from '@/components/Alert.vue';
+import NoTicks from '@/components/NoTicks.vue';
+import Spinner from '@/components/Spinner.vue';
+
 import { areaMapRef, areaRef, routeRef } from '@/docs';
 import {
   Area,
@@ -64,8 +72,6 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
-import NoTicks from '@/components/NoTicks.vue';
-import Spinner from '@/components/Spinner.vue';
 
 // Interface for items in the v-treeview.
 interface Item {
@@ -220,10 +226,14 @@ class AreaItem implements Item {
   }
 }
 
-@Component({ components: { NoTicks, Spinner } })
+@Component({ components: { Alert, NoTicks, Spinner } })
 export default class Ticks extends Vue {
   // If set, the supplied route will be initially opened.
   @Prop(Number) readonly initialRouteId?: RouteId;
+
+  ready = false;
+  haveTicks = false;
+  errorMsg = '';
 
   items: Item[] = [];
 
@@ -234,14 +244,10 @@ export default class Ticks extends Vue {
   // |initialRouteId|. Cleared after the route is opened.
   initialRouteParentId = '';
 
-  ready = false;
-  haveTicks = false;
-
   mounted() {
     const areasPromise = areaMapRef()
       .get()
       .then(snap => {
-        this.ready = true;
         if (!snap.exists) return;
         this.haveTicks = true;
         const map = snap.data() as AreaMap;
@@ -250,19 +256,27 @@ export default class Ticks extends Vue {
           .map(([name, child]) => new AreaItem('', child, name));
       });
 
-    // If we need to start with an initially-open route, start loading it now.
+    // If requested, start loading the initially-open route in parallel with the
+    // area map.
     const routePromise = this.initialRouteId
       ? routeRef(this.initialRouteId)
           .get()
-          .then(snap => (snap.exists ? (snap.data() as Route).location : null))
+          .then(snap => {
+            if (snap.exists) return (snap.data() as Route).location;
+            throw new Error(`${this.initialRouteId} not found`);
+          })
       : Promise.resolve(null);
 
-    // After both the route and areas are loaded, we can open the route.
-    Promise.all([routePromise, areasPromise]).then(([location]) => {
-      if (this.initialRouteId && location) {
-        this.openRoute(this.initialRouteId, location);
-      }
-    });
+    // After both the route and area map are loaded, we can open the route.
+    Promise.all([routePromise, areasPromise])
+      .then(([location]) => {
+        if (location) this.openRoute(this.initialRouteId!, location);
+      })
+      .catch(err => {
+        this.errorMsg = `Failed to load ticks: ${err.message}`;
+        throw err;
+      })
+      .finally(() => (this.ready = true));
   }
 
   // Asynchronously open the RouteItem identified by |routeId|. The hierarchy of

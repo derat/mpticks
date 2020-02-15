@@ -58,6 +58,9 @@ export function getTicks(
 
       // Recurse to get additional ticks.
       return getTicks(email, key, minTickId, ticks);
+    })
+    .catch(err => {
+      throw improveError(err);
     });
 }
 
@@ -105,12 +108,28 @@ export function getRoutes(
     key,
     routeIds: routeIds.slice(0, maxRoutesPerRequest).join(','),
   };
-  return axios.get(getRoutesUrl, { params }).then(response => {
-    const result = (response.data as unknown) as GetRoutesResult;
-    if (!result.success) throw new Error('API reported failure');
+  return axios
+    .get(getRoutesUrl, { params })
+    .then(response => {
+      const result = (response.data as unknown) as GetRoutesResult;
+      if (!result.success) throw new Error('API reported failure');
 
-    routes = routes.concat(result.routes as ApiRoute[]);
-    if (routeIds.length <= maxRoutesPerRequest) return routes;
-    return getRoutes(routeIds.slice(maxRoutesPerRequest), key, routes);
-  });
+      routes = routes.concat(result.routes as ApiRoute[]);
+      if (routeIds.length <= maxRoutesPerRequest) return routes;
+      return getRoutes(routeIds.slice(maxRoutesPerRequest), key, routes);
+    })
+    .catch(err => {
+      throw improveError(err);
+    });
+}
+
+// Attempts to improve |err.message|.
+function improveError(err: Error): Error {
+  // Apparently we just get a generic 'Network Error' from Axios if the API key
+  // is invalid, due to the browser not exposing the full response due to CORS:
+  // https://github.com/axios/axios/issues/383
+  if (err.message == 'Network Error') {
+    err.message = 'Network error or bad credentials';
+  }
+  return err;
 }

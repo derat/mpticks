@@ -4,6 +4,8 @@
 
 <template>
   <div class="mx-3">
+    <Alert :text.sync="errorMsg" />
+
     <v-row>
       <v-col cols="12" lg="8">
         <p>
@@ -86,6 +88,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import Alert from '@/components/Alert.vue';
 
 import firebase from 'firebase/app';
 import app from '@/firebase';
@@ -124,9 +127,10 @@ import {
 import { parseDate, getDayOfWeek } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 
-@Component
+@Component({ components: { Alert } })
 export default class Import extends Vue {
   // Models for UI components.
+  errorMsg = '';
   email = '';
   key = '';
   remember = false;
@@ -189,6 +193,7 @@ export default class Import extends Vue {
     const batch = app.firestore().batch();
 
     this.importStartTime = new Date().toISOString();
+    this.errorMsg = '';
     this.getTicks(routeTicks, batch)
       .then(() => this.getRoutes(Array.from(routeTicks.keys()), routes, batch))
       .then(() => this.updateRoutes(routeTicks, routes, batch))
@@ -201,7 +206,9 @@ export default class Import extends Vue {
         this.log('Import complete.');
       })
       .catch(err => {
-        this.log(`Import failed: ${err}`, true);
+        const msg = `Import failed: ${err.message}`;
+        this.errorMsg = msg;
+        this.log(msg, true);
       })
       .finally(() => {
         this.importStartTime = '';

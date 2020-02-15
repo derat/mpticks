@@ -4,6 +4,7 @@
 
 <template>
   <div class="mx-3">
+    <Alert :text.sync="errorMsg" />
     <v-row>
       <v-col cols="12" lg="8" class="pb-0">
         <p>
@@ -51,13 +52,15 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import Alert from '@/components/Alert.vue';
 import { ApiRoute, ApiTick } from '@/api';
 import { importsRef } from '@/docs';
 import { ImportedRoutes, ImportedTicks } from '@/models';
 
-@Component
+@Component({ components: { Alert } })
 export default class Export extends Vue {
-  exporting = false;
+  exporting = false; // true while data is being exported
+  errorMsg = ''; // data for alert
 
   get exportButtonLabel(): string {
     return this.exporting ? 'Exporting...' : 'Export';
@@ -65,6 +68,7 @@ export default class Export extends Vue {
 
   onExportClick() {
     this.exporting = true;
+    this.errorMsg = '';
 
     importsRef()
       .get()
@@ -81,12 +85,16 @@ export default class Export extends Vue {
           }
         });
 
-        if (ticks.length) this.download('ticks.json', ticks);
-        if (routes.length) this.download('routes.json', routes);
         if (!ticks.length && !routes.length) {
-          // TODO: Consider displaying a message onscreen.
-          console.log('No ticks or routes found');
+          this.errorMsg = 'No ticks or routes found.';
+        } else {
+          if (ticks.length) this.download('ticks.json', ticks);
+          if (routes.length) this.download('routes.json', routes);
         }
+      })
+      .catch(err => {
+        this.errorMsg = err.message;
+        console.error(err);
       })
       .finally(() => {
         this.exporting = false;
