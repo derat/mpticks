@@ -3,11 +3,7 @@
      found in the LICENSE file. -->
 
 <template>
-  <v-container class="fill-height">
-    <v-row justify="center" align="center">
-      <v-progress-circular indeterminate size="48" />
-    </v-row>
-  </v-container>
+  <v-progress-circular indeterminate size="48" class="spinner" />
 </template>
 
 <script lang="ts">
@@ -16,3 +12,13 @@ import { Component, Vue } from 'vue-property-decorator';
 @Component
 export default class Spinner extends Vue {}
 </script>
+
+<style scoped>
+.spinner {
+  left: 50%;
+  margin-left: -24px;
+  margin-top: -24px;
+  position: fixed;
+  top: 50%;
+}
+</style>
