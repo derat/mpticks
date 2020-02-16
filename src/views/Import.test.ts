@@ -22,6 +22,15 @@ import {
   getTicksUrl,
   maxRoutesPerRequest,
 } from '@/api';
+import { makeAreaId } from '@/convert';
+import {
+  areaMapRef,
+  areaRef,
+  countsRef,
+  importsRef,
+  userRef,
+  routeRef,
+} from '@/docs';
 import {
   AreaId,
   importedRoutesBatchSize,
@@ -33,7 +42,6 @@ import {
   Tick,
   TickId,
 } from '@/models';
-import { makeAreaId } from '@/convert';
 import {
   testApiRoute,
   testApiTick,
@@ -58,10 +66,6 @@ describe('Import', () => {
   let wrapper: Wrapper<Vue>;
 
   const testUid = 'test-uid';
-  const userPath = `users/${testUid}`;
-  const areaMapPath = `${userPath}/areas/map`;
-  const countsPath = `${userPath}/stats/counts`;
-
   const email = 'user@example.org';
   const key = 'secret123';
 
@@ -126,18 +130,18 @@ describe('Import', () => {
 
     const r1 = testRoute(rid1, [tid1], loc);
     const t1 = testTick(tid1, rid1);
-    expect(MockFirebase.getDoc(userPath)).toEqual({
+    expect(MockFirebase.getDoc(userRef())).toEqual({
       maxTickId: tid1,
       numRoutes: 1,
     });
-    expect(MockFirebase.getDoc(`${userPath}/routes/${rid1}`)).toEqual(r1);
-    expect(MockFirebase.getDoc(`${userPath}/areas/${aid}`)).toEqual({
+    expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(r1);
+    expect(MockFirebase.getDoc(areaRef(aid))).toEqual({
       routes: { [rid1]: testRouteSummary(rid1) },
     });
-    expect(MockFirebase.getDoc(areaMapPath)).toEqual({
+    expect(MockFirebase.getDoc(areaMapRef())).toEqual({
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    expect(MockFirebase.getDoc(countsPath)).toEqual(
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
       testCounts(new Map([[rid1, r1]]))
     );
   });
@@ -146,15 +150,15 @@ describe('Import', () => {
     // Start out with a single route with a single tick.
     let r1 = testRoute(rid1, [tid1], loc);
     const t1 = testTick(tid1, rid1);
-    MockFirebase.setDoc(userPath, { maxTickId: tid1, numRoutes: 1 });
-    MockFirebase.setDoc(`${userPath}/routes/${rid1}`, r1);
-    MockFirebase.setDoc(`${userPath}/areas/${aid}`, {
+    MockFirebase.setDoc(userRef(), { maxTickId: tid1, numRoutes: 1 });
+    MockFirebase.setDoc(routeRef(rid1), r1);
+    MockFirebase.setDoc(areaRef(aid), {
       routes: { [rid1]: testRouteSummary(rid1) },
     });
-    MockFirebase.setDoc(areaMapPath, {
+    MockFirebase.setDoc(areaMapRef(), {
       children: { [loc[0]]: { children: { [loc[1]]: { areaId: aid } } } },
     });
-    MockFirebase.setDoc(countsPath, testCounts(new Map([[rid1, r1]])));
+    MockFirebase.setDoc(countsRef(), testCounts(new Map([[rid1, r1]])));
 
     // Report a second route in a subarea of the first route's area, and new
     // ticks for both routes.
@@ -167,29 +171,29 @@ describe('Import', () => {
     handleGetRoutes([testApiRoute(rid2, loc2)]);
     await doImport();
 
-    expect(MockFirebase.getDoc(userPath)).toEqual({
+    expect(MockFirebase.getDoc(userRef())).toEqual({
       maxTickId: tid3,
       numRoutes: 2,
     });
-    expect(MockFirebase.getDoc(`${userPath}/routes/${rid1}`)).toEqual(
+    expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(
       testRoute(rid1, [tid1, tid2], loc)
     );
-    expect(MockFirebase.getDoc(`${userPath}/routes/${rid2}`)).toEqual(
+    expect(MockFirebase.getDoc(routeRef(rid2))).toEqual(
       testRoute(rid2, [tid3], loc2)
     );
-    expect(MockFirebase.getDoc(`${userPath}/areas/${aid}`)).toEqual({
+    expect(MockFirebase.getDoc(areaRef(aid))).toEqual({
       routes: { [rid1]: testRouteSummary(rid1) },
     });
-    expect(MockFirebase.getDoc(`${userPath}/areas/${aid2}`)).toEqual({
+    expect(MockFirebase.getDoc(areaRef(aid2))).toEqual({
       routes: { [rid2]: testRouteSummary(rid2) },
     });
-    expect(MockFirebase.getDoc(areaMapPath)).toEqual({
+    expect(MockFirebase.getDoc(areaMapRef())).toEqual({
       children: {
         [loc[0]]: { areaId: aid2, children: { [loc[1]]: { areaId: aid } } },
       },
     });
     // prettier-ignore
-    expect(MockFirebase.getDoc(countsPath)).toEqual(
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
       testCounts(new Map([[rid1, r1], [rid2, r2]]))
     );
   });
@@ -199,7 +203,7 @@ describe('Import', () => {
     const routeTicks = Object.fromEntries(
       [...Array(numTopRoutes).keys()].map(i => [`${i + 1}|${i + 1}`, i + 1])
     );
-    MockFirebase.setDoc(countsPath, { routeTicks });
+    MockFirebase.setDoc(countsRef(), { routeTicks });
 
     // Report a new route with a large number of ticks.
     const routeId = 100;
@@ -213,7 +217,7 @@ describe('Import', () => {
     // The new route should've pushed out the old route with the least ticks.
     delete routeTicks['1|1'];
     routeTicks[`${routeId}|${route.name}`] = numTicks;
-    expect(MockFirebase.getDoc(countsPath)!.routeTicks).toEqual(routeTicks);
+    expect(MockFirebase.getDoc(countsRef())!.routeTicks).toEqual(routeTicks);
   });
 
   it('saves original data', async () => {
@@ -231,7 +235,7 @@ describe('Import', () => {
     await doImport();
 
     let numSavedRoutes = 0;
-    const routesRegExp = new RegExp(`^${userPath}/imports/.*\.routes`);
+    const routesRegExp = new RegExp(`^${importsRef().path}/.*\.routes`);
     MockFirebase.listDocs()
       .filter(p => p.match(routesRegExp))
       .sort()
@@ -248,7 +252,7 @@ describe('Import', () => {
     expect(numSavedRoutes).toBe(numItems);
 
     let numSavedTicks = 0;
-    const ticksRegExp = new RegExp(`^${userPath}/imports/.*\.ticks`);
+    const ticksRegExp = new RegExp(`^${importsRef().path}/.*\.ticks`);
     MockFirebase.listDocs()
       .filter(p => p.match(ticksRegExp))
       .sort()
