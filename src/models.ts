@@ -156,6 +156,8 @@ export interface Route {
   // Firestore, which only expects simple types and objects (unless you write
   // custom conversion functions, which seems like a pain).
   ticks: Record<TickId, Tick>;
+  // If the user deletes a tick, it's moved here from |ticks|.
+  deletedTicks?: Record<TickId, Tick>;
 }
 
 // Partial information about a route stored in Area.

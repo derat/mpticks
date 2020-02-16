@@ -247,9 +247,10 @@ describe('Ticks', () => {
       area2,
     ]);
 
-    // The route document should be updated to no longer list the tick, and the
-    // total counts should be updated to exclude the tick as well.
+    // The route document should be updated to reflect the tick's deletion, and
+    // the total counts should be updated to exclude the tick as well.
     const newRoute1 = testRoute(routeId1, [], route1.location);
+    newRoute1.deletedTicks = { [tickId1]: tick1 };
     expect(MockFirebase.getDoc(routeRef(routeId1))!).toEqual(newRoute1);
     expect(MockFirebase.getDoc(countsRef())!).toEqual(
       testCounts(

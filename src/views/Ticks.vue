@@ -433,6 +433,7 @@ export default class Ticks extends Vue {
 
         // This needs to happen before |route| is passed to addTicksToCounts().
         delete route.ticks[tickId];
+        (route.deletedTicks = route.deletedTicks || {})[tickId] = tick;
         batch.set(routeRef(routeId), route);
 
         addTicksToCounts(
