@@ -82,7 +82,13 @@
 
       <v-row class="mx-1">
         <v-col cols="12" :lg="lgFullCols">
-          <canvas id="grade-ticks-chart" />
+          <canvas id="rock-grade-ticks-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row class="mx-1">
+        <v-col cols="12" :lg="lgFullCols">
+          <canvas id="boulder-grade-ticks-chart" />
         </v-col>
       </v-row>
 
@@ -241,6 +247,8 @@ export default class Stats extends Vue {
       ],
     });
 
+    // TODO: Might need to cut off old dates in case someone has a long history.
+    // The bars are pretty narrow after five years.
     const yearMonthLabels: string[] = [];
     for (
       let date = parseDate(sortedDates[0]);
@@ -308,20 +316,21 @@ export default class Stats extends Vue {
       ],
     });
 
-    const gradeLabels: string[] = [];
-    for (let i = 0; i <= 15; i++) {
+    // Future-proof grade range.
+    const rockGradeLabels: string[] = [];
+    for (let i = 0; i <= 16; i++) {
       if (i < 10) {
-        gradeLabels.push(`5.${i}`);
+        rockGradeLabels.push(`5.${i}`);
       } else {
         ['a', 'b', 'c', 'd'].forEach(ch => {
-          gradeLabels.push(`5.${i}${ch}`);
+          rockGradeLabels.push(`5.${i}${ch}`);
         });
       }
     }
     this.addChart({
-      id: 'grade-ticks-chart',
-      title: 'Ticks by Grade',
-      labels: gradeLabels,
+      id: 'rock-grade-ticks-chart',
+      title: 'Rock Ticks by Grade',
+      labels: rockGradeLabels,
       labelFunc: (key: string) => {
         const m = key.match(/^5\.(\d+)([a-d]?).*/);
         if (!m) return '';
@@ -348,6 +357,33 @@ export default class Stats extends Vue {
       aspectRatio: fullAspectRatio,
     });
 
+    // Future-proof grade range.
+    const boulderGradeLabels: string[] = ['VB'];
+    for (let i = 0; i <= 20; i++) boulderGradeLabels.push(`V${i}`);
+    this.addChart({
+      id: 'boulder-grade-ticks-chart',
+      title: 'Boulder Ticks by Grade',
+      labels: boulderGradeLabels,
+      labelFunc: (key: string) => {
+        const m = key.match(/^(V(B|\d+)).*/);
+        return !m ? '' : m[1];
+      },
+      dataSets: [
+        {
+          data: this.counts.gradeCleanTicks,
+          units: 'Clean ticks',
+          color: colors.yellow.lighten2,
+        },
+        {
+          data: this.counts.gradeTicks,
+          units: 'All ticks',
+          color: colors.green.lighten2,
+        },
+      ],
+      trim: Trim.ZEROS_AT_ENDS,
+      aspectRatio: fullAspectRatio,
+    });
+
     const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
       (a, b) => parseInt(a) - parseInt(b)
     );
@@ -363,7 +399,7 @@ export default class Stats extends Vue {
           color: colors.teal.lighten3,
         },
       ],
-      trim: Trim.ALL_ZEROS,
+      trim: Trim.ZEROS_AT_ENDS,
     });
 
     const tickStyleLabels = [
@@ -452,6 +488,9 @@ export default class Stats extends Vue {
             xAxes: [
               {
                 gridLines: { drawOnChartArea: false },
+                // Avoid letting bars get super-wide if someone has e.g. only
+                // climbed one or two grades.
+                maxBarThickness: 60,
                 stacked: true,
               },
             ],
