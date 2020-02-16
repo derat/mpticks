@@ -236,6 +236,24 @@ export interface Counts {
   tickStyleTicks: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
 }
 
+// Returns an empty Counts object.
+export function newCounts(): Counts {
+  return {
+    datePitches: {},
+    dateTicks: {},
+    dayOfWeekPitches: {},
+    dayOfWeekTicks: {},
+    gradeCleanTicks: {},
+    gradeTicks: {},
+    latLongTicks: {},
+    pitchesTicks: {},
+    regionTicks: {},
+    routeTicks: {},
+    routeTypeTicks: {},
+    tickStyleTicks: {},
+  };
+}
+
 // Number of entries to store in Counts.routeTicks.
 export const numTopRoutes = 20;
 

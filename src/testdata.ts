@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 import { ApiRoute, ApiTick } from '@/api';
+import { getRegion } from '@/convert';
 import {
+  Counts,
+  isCleanTickStyle,
   Route,
   RouteId,
   RouteSummary,
@@ -12,7 +15,8 @@ import {
   TickId,
   TickStyle,
 } from '@/models';
-import { formatDate } from '@/dateutil';
+import { getDayOfWeek, formatDate, parseDate } from '@/dateutil';
+import { truncateLatLong } from '@/geoutil';
 
 // Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
 export function testApiRoute(routeId: RouteId, location?: string[]): ApiRoute {
@@ -105,4 +109,78 @@ export function testTick(tickId: TickId, routeId: RouteId): Tick {
     stars: apiTick.userStars,
     grade: apiTick.userRating,
   };
+}
+
+// Runs |keyFunc| and |valFunc| on each item in |items| and returns a map from
+// each key to its summed values. If |valFunc| isn't supplied, a value of 1 is
+// used for each item.
+function countItems<T>(
+  items: T[],
+  keyFunc: (t: T) => number | string,
+  valFunc?: (t: T) => number
+): Record<string, number> {
+  return items.reduce((m, t) => {
+    const key = keyFunc(t).toString();
+    const val = valFunc ? valFunc(t) : 1;
+    if (val) m[key] = m[key] + val || val;
+    return m;
+  }, {} as Record<string, number>);
+}
+
+// Returns a Counts object incorporating all of the ticks from |routeMap|.
+export function testCounts(routeMap: Map<RouteId, Route>): Counts {
+  const routes: Route[] = Array.from(routeMap.values());
+  const ticks: Tick[] = routes.map(r => Object.values(r.ticks)).flat();
+
+  const counts: Counts = {
+    datePitches: countItems(
+      ticks,
+      t => t.date,
+      t => t.pitches
+    ),
+    dateTicks: countItems(ticks, t => t.date),
+    dayOfWeekPitches: countItems(
+      ticks,
+      t => getDayOfWeek(parseDate(t.date)),
+      t => t.pitches
+    ),
+    dayOfWeekTicks: countItems(ticks, t => getDayOfWeek(parseDate(t.date))),
+    gradeCleanTicks: countItems(
+      routes,
+      r => r.grade,
+      r =>
+        Object.values(r.ticks)
+          .map(t => (isCleanTickStyle(t.style) ? 1 : 0) as number)
+          .reduce((a, b) => a + b, 0)
+    ),
+    gradeTicks: countItems(
+      routes,
+      r => r.grade,
+      r => Object.keys(r.ticks).length
+    ),
+    latLongTicks: countItems(
+      routes,
+      r => truncateLatLong(r.lat, r.long),
+      r => Object.keys(r.ticks).length
+    ),
+    pitchesTicks: countItems(ticks, t => t.pitches),
+    regionTicks: countItems(
+      routes,
+      r => getRegion(r.location),
+      r => Object.keys(r.ticks).length
+    ),
+    routeTicks: {}, // updated below
+    routeTypeTicks: countItems(
+      routes,
+      r => r.type,
+      r => Object.keys(r.ticks).length
+    ),
+    tickStyleTicks: countItems(ticks, t => t.style),
+  };
+
+  routeMap.forEach((r, rid) => {
+    counts.routeTicks[`${rid}|${r.name}`] = Object.keys(r.ticks).length;
+  });
+
+  return counts;
 }
