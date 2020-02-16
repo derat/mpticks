@@ -8,9 +8,16 @@ import firebase from 'firebase/app';
 import 'firebase/firestore';
 
 import { mount, Wrapper } from '@vue/test-utils';
-import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
+import {
+  getValue,
+  newVuetifyMountOptions,
+  setUpVuetifyTesting,
+} from '@/testutil';
 import Vue from 'vue';
 import flushPromises from 'flush-promises';
+
+import { makeAreaId } from '@/convert';
+import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
 import {
   Route,
   RouteId,
@@ -20,8 +27,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
-import { makeAreaId } from '@/convert';
-import { testRoute, testRouteSummary, testTick } from '@/testdata';
+import { testCounts, testRoute, testRouteSummary, testTick } from '@/testdata';
 
 import Ticks from './Ticks.vue';
 
@@ -60,7 +66,7 @@ describe('Ticks', () => {
   beforeEach(async () => {
     MockFirebase.reset();
     MockFirebase.currentUser = new MockUser(testUid, 'Test User');
-    MockFirebase.setDoc(`users/${testUid}/areas/map`, {
+    MockFirebase.setDoc(areaMapRef(), {
       children: {
         [area1]: {
           children: {
@@ -70,18 +76,28 @@ describe('Ticks', () => {
         [area2]: { children: {}, areaId: areaId2 },
       },
     });
-    MockFirebase.setDoc(`users/${testUid}/areas/${areaId1}`, {
+    MockFirebase.setDoc(areaRef(areaId1), {
       routes: { [routeId1]: testRouteSummary(routeId1) },
     });
-    MockFirebase.setDoc(`users/${testUid}/areas/${areaId2}`, {
+    MockFirebase.setDoc(areaRef(areaId2), {
       routes: {
         [routeId2]: testRouteSummary(routeId2),
         [routeId3]: testRouteSummary(routeId3),
       },
     });
-    MockFirebase.setDoc(`users/${testUid}/routes/${routeId1}`, route1);
-    MockFirebase.setDoc(`users/${testUid}/routes/${routeId2}`, route2);
-    MockFirebase.setDoc(`users/${testUid}/routes/${routeId3}`, route3);
+    MockFirebase.setDoc(routeRef(routeId1), route1);
+    MockFirebase.setDoc(routeRef(routeId2), route2);
+    MockFirebase.setDoc(routeRef(routeId3), route3);
+    MockFirebase.setDoc(
+      countsRef(),
+      testCounts(
+        new Map([
+          [routeId1, route1],
+          [routeId2, route2],
+          [routeId3, route3],
+        ])
+      )
+    );
   });
 
   // Mounts the Ticks view and initializes |wrapper|.
@@ -116,11 +132,7 @@ describe('Ticks', () => {
     const month = tick.date.substring(4, 6);
     const day = tick.date.substring(6, 8);
     const style = TickStyleToString(tick.style);
-    return (
-      `${year}-${month}-${day} ${style} ` +
-      `${tick.pitches} pitch${tick.pitches == 1 ? '' : 'es'} ` +
-      tick.notes
-    );
+    return `${year}-${month}-${day} ${style} ${tick.pitches}p delete ${tick.notes}`;
   }
 
   it('loads and displays data', async () => {
@@ -190,5 +202,63 @@ describe('Ticks', () => {
       getTickLabel(tick1),
       area2,
     ]);
+  });
+
+  it('supports deleting ticks', async () => {
+    // Show the first route's ticks.
+    await mountView();
+    await toggleItem(0);
+    await toggleItem(1);
+    await toggleItem(2);
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      getTickLabel(tick1),
+      area2,
+    ]);
+
+    // Click the first tick's delete icon to display the dialog.
+    const dialog = wrapper.find({ ref: 'deleteDialog' });
+    expect(getValue(dialog)).toBeFalsy();
+    const deleteIcon = wrapper.find('.tick-delete-icon');
+    deleteIcon.trigger('click');
+    await flushPromises();
+    expect(getValue(dialog)).toBeTruthy();
+
+    // Check that the cancel button dismisses the dialog without doing anything.
+    wrapper.find({ ref: 'deleteCancelButton' }).trigger('click');
+    await flushPromises();
+    expect(getValue(dialog)).toBeFalsy();
+    expect(MockFirebase.getDoc(routeRef(routeId1))!).toEqual(route1);
+
+    // This time, confirm deleting the tick.
+    deleteIcon.trigger('click');
+    await flushPromises();
+    expect(getValue(dialog)).toBeTruthy();
+    wrapper.find({ ref: 'deleteConfirmButton' }).trigger('click');
+    await flushPromises();
+
+    // The tick should no longer be displayed.
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      area2,
+    ]);
+
+    // The route document should be updated to no longer list the tick, and the
+    // total counts should be updated to exclude the tick as well.
+    const newRoute1 = testRoute(routeId1, [], route1.location);
+    expect(MockFirebase.getDoc(routeRef(routeId1))!).toEqual(newRoute1);
+    expect(MockFirebase.getDoc(countsRef())!).toEqual(
+      testCounts(
+        new Map([
+          [routeId1, newRoute1],
+          [routeId2, route2],
+          [routeId3, route3],
+        ])
+      )
+    );
   });
 });

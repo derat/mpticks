@@ -22,17 +22,23 @@
             <v-icon class="tree-icon">{{ item.icon }} </v-icon>
           </template>
           <template v-slot:label="{ item }">
-            <div v-if="item.tickId">
-              <div>
+            <div v-if="item.tick">
+              <div class="tick-label">
                 <span>{{ item.tickDate }}</span>
                 <span class="tick-style" :class="item.tickStyleClass">{{
                   item.tickStyle
                 }}</span>
-                <span class="tick-pitches">{{ item.tickPitches }}</span>
+                <span class="tick-pitches">{{ item.tickPitches }}p</span>
+                <v-icon
+                  class="tick-delete-icon"
+                  :size="18"
+                  @click.stop="onDeleteIconClick(item.tickId, item.routeId)"
+                  >delete</v-icon
+                >
               </div>
               <div class="tick-notes">{{ item.tickNotes }}</div>
             </div>
-            <div v-if="item.routeId" :id="`route-${item.routeId}`">
+            <div v-if="item.routeSummary" :id="`route-${item.routeId}`">
               <span>{{ item.routeName }}</span>
               <span class="route-grade">{{ item.routeGrade }}</span>
               <a
@@ -49,6 +55,37 @@
       </v-col>
     </v-row>
     <NoTicks v-else class="ma-3" />
+
+    <v-dialog ref="deleteDialog" :value="deleteDialogShown" max-width="320px">
+      <v-card>
+        <v-card-title class="title grey lighten-2 px-4" primary-title>
+          Delete tick
+        </v-card-title>
+        <v-card-text class="px-4 py-3">
+          Are you sure that you want to permanently remove this tick from this
+          app?
+        </v-card-text>
+        <v-divider />
+        <v-card-actions>
+          <v-btn
+            text
+            ref="deleteCancelButton"
+            @click="onDeleteCancel"
+            :disabled="deleting"
+            >Cancel</v-btn
+          >
+          <v-spacer />
+          <v-btn
+            text
+            color="error"
+            ref="deleteConfirmButton"
+            @click="onDeleteConfirm"
+            :disabled="deleting"
+            >{{ deleting ? 'Deleting...' : 'Delete' }}</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
   <Spinner v-else />
 </template>
@@ -59,11 +96,13 @@ import Alert from '@/components/Alert.vue';
 import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
-import { areaMapRef, areaRef, routeRef } from '@/docs';
+import app from '@/firebase';
+import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
 import {
   Area,
   AreaId,
   AreaMap,
+  Counts,
   Route,
   RouteId,
   RouteSummary,
@@ -72,6 +111,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
+import { addTicksToCounts } from '@/stats';
 
 // Interface for items in the v-treeview.
 interface Item {
@@ -85,6 +125,10 @@ interface Item {
 
   // Called to dynamically populate |children| when the item is clicked.
   loadChildren(): Promise<void>;
+
+  // Removes the tick identified by |tickId| from |children|. Returns true if
+  // the tick was present in this item or in one of its descendents.
+  removeTick(tickId: TickId): boolean;
 }
 
 class TickItem implements Item {
@@ -94,11 +138,13 @@ class TickItem implements Item {
 
   readonly tickId: TickId;
   readonly tick: Tick;
+  readonly routeId: RouteId;
 
-  constructor(parentId: string, tickId: TickId, tick: Tick) {
+  constructor(parentId: string, tickId: TickId, tick: Tick, routeId: RouteId) {
     this.id = `${parentId}|tick-${tickId}`;
     this.tickId = tickId;
     this.tick = tick;
+    this.routeId = routeId;
   }
 
   get tickDate(): string {
@@ -129,8 +175,8 @@ class TickItem implements Item {
         ) != -1,
     };
   }
-  get tickPitches(): string {
-    return this.tick.pitches == 1 ? '1 pitch' : `${this.tick.pitches} pitches`;
+  get tickPitches(): number {
+    return this.tick.pitches;
   }
   get tickNotes(): string {
     return this.tick.notes || '';
@@ -140,12 +186,16 @@ class TickItem implements Item {
     // Not reached since |children| is undefined.
     throw new Error('Ticks have no children');
   }
+
+  removeTick(tickId: TickId) {
+    return false;
+  }
 }
 
 class RouteItem implements Item {
   readonly id: string;
   readonly icon = 'view_list';
-  children: Item[] = []; // initially empty to force dynamic loading of ticks
+  children: TickItem[] = []; // initially empty to force dynamic loading
 
   readonly routeId: RouteId;
   readonly routeSummary: RouteSummary;
@@ -172,13 +222,24 @@ class RouteItem implements Item {
         // Sort by descending date and ID.
         this.children = Object.entries(route.ticks)
           .map(
-            ([tickId, tick]) => new TickItem(this.id, parseInt(tickId), tick)
+            ([tickId, tick]) =>
+              new TickItem(this.id, parseInt(tickId), tick, this.routeId)
           )
           .sort(
             (a, b) =>
               b.tickDate.localeCompare(a.tickDate) || b.tickId - a.tickId
           );
       });
+  }
+
+  removeTick(tickId: TickId) {
+    for (let i = 0; i < this.children.length; i++) {
+      if (this.children[i].tickId == tickId) {
+        this.children.splice(i, 1);
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -224,6 +285,11 @@ class AreaItem implements Item {
         );
       });
   }
+
+  removeTick(tickId: TickId) {
+    for (const c of this.children) if (c.removeTick(tickId)) return true;
+    return false;
+  }
 }
 
 @Component({ components: { Alert, NoTicks, Spinner } })
@@ -236,6 +302,11 @@ export default class Ticks extends Vue {
   errorMsg = '';
 
   items: Item[] = [];
+
+  deleting = false; // true while tick is being deleted
+  deleteDialogShown = false; // model for delete dialog
+  deleteTickId: TickId = 0; // set when delete icon clicked
+  deleteRouteId: RouteId = 0; // set when delete icon clicked
 
   // Synchronously bound to v-treeview to reflect the |id| fields of open items.
   openIds: string[] = [];
@@ -322,6 +393,72 @@ export default class Ticks extends Vue {
       this.initialRouteParentId = '';
     });
   }
+
+  onDeleteIconClick(tickId: TickId, routeId: RouteId) {
+    this.deleteDialogShown = true;
+    this.deleteTickId = tickId;
+    this.deleteRouteId = routeId;
+  }
+
+  onDeleteCancel() {
+    this.deleteDialogShown = false;
+    this.deleteTickId = 0;
+    this.deleteRouteId = 0;
+  }
+
+  onDeleteConfirm() {
+    this.deleting = true;
+    const tickId = this.deleteTickId;
+    const routeId = this.deleteRouteId;
+
+    Promise.all([
+      routeRef(routeId)
+        .get()
+        .then(snap => {
+          if (!snap.exists) throw new Error(`Can't find route ${routeId}`);
+          return snap.data() as Route;
+        }),
+      countsRef()
+        .get()
+        .then(snap => {
+          if (!snap.exists) throw new Error("Can't find stats");
+          return snap.data() as Counts;
+        }),
+    ])
+      .then(([route, counts]) => {
+        const tick = route.ticks[tickId];
+        if (!tick) throw new Error(`Can't find tick ${tickId}`);
+
+        const batch = app.firestore().batch();
+
+        // This needs to happen before |route| is passed to addTicksToCounts().
+        delete route.ticks[tickId];
+        batch.set(routeRef(routeId), route);
+
+        addTicksToCounts(
+          counts,
+          new Map([[routeId, new Map([[tickId, tick]])]]),
+          new Map([[routeId, route]]),
+          true /* remove */
+        );
+        batch.set(countsRef(), counts);
+
+        return batch.commit();
+      })
+      .then(() => {
+        for (const item of this.items) if (item.removeTick(tickId)) break;
+      })
+      .catch(err => {
+        this.errorMsg = `Failed to delete tick: ${err.message}`;
+        throw err;
+      })
+      .finally(() => {
+        this.deleteDialogShown = false;
+        this.deleting = false;
+        this.deleteTickId = 0;
+        this.deleteRouteId = 0;
+      });
+  }
 }
 </script>
 
@@ -333,6 +470,11 @@ export default class Ticks extends Vue {
   opacity: 0.8;
 }
 
+.tick-label {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+}
 .tick-style {
   background-color: #c5cae9; /* indigo.lighten-4 */
   border: solid 1px #9fa8da; /* indigo.lighten-3 */
@@ -355,6 +497,10 @@ export default class Ticks extends Vue {
   margin-left: 6px;
   opacity: 0.8;
   vertical-align: middle;
+}
+.tick-delete-icon {
+  margin-left: 4px;
+  opacity: 0.6;
 }
 .tick-notes {
   white-space: pre-wrap;
