@@ -12,6 +12,7 @@
       <v-row class="mx-1">
         <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
+            ref="dateTable"
             :headers="dateHeaders"
             :items="dateItems"
             :mobile-breakpoint="NaN"
@@ -45,6 +46,7 @@
       <v-row class="mx-1">
         <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
+            ref="routeTypeTable"
             :headers="routeTypeHeaders"
             :items="routeTypeItems"
             :mobile-breakpoint="NaN"
@@ -57,6 +59,7 @@
         </v-col>
         <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
           <v-data-table
+            ref="topRouteTable"
             :headers="topRouteHeaders"
             :items="topRouteItems"
             :mobile-breakpoint="NaN"
@@ -69,9 +72,9 @@
             <!-- Override rendering of 'route' values to add a click handler
                  that jumps to the corresponding route in the Ticks view. -->
             <template v-slot:item.route="props">
-              <td class="top-route-name" @click="openRoute(props.item.id)">
+              <span class="top-route-name" @click="openRoute(props.item.id)">
                 {{ props.value }}
-              </td>
+              </span>
             </template>
           </v-data-table>
           <div class="total-routes">
@@ -100,6 +103,8 @@
           <canvas id="tick-style-ticks-chart" />
         </v-col>
       </v-row>
+
+      <!-- TODO: Display top regions and map. -->
     </div>
     <NoTicks v-if="ready && !haveStats" class="ma-3" />
     <Spinner v-else-if="!ready" />
@@ -216,13 +221,14 @@ export default class Stats extends Vue {
   }
 
   createCharts() {
-    if (!this.counts) return;
+    if (!this.counts || !this.counts.datePitches) return;
 
     const fullAspectRatio = this.$vuetify.breakpoint.smAndUp
       ? this.smAspectRatio
       : undefined;
 
     const sortedDates = Object.keys(this.counts.datePitches).sort();
+    if (!sortedDates.length) return; // deleted all ticks?
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
 
     const yearLabels: string[] = [];
@@ -273,7 +279,7 @@ export default class Stats extends Vue {
       aspectRatio: fullAspectRatio,
     });
 
-    const monthLabels: string[] = [
+    const monthLabels = [
       'Jan',
       'Feb',
       'Mar',
@@ -358,7 +364,7 @@ export default class Stats extends Vue {
     });
 
     // Future-proof grade range.
-    const boulderGradeLabels: string[] = ['VB'];
+    const boulderGradeLabels = ['VB'];
     for (let i = 0; i <= 20; i++) boulderGradeLabels.push(`V${i}`);
     this.addChart({
       id: 'boulder-grade-ticks-chart',
@@ -384,9 +390,12 @@ export default class Stats extends Vue {
       aspectRatio: fullAspectRatio,
     });
 
-    const pitchesLabels: string[] = Object.keys(this.counts.pitchesTicks).sort(
-      (a, b) => parseInt(a) - parseInt(b)
-    );
+    const sortedPitches = Object.keys(this.counts.pitchesTicks)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(s => parseInt(s));
+    const pitchesLabels = [
+      ...Array(sortedPitches[sortedPitches.length - 1]).keys(),
+    ].map(i => (i + 1).toString());
     this.addChart({
       id: 'pitches-ticks-chart',
       title: 'Ticks by Pitches',
@@ -403,17 +412,17 @@ export default class Stats extends Vue {
     });
 
     const tickStyleLabels = [
-      TickStyle.LEAD,
+      TickStyle.SOLO,
       TickStyle.LEAD_ONSIGHT,
       TickStyle.LEAD_FLASH,
       TickStyle.LEAD_REDPOINT,
       TickStyle.LEAD_PINKPOINT,
+      TickStyle.LEAD,
       TickStyle.LEAD_FELL_HUNG,
       TickStyle.FOLLOW,
       TickStyle.TOP_ROPE,
-      TickStyle.SOLO,
-      TickStyle.SEND,
       TickStyle.FLASH,
+      TickStyle.SEND,
       TickStyle.ATTEMPT,
     ].map(v => TickStyleToString(v));
     this.addChart({
@@ -432,6 +441,8 @@ export default class Stats extends Vue {
     });
   }
 
+  // Creates a Chart object as described by |cfg| and appends it to
+  // |this.charts|.
   addChart(cfg: ChartConfig) {
     const labels = [...cfg.labels];
 
@@ -465,6 +476,9 @@ export default class Stats extends Vue {
       }
     }
 
+    // We don't test that this is defined since it's missing during unit tests,
+    // presumably because jsdom doesn't support <canvas>. I briefly tried
+    // various packages for adding canvas support but couldn't get them to work.
     const canvas = document.getElementById(cfg.id) as HTMLCanvasElement;
     this.charts.push(
       new Chart(canvas, {
@@ -511,7 +525,7 @@ export default class Stats extends Vue {
 
     type DateFunc = (d: Date) => void;
     const getDate = (f: DateFunc): string => {
-      const date = new Date();
+      const date = new Date(Date.now()); // tests mock Date.now()
       f(date);
       return formatDate(date, '%Y%m%d'); // matches Tick.date format
     };
@@ -547,7 +561,8 @@ export default class Stats extends Vue {
     if (!this.counts) return [];
 
     const total = Object.values(this.counts.routeTypeTicks).reduce(
-      (a, b) => a + b
+      (a, b) => a + b,
+      0
     );
     return Object.entries(this.counts.routeTypeTicks)
       .sort((a, b) => b[1] - a[1])

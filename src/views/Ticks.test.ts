@@ -7,13 +7,14 @@ import { MockFirebase, MockUser } from '@/firebase/mock';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 
+import Vue from 'vue';
+import VueRouter from 'vue-router';
 import { mount, Wrapper } from '@vue/test-utils';
 import {
   getValue,
   newVuetifyMountOptions,
   setUpVuetifyTesting,
 } from '@/testutil';
-import Vue from 'vue';
 import flushPromises from 'flush-promises';
 
 import { makeAreaId } from '@/convert';
@@ -29,6 +30,7 @@ import {
 } from '@/models';
 import { testCounts, testRoute, testRouteSummary, testTick } from '@/testdata';
 
+import NoTicks from '@/components/NoTicks.vue';
 import Ticks from './Ticks.vue';
 
 setUpVuetifyTesting();
@@ -101,8 +103,16 @@ describe('Ticks', () => {
   });
 
   // Mounts the Ticks view and initializes |wrapper|.
-  async function mountView(options?: Record<string, any>) {
-    wrapper = mount(Ticks, newVuetifyMountOptions(options));
+  async function mountView(propsData?: Record<string, any>) {
+    wrapper = mount(
+      Ticks,
+      newVuetifyMountOptions({
+        propsData,
+        // Avoids 'Unknown custom element: <router-link>' warning from NoRoutes
+        // component.
+        router: new VueRouter(),
+      })
+    );
     await flushPromises();
   }
 
@@ -138,6 +148,7 @@ describe('Ticks', () => {
   it('loads and displays data', async () => {
     // The top-level areas should be shown initially.
     await mountView();
+    expect(wrapper.find(NoTicks).exists()).toBe(false);
     expect(getLabels()).toEqual([area1, area2]);
 
     // Expand the first area to show its subarea.
@@ -180,7 +191,7 @@ describe('Ticks', () => {
 
   it('supports displaying an initial route', async () => {
     jest.useFakeTimers();
-    await mountView({ propsData: { initialRouteId: routeId1 } });
+    await mountView({ initialRouteId: routeId1 });
 
     await jest.runTimersToTime(0); // window.setTimeout() in openRoute()
     await flushPromises(); // Firestore read from loadItemChildren()
@@ -268,5 +279,12 @@ describe('Ticks', () => {
         ])
       )
     );
+  });
+
+  it('points the user at the Import view when there are no ticks', async () => {
+    MockFirebase.reset();
+    MockFirebase.currentUser = new MockUser(testUid, 'Test User');
+    await mountView();
+    expect(wrapper.find(NoTicks).exists()).toBe(true);
   });
 });
