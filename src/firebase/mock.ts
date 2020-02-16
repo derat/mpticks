@@ -243,7 +243,13 @@ export const MockFirebase = new (class {
   }
 
   // Sets the document at |path| to |data|.
-  setDoc(path: string, data: DocData, options?: firebase.firestore.SetOptions) {
+  setDoc(
+    path: string | DocumentReference,
+    data: DocData,
+    options?: firebase.firestore.SetOptions
+  ) {
+    if (typeof path !== 'string') path = path.path;
+
     // Extract any field increments that are in the doc data.
     const extractIncs = (data: DocData): firebase.firestore.UpdateData => {
       const incs: firebase.firestore.UpdateData = {};
@@ -276,7 +282,9 @@ export const MockFirebase = new (class {
 
   // Returns the document at |path|. Primarily used to simulate actual document
   // fetches, but exposed publicly to let tests check stored data.
-  getDoc(path: string): DocData | undefined {
+  getDoc(path: string | DocumentReference): DocData | undefined {
+    if (typeof path !== 'string') path = path.path;
+
     if (this.getDocHook) {
       const data = this.getDocHook(path);
       if (data != null) return data;
