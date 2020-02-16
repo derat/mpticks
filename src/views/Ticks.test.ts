@@ -82,66 +82,113 @@ describe('Ticks', () => {
     MockFirebase.setDoc(`users/${testUid}/routes/${routeId1}`, route1);
     MockFirebase.setDoc(`users/${testUid}/routes/${routeId2}`, route2);
     MockFirebase.setDoc(`users/${testUid}/routes/${routeId3}`, route3);
-
-    wrapper = mount(Ticks, newVuetifyMountOptions());
-    await flushPromises();
   });
 
-  it('loads and displays data', async () => {
-    const labels = () =>
-      wrapper.findAll('.v-treeview-node__label').wrappers.map(w => w.text());
-    const toggle = async (index: number) => {
-      wrapper
-        .findAll('.v-treeview-node__toggle')
-        .wrappers[index].trigger('click');
-      await flushPromises();
-    };
-    const routeLabel = (route: Route) => `${route.name} ${route.grade} info`;
-    const tickLabel = (tick: Tick) => {
-      const year = tick.date.substring(0, 4);
-      const month = tick.date.substring(4, 6);
-      const day = tick.date.substring(6, 8);
-      const style = TickStyleToString(tick.style);
-      return (
-        `${year}-${month}-${day} ${style} ` +
-        `${tick.pitches} pitch${tick.pitches == 1 ? '' : 'es'} ` +
-        tick.notes
-      );
-    };
+  // Mounts the Ticks view and initializes |wrapper|.
+  async function mountView(options?: Record<string, any>) {
+    wrapper = mount(Ticks, newVuetifyMountOptions(options));
+    await flushPromises();
+  }
 
+  // Returns an array containing the text from each item.
+  function getLabels(): string[] {
+    return wrapper
+      .findAll('.v-treeview-node__label')
+      .wrappers.map(w => w.text());
+  }
+
+  // Toggles the item at zero-based |index|.
+  async function toggleItem(index: number) {
+    wrapper
+      .findAll('.v-treeview-node__toggle')
+      .wrappers[index].trigger('click');
+    await flushPromises();
+  }
+
+  // Returns the label that is used for |route|.
+  function getRouteLabel(route: Route) {
+    return `${route.name} ${route.grade} info`;
+  }
+
+  // Returns the label that is used for |tick|.
+  function getTickLabel(tick: Tick) {
+    const year = tick.date.substring(0, 4);
+    const month = tick.date.substring(4, 6);
+    const day = tick.date.substring(6, 8);
+    const style = TickStyleToString(tick.style);
+    return (
+      `${year}-${month}-${day} ${style} ` +
+      `${tick.pitches} pitch${tick.pitches == 1 ? '' : 'es'} ` +
+      tick.notes
+    );
+  }
+
+  it('loads and displays data', async () => {
     // The top-level areas should be shown initially.
-    expect(labels()).toEqual([area1, area2]);
+    await mountView();
+    expect(getLabels()).toEqual([area1, area2]);
 
     // Expand the first area to show its subarea.
-    await toggle(0);
-    expect(labels()).toEqual([area1, subArea1, area2]);
+    await toggleItem(0);
+    expect(getLabels()).toEqual([area1, subArea1, area2]);
 
     // Expanding the subarea should show its route.
-    await toggle(1);
-    expect(labels()).toEqual([area1, subArea1, routeLabel(route1), area2]);
-
-    // Expand the second area to show its routes.
-    await toggle(3);
-    expect(labels()).toEqual([
+    await toggleItem(1);
+    expect(getLabels()).toEqual([
       area1,
       subArea1,
-      routeLabel(route1),
+      getRouteLabel(route1),
       area2,
-      routeLabel(route2),
-      routeLabel(route3),
+    ]);
+
+    // Expand the second area to show its routes.
+    await toggleItem(3);
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      area2,
+      getRouteLabel(route2),
+      getRouteLabel(route3),
     ]);
 
     // Click the second area's first route to show its ticks.
-    await toggle(4);
-    expect(labels()).toEqual([
+    await toggleItem(4);
+    expect(getLabels()).toEqual([
       area1,
       subArea1,
-      routeLabel(route1),
+      getRouteLabel(route1),
       area2,
-      routeLabel(route2),
-      tickLabel(tick3),
-      tickLabel(tick2),
-      routeLabel(route3),
+      getRouteLabel(route2),
+      getTickLabel(tick3),
+      getTickLabel(tick2),
+      getRouteLabel(route3),
+    ]);
+  });
+
+  it.skip('supports displaying an initial route', async () => {
+    jest.useFakeTimers();
+    await mountView({ propsData: { initialRouteId: routeId1 } });
+
+    await jest.runTimersToTime(0); // window.setTimeout() in openRoute()
+    await flushPromises(); // Firestore read from loadItemChildren()
+    await jest.runTimersToTime(0); // window.setTimeout() in loadItemChildren()
+
+    // TODO: At this point, loadItemChildren() ought to be called for the
+    // RouteItem. However, this doesn't seem to happen -- regardless of how many
+    // times I call jest.runTimersToTime(), flushPromises(), or Vue.nextTick(),
+    // I never see the tick get loaded. There seems to be some fishiness with
+    // v-treeview's |open| property that may be related:
+    // https://github.com/vuetifyjs/vuetify/issues/10583
+
+    await flushPromises(); // Firestore read from loadItemChildren()
+
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      getTickLabel(tick1),
+      area2,
     ]);
   });
 });
