@@ -475,6 +475,9 @@ export default class Stats extends Vue {
             label: ds.units,
             data: labels.map(label => dataSetLabelValues[i][label]),
             backgroundColor: ds.color,
+            // Avoid letting bars get super-wide if someone has e.g. only
+            // climbed one or two grades.
+            maxBarThickness: 60,
           })),
         },
         options: {
@@ -488,9 +491,6 @@ export default class Stats extends Vue {
             xAxes: [
               {
                 gridLines: { drawOnChartArea: false },
-                // Avoid letting bars get super-wide if someone has e.g. only
-                // climbed one or two grades.
-                maxBarThickness: 60,
                 stacked: true,
               },
             ],
