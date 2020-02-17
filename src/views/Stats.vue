@@ -9,65 +9,50 @@
     <!-- Using v-show instead of v-if so the canvas will exist when we try to
          draw into it from mounted(). -->
     <div v-show="ready && haveStats">
-      <v-row class="mx-1">
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+      <v-row>
+        <v-col v-bind="halfColProps">
           <v-data-table
             ref="dateTable"
             :headers="dateHeaders"
             :items="dateItems"
-            :mobile-breakpoint="NaN"
-            dense
-            disable-filtering
-            disable-pagination
-            disable-sort
-            hide-default-footer
+            v-bind="dataTableProps"
           />
         </v-col>
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+        <v-col v-bind="halfColProps">
           <canvas id="year-pitches-chart" />
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :lg="lgFullCols">
+      <v-row>
+        <v-col v-bind="fullColProps">
           <canvas id="year-month-pitches-chart" />
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+      <v-row>
+        <v-col v-bind="halfColProps">
           <canvas id="month-pitches-chart" />
         </v-col>
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+        <v-col v-bind="halfColProps">
           <canvas id="day-of-week-pitches-chart" />
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+      <v-row>
+        <v-col v-bind="halfColProps">
           <v-data-table
             ref="routeTypeTable"
             :headers="routeTypeHeaders"
             :items="routeTypeItems"
-            :mobile-breakpoint="NaN"
-            dense
-            disable-filtering
-            disable-pagination
-            disable-sort
-            hide-default-footer
+            v-bind="dataTableProps"
           />
         </v-col>
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+        <v-col v-bind="halfColProps">
           <v-data-table
             ref="topRouteTable"
             :headers="topRouteHeaders"
             :items="topRouteItems"
-            :mobile-breakpoint="NaN"
-            dense
-            disable-filtering
-            disable-pagination
-            disable-sort
-            hide-default-footer
+            v-bind="dataTableProps"
           >
             <!-- Override rendering of 'route' values to add a click handler
                  that jumps to the corresponding route in the Ticks view. -->
@@ -83,23 +68,23 @@
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :lg="lgFullCols">
+      <v-row>
+        <v-col v-bind="fullColProps">
           <canvas id="rock-grade-ticks-chart" />
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :lg="lgFullCols">
+      <v-row>
+        <v-col v-bind="fullColProps">
           <canvas id="boulder-grade-ticks-chart" />
         </v-col>
       </v-row>
 
-      <v-row class="mx-1">
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+      <v-row>
+        <v-col v-bind="halfColProps">
           <canvas id="pitches-ticks-chart" />
         </v-col>
-        <v-col cols="12" :sm="smHalfCols" :lg="lgHalfCols">
+        <v-col v-bind="halfColProps">
           <canvas id="tick-style-ticks-chart" />
         </v-col>
       </v-row>
@@ -156,11 +141,20 @@ interface ChartConfig {
 
 @Component({ components: { Alert, NoTicks, Spinner } })
 export default class Stats extends Vue {
-  // Columns for half-width charts at the 'sm' and 'lg' breakpoints.
-  readonly smHalfCols = 6;
-  readonly lgHalfCols = 4;
-  // Columns for full-width charts at the 'lg' breakpoint.
-  readonly lgFullCols = 8;
+  // Properties for half- and full-screen-width columns.
+  readonly halfColProps = { cols: 12, lg: 4, sm: 6 };
+  readonly fullColProps = { cols: 12, lg: 8 };
+
+  // Common properties for all v-data-table components.
+  readonly dataTableProps = {
+    dense: true,
+    disableFiltering: true,
+    disablePagination: true,
+    disableSort: true,
+    hideDefaultFooter: true,
+    mobileBreakpoint: NaN,
+  };
+
   // Aspect ratio for full-width charts at the 'sm' breakpoint.
   readonly smAspectRatio = 3;
 
