@@ -115,7 +115,7 @@ describe('Stats', () => {
       },
       latLongTicks: { '0,0': 1 },
       pitchesTicks: { 1: 20, 2: 3, 4: 1 },
-      regionTicks: { Foo: 1 },
+      regionTicks: { California: 1, Arizona: 20, Canada: 5 },
       routeTicks,
       routeTypeTicks: {
         [RouteType.SPORT]: 5,
@@ -201,6 +201,12 @@ describe('Stats', () => {
         `Route ${numTopRoutes - i}`,
         (numTopRoutes - i).toString(),
       ]),
+    ]);
+    expect(getDataTableRows('regionTable')).toEqual([
+      ['Region', 'Ticks'],
+      ['Arizona', '20'],
+      ['Canada', '5'],
+      ['California', '1'],
     ]);
 
     expect(wrapper.find('.total-routes').text()).toBe('Total Routes: 25');

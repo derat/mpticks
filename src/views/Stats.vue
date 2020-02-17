@@ -82,6 +82,17 @@
 
       <v-row>
         <v-col v-bind="halfColProps">
+          <v-data-table
+            ref="regionTable"
+            :headers="regionHeaders"
+            :items="regionItems"
+            v-bind="dataTableProps"
+          />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col v-bind="halfColProps">
           <canvas id="pitches-ticks-chart" />
         </v-col>
         <v-col v-bind="halfColProps">
@@ -178,6 +189,10 @@ export default class Stats extends Vue {
   ];
   readonly topRouteHeaders = [
     { text: 'Route', value: 'route' },
+    { text: 'Ticks', value: 'ticks', align: 'right' },
+  ];
+  readonly regionHeaders = [
+    { text: 'Region', value: 'region' },
     { text: 'Ticks', value: 'ticks', align: 'right' },
   ];
 
@@ -570,19 +585,28 @@ export default class Stats extends Vue {
   }
 
   get topRouteItems() {
-    if (!this.counts) return [];
+    return this.counts
+      ? Object.entries(this.counts.routeTicks)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([key, ticks]) => {
+            const parts = key.split('|');
+            return {
+              id: parts[0],
+              route: parts.slice(1).join('|'),
+              ticks: ticks as number,
+            };
+          })
+      : [];
+  }
 
-    return Object.entries(this.counts.routeTicks)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([key, ticks]) => {
-        const parts = key.split('|');
-        return {
-          id: parts[0],
-          route: parts.slice(1).join('|'),
-          ticks: ticks as number,
-        };
-      });
+  get regionItems() {
+    return this.counts
+      ? Object.entries(this.counts.regionTicks)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([region, ticks]) => ({ region, ticks }))
+      : [];
   }
 
   openRoute(routeId: RouteId) {
