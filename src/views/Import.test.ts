@@ -81,7 +81,12 @@ describe('Import', () => {
     mockAxios.reset();
     MockFirebase.reset();
     MockFirebase.currentUser = new MockUser(testUid, 'Test User');
-    wrapper = mount(Import, newVuetifyMountOptions());
+
+    // Disable sync mode since it causes "TypeError: Cannot read property
+    // '$scopedSlots' of undefined" errors here. It's apparently permanently
+    // removed after @vue/test-utils@1.0.0-beta.29:
+    // https://github.com/vuejs/vue-test-utils/issues/1130
+    wrapper = mount(Import, newVuetifyMountOptions({ sync: false }));
     await flushPromises();
   });
 

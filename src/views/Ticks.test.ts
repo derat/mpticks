@@ -178,7 +178,7 @@ describe('Ticks', () => {
     ]);
   });
 
-  it.skip('supports displaying an initial route', async () => {
+  it('supports displaying an initial route', async () => {
     jest.useFakeTimers();
     await mountView({ propsData: { initialRouteId: routeId1 } });
 
@@ -192,9 +192,16 @@ describe('Ticks', () => {
     // I never see the tick get loaded. There seems to be some fishiness with
     // v-treeview's |open| property that may be related:
     // https://github.com/vuetifyjs/vuetify/issues/10583
+    //
+    // When running the test in sync mode, this isn't a problem. However, sync
+    // mode was apparently permanently removed after removed after
+    // @vue/test-utils@1.0.0-beta.29:
+    // https://github.com/vuejs/vue-test-utils/issues/1130
+    //
+    // Hopefully the v-treeview issue gets resolved before I need to upgrade to
+    // a newer version of vue-test-utils. :-/
 
     await flushPromises(); // Firestore read from loadItemChildren()
-
     expect(getLabels()).toEqual([
       area1,
       subArea1,
