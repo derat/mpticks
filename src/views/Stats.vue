@@ -89,6 +89,9 @@
             v-bind="dataTableProps"
           />
         </v-col>
+        <v-col v-bind="halfColProps">
+          <div id="map" />
+        </v-col>
       </v-row>
 
       <v-row>
@@ -115,6 +118,7 @@ import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
 import Chart from 'chart.js';
+import loadGoogleMapsApi from 'load-google-maps-api';
 
 import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
@@ -197,6 +201,7 @@ export default class Stats extends Vue {
   ];
 
   charts: Chart[] = [];
+  map?: google.maps.Map;
 
   mounted() {
     Promise.all([
@@ -207,6 +212,7 @@ export default class Stats extends Vue {
             this.haveStats = true;
             this.counts = snap.data()! as Counts;
             this.createCharts();
+            this.createMap();
           }
         }),
       userRef()
@@ -529,6 +535,47 @@ export default class Stats extends Vue {
     );
   }
 
+  createMap() {
+    if (!this.counts) return;
+
+    loadGoogleMapsApi({
+      key: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
+      libraries: ['visualization'],
+    }).then(googleMaps => {
+      const bounds = new googleMaps.LatLngBounds();
+      // https://developers.google.com/maps/documentation/javascript/heatmaplayer
+      const heatmap = new googleMaps.visualization.HeatmapLayer({
+        data: Object.entries(this.counts!.latLongTicks).map(([key, ticks]) => {
+          const p = key.split(',').map(s => parseFloat(s));
+          const latLng = new googleMaps.LatLng(p[0], p[1]);
+          bounds.extend(latLng);
+          return { location: latLng, weight: ticks };
+        }),
+        gradient: [
+          'rgba(244, 67, 54, 0)', // red
+          'rgb(255, 152, 0)', // orange
+          'rgb(255, 235, 59)', // yellow
+        ],
+        maxIntensity: 10,
+        opacity: 1,
+        radius: 5,
+      });
+
+      this.map = new googleMaps.Map(document.getElementById('map')!, {
+        center: bounds.getCenter(),
+        controlSize: 24,
+        mapTypeControl: false,
+        mapTypeId: 'satellite',
+        scaleControl: false,
+        streetViewControl: false,
+        zoom: 1,
+        zoomControl: true,
+      });
+
+      heatmap.setMap(this.map);
+    });
+  }
+
   get dateItems() {
     if (!this.counts) return [];
 
@@ -630,5 +677,10 @@ export default class Stats extends Vue {
 .total-routes .label {
   color: rgb(0, 0, 0, 0.6);
   font-weight: 700;
+}
+
+#map {
+  width: 100%;
+  height: 250px;
 }
 </style>

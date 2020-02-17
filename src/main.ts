@@ -8,7 +8,6 @@ Vue.config.productionTip = false;
 Vue.config.devtools = false;
 
 import VueRouter from 'vue-router';
-
 Vue.use(VueRouter);
 
 import firebase from '@/firebase';

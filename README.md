@@ -142,7 +142,8 @@ interface:
     `isCleanTickStyle` function.
 *   `gradeTicks` - Map field keyed by route grade, e.g. `'5.9'` or `'V3'`.
 *   `latLongTicks` - Map field keyed by comma-separated route latitude and
-    longitude rounded to one decimal place of precision, e.g. `'39.9,-105.0'`.
+    longitude rounded to two decimal places of precision, e.g.
+    `'39.94,-105.02'`.
 *   `pitchesTicks` - Map field keyed by number of pitches in each tick.
 *   `regionTicks` - Map field keyed by route region (U.S. state/territory or
     country).

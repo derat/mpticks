@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Truncates the supplied coordinates to a single decimal place (corresponding
-// to 11.132 km of precision) and returns a string like '39.9,-105.0'. See
+// Truncates the supplied coordinates to two decimal places (corresponding to
+// 1.1132 km of precision) and returns a string like '39.92,-105.05'. See
 // https://en.wikipedia.org/wiki/Decimal_degrees.
 export function truncateLatLong(latitude: number, longitude: number): string {
-  return `${latitude.toFixed(1)},${longitude.toFixed(1)}`;
+  return `${latitude.toFixed(2)},${longitude.toFixed(2)}`;
 }

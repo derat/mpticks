@@ -5,12 +5,12 @@
 import { truncateLatLong } from './geoutil';
 
 describe('truncateLatLong', () => {
-  it('truncates to one decimal place', () => {
+  it('truncates to two decimal places', () => {
     ([
-      [45.5435, -123.34541, '45.5,-123.3'],
-      [0.123, 0.426, '0.1,0.4'],
-      [29.99, 41.96, '30.0,42.0'],
-      [23, -67, '23.0,-67.0'],
+      [45.5435, -123.34541, '45.54,-123.35'],
+      [0.123, 0.426, '0.12,0.43'],
+      [29.999, 41.964, '30.00,41.96'],
+      [23, -67, '23.00,-67.00'],
     ] as [number, number, string][]).forEach(([lat, long, exp]) => {
       expect(truncateLatLong(lat, long)).toEqual(exp);
     });

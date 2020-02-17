@@ -230,7 +230,7 @@ export interface Counts {
   dayOfWeekTicks: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
   gradeCleanTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   gradeTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
-  latLongTicks: Record<string, number>; // '39.9,-105.0' (11.132 km accuracy)
+  latLongTicks: Record<string, number>; // '39.94,-105.01' (1.1132 km accuracy)
   pitchesTicks: Record<number, number>; // pitch count from tick
   regionTicks: Record<string, number>; // 'California', 'China', etc.
   routeTicks: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
