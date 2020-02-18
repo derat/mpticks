@@ -14,8 +14,7 @@ export default new Vuetify({
   theme: {
     themes: {
       light: {
-        // https://materialpalette.com/indigo/amber
-        primary: colors.indigo.base,
+        primary: colors.indigo.darken2,
         secondary: colors.grey.darken1,
         accent: colors.amber.base,
       },
