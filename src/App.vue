@@ -114,7 +114,7 @@ export default class App extends Vue {
         to: 'export',
       },
       { type: NavItemType.ITEM, text: 'About', icon: 'info', to: 'about' },
-      { type: NavItemType.DIVIDER },
+      { type: NavItemType.DIVIDER, when: When.LOGGED_IN },
       {
         type: NavItemType.ITEM,
         text: 'Log out',
