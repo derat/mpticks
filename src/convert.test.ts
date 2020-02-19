@@ -205,9 +205,23 @@ describe('getRegion', () => {
 });
 
 describe('makeAreaId', () => {
-  it('escapes slashes, percents, and pipes in components', () => {
-    expect(makeAreaId(['A/%B', 'C%|D', 'E|/F'])).toBe(
-      'A%2f%25B|C%25%7cD|E%7c%2fF'
-    );
+  it('escapes disallowed characters', () => {
+    ([
+      [['A', 'B', 'C'], 'A|B|C'],
+      [['A/%B', 'C%|D', 'E|/F'], 'A%2f%25B|C%25%7cD|E%7c%2fF'],
+      [['.'], '%2e'],
+      [['.A'], '.A'],
+      [['..'], '%2e%2e'],
+      [['..A'], '..A'],
+      [['__foo__'], '%5f%5ffoo%5f%5f'],
+      [['____'], '%5f%5f%5f%5f'],
+      [['___'], '___'],
+      [['__'], '__'],
+    ] as [string[], string][]).forEach(([location, exp]) => {
+      expect(makeAreaId(location)).toBe(exp);
+      // It's just a nice-to-have, but check that the area ID decodes to the
+      // original components joined by pipes.
+      expect(decodeURIComponent(makeAreaId(location))).toBe(location.join('|'));
+    });
   });
 });

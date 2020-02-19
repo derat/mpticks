@@ -126,15 +126,28 @@ export function createRoute(apiRoute: ApiRoute): Route {
 }
 
 // Generates an AreaId based on the supplied location components.
-export function makeAreaId(location: string[]) {
-  return (
-    location
-      // Forward slashes can't appear in Firestore path components.
-      // Pipes are used for separating components.
-      // Percent signs are used for escaping.
-      .map(l => l.replace(/[/|%]/g, c => '%' + c.charCodeAt(0).toString(16)))
-      .join('|')
-  );
+export function makeAreaId(location: string[]): AreaId {
+  // Area IDs are used as document IDs in the 'areas' subcollection, so we
+  // percent-escape various characters to avoid running afoul of the naming
+  // rules at https://cloud.google.com/firestore/quotas.
+  let id: AreaId = location
+    // Forward slashes can't appear in Firestore path components.
+    // Pipes are used for separating components.
+    // Percent signs are used for escaping.
+    .map(l => l.replace(/[/|%]/g, c => '%' + c.charCodeAt(0).toString(16)))
+    .join('|');
+
+  // Handle more weird Firestore document-naming rules: docs can't be named '.',
+  // '..', or be matched by /__.*__/.
+  if (id == '.') {
+    id = '%2e';
+  } else if (id == '..') {
+    id = '%2e%2e';
+  } else if (id.length >= 4 && id.startsWith('__') && id.endsWith('__')) {
+    id = '%5f%5f' + id.slice(2, id.length - 2) + '%5f%5f';
+  }
+
+  return id;
 }
 
 // Recursively walks |map| in order to add an area identified by |id|.
