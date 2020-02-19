@@ -9,6 +9,7 @@ import {
   getRegion,
   getRouteType,
   getTickStyle,
+  makeAreaId,
   unknownRegion,
 } from '@/convert';
 import { RouteType, TickStyle } from '@/models';
@@ -200,5 +201,13 @@ describe('getRegion', () => {
     ] as [string[], string][]).forEach(([loc, region]) => {
       expect(getRegion(loc)).toEqual(region);
     });
+  });
+});
+
+describe('makeAreaId', () => {
+  it('escapes slashes, percents, and pipes in components', () => {
+    expect(makeAreaId(['A/%B', 'C%|D', 'E|/F'])).toBe(
+      'A%2f%25B|C%25%7cD|E%7c%2fF'
+    );
   });
 });

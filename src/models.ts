@@ -167,8 +167,10 @@ export interface RouteSummary {
 }
 
 // A unique identifier for an area containing routes. Created by joining the
-// components of the |location| field returned by the get-routes API endpoint
-// with pipes, e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'.
+// components of the |location| field returned by the get-routes API endpoint,
+// e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'. Some characters are
+// escaped due to limitations in Firestore path components; see makeAreaId() in
+// convert.ts.
 //
 // This is used as the document ID for the corresponding AreaMap in the |areas|
 // subcollection.

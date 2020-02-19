@@ -127,7 +127,14 @@ export function createRoute(apiRoute: ApiRoute): Route {
 
 // Generates an AreaId based on the supplied location components.
 export function makeAreaId(location: string[]) {
-  return location.join('|');
+  return (
+    location
+      // Forward slashes can't appear in Firestore path components.
+      // Pipes are used for separating components.
+      // Percent signs are used for escaping.
+      .map(l => l.replace(/[/|%]/g, c => '%' + c.charCodeAt(0).toString(16)))
+      .join('|')
+  );
 }
 
 // Recursively walks |map| in order to add an area identified by |id|.

@@ -110,8 +110,8 @@ correspond to the `Route` interface:
 
 Area-specific information is stored in the `areas` subcollection under each user
 document. Documents have names corresponding to pipe-separated Mountain Project
-locations (e.g. `Colorado|Boulder|Boulder Canyon|Avalon`) and correspond to the
-`Area` interface:
+locations (e.g. `Colorado|Boulder|Boulder Canyon|Avalon`) with minor escaping
+(see `makeAreaId()`). They correspond to the `Area` interface:
 
 *   `routes` - Map field keyed by route ID. Values are maps corresponding to the
     `RouteSummary` interface:

@@ -203,6 +203,31 @@ describe('Import', () => {
     );
   });
 
+  it('handles slashes in location components', async () => {
+    const weirdLoc = ['A/B', 'C/D'];
+    handleGetTicks([testApiTick(tid1, rid1)]);
+    handleGetRoutes([testApiRoute(rid1, weirdLoc)]);
+    await doImport();
+
+    const weirdAid = makeAreaId(weirdLoc);
+    expect(weirdAid).not.toContain('/');
+
+    const r1 = testRoute(rid1, [tid1], weirdLoc);
+    const t1 = testTick(tid1, rid1);
+    expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(r1);
+    expect(MockFirebase.getDoc(areaRef(weirdAid))).toEqual({
+      routes: { [rid1]: testRouteSummary(rid1) },
+    });
+    expect(MockFirebase.getDoc(areaMapRef())).toEqual({
+      children: {
+        [weirdLoc[0]]: { children: { [weirdLoc[1]]: { areaId: weirdAid } } },
+      },
+    });
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
+      testCounts(new Map([[rid1, r1]]))
+    );
+  });
+
   it('updates route ticks stat', async () => {
     // Start out with a full set of route counts.
     const routeTicks = Object.fromEntries(
