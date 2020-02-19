@@ -1,7 +1,7 @@
 {
   "name": "mpticks",
   "short_name": "mpticks",
-  "theme_color": "#303f9f",
+  "theme_color": "#3f51b5",
   "icons": [
     {
       "src": "/maskable-512x512.png",
@@ -22,6 +22,6 @@
   ],
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#303f9f",
+  "background_color": "#3f51b5",
   "scope": "/"
 }
