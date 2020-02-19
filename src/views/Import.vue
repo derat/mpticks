@@ -32,6 +32,9 @@
             label="Email address"
             v-model="email"
             :rules="emailRules"
+            autocomplete="email"
+            name="email"
+            type="email"
           />
         </v-col>
       </v-row>
