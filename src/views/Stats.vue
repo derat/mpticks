@@ -542,30 +542,39 @@ export default class Stats extends Vue {
       key: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       libraries: ['visualization'],
     }).then(googleMaps => {
+      let maxTicks = 1;
       const bounds = new googleMaps.LatLngBounds();
+
       // https://developers.google.com/maps/documentation/javascript/heatmaplayer
-      const heatmap = new googleMaps.visualization.HeatmapLayer({
-        data: Object.entries(this.counts!.latLongTicks).map(([key, ticks]) => {
+      const data = Object.entries(this.counts!.latLongTicks).map(
+        ([key, tickCount]) => {
           const p = key.split(',').map(s => parseFloat(s));
           const latLng = new googleMaps.LatLng(p[0], p[1]);
           bounds.extend(latLng);
-          return { location: latLng, weight: ticks };
-        }),
+          maxTicks = Math.max(maxTicks, tickCount);
+          return { location: latLng, weight: tickCount };
+        }
+      );
+      const heatmap = new googleMaps.visualization.HeatmapLayer({
+        data,
         gradient: [
-          'rgba(244, 67, 54, 0)', // red
-          'rgb(255, 152, 0)', // orange
-          'rgb(255, 235, 59)', // yellow
+          'rgba(183, 28, 28, 0)', // red darken-4
+          colors.red.darken4,
+          colors.orange.darken2,
+          colors.orange.base,
+          colors.orange.lighten2,
+          colors.yellow.base,
         ],
-        maxIntensity: 10,
+        maxIntensity: Math.min(maxTicks, 20),
         opacity: 1,
-        radius: 5,
+        radius: 10,
       });
 
       this.map = new googleMaps.Map(document.getElementById('map')!, {
         center: bounds.getCenter(),
         controlSize: 24,
         mapTypeControl: false,
-        mapTypeId: 'satellite',
+        mapTypeId: 'terrain',
         scaleControl: false,
         streetViewControl: false,
         zoom: 1,
