@@ -14,7 +14,7 @@
       Some users want to tick every climb so they can track their activity or
       review notes about earlier attempts. At the same time, it can be annoying
       to see the stats page for a warm-up route cluttered with multiple ticks
-      from a single user.
+      from the same user.
       <span v-if="!short"
         >There have been
         <a
@@ -39,8 +39,10 @@
     </p>
     <p v-if="!short">
       Mountain Project doesn't currently provide an interface for importing
-      ticks, so be sure that you know what you're doing before you delete them
-      from there.
+      ticks, so be sure that you know what you're doing if you choose to delete
+      them from there. Your Mountain Project ticks page has an "Export CSV"
+      link, and you can also <router-link to="/export">export</router-link> all
+      ticks and routes that you import into this site.
     </p>
     <p>
       The source code for this site is available on
@@ -50,6 +52,12 @@
         <a href="mailto:dan-mpticks@erat.org" target="_blank">email me</a
         >.</span
       >
+    </p>
+    <p class="caption">
+      This site doesn't collect any information beyond the email address that
+      you use to log in and the ticks that you import (which Mountain Project
+      already makes publically available). I won't give your email address to
+      anyone or use it to spam you.
     </p>
   </div>
 </template>
