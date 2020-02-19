@@ -15,7 +15,10 @@
             >this page</a
           >.
         </p>
-
+        <p>
+          Ticks that were added in Mountain Project since the last time that you
+          did an import will be saved to this site.
+        </p>
         <p class="data-note caption">
           This information is only used to fetch your ticks and routes. In fact,
           it goes directly from your browser to Mountain Project's servers and
@@ -68,7 +71,7 @@
           color="primary"
           :disabled="!valid || importing"
           @click="onImportClick"
-          >{{ importButtonLabel }}</v-btn
+          >{{ importing ? 'Importing...' : 'Import new ticks' }}</v-btn
         >
       </v-col>
     </v-row>
@@ -153,10 +156,6 @@ export default class Import extends Vue {
 
   get importing() {
     return !!this.importStartTime;
-  }
-
-  get importButtonLabel() {
-    return this.importing ? 'Importing...' : 'Import';
   }
 
   mounted() {

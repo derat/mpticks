@@ -63,9 +63,8 @@
         </v-card-title>
         <v-card-text class="px-4 py-3">
           Are you sure that you want to permanently remove this tick from this
-          app?
+          app? You won't be able to import it again.
         </v-card-text>
-        <v-divider />
         <v-card-actions>
           <v-btn
             text
