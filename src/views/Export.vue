@@ -75,7 +75,7 @@ export default class Export extends Vue {
       .then(snapshot => {
         const routes: ApiRoute[] = [];
         const ticks: ApiTick[] = [];
-        snapshot.docs.map(doc => {
+        snapshot.docs.forEach(doc => {
           if (doc.id.indexOf('.routes.') != -1) {
             routes.push(...((doc.data() as ImportedRoutes).routes || []));
           } else if (doc.id.indexOf('.ticks.') != -1) {
