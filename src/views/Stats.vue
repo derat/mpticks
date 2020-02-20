@@ -88,6 +88,12 @@
 
       <v-row>
         <v-col v-bind="halfColProps">
+          <canvas id="new-routes-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col v-bind="halfColProps">
           <v-data-table
             ref="regionTable"
             :headers="regionHeaders"
@@ -108,8 +114,6 @@
           <canvas id="tick-style-ticks-chart" />
         </v-col>
       </v-row>
-
-      <!-- TODO: Display top regions and map. -->
     </div>
     <NoTicks v-if="ready && !haveStats" class="ma-3" />
     <Spinner v-else-if="!ready" />
@@ -423,6 +427,23 @@ export default class Stats extends Vue {
         ],
         trim: Trim.ZEROS_AT_ENDS,
         aspectRatio: fullAspectRatio,
+      })
+    );
+
+    const [newRoutesLabels, newRoutesDateToLabel] = makeWeekLabels(12);
+    this.charts.push(
+      newChart({
+        id: 'new-routes-chart',
+        title: 'Weekly New Routes',
+        labels: newRoutesLabels,
+        labelFunc: k => newRoutesDateToLabel[k],
+        dataSets: [
+          {
+            data: this.counts.dateFirstTicks,
+            units: 'Ticks',
+            color: colors.indigo.lighten2,
+          },
+        ],
       })
     );
 

@@ -101,6 +101,7 @@ import {
   Area,
   AreaId,
   AreaMap,
+  compareTicks,
   Counts,
   Route,
   RouteId,
@@ -218,16 +219,13 @@ class RouteItem implements Item {
       .then(snap => {
         if (!snap.exists) return;
         const route = snap.data() as Route;
-        // Sort by descending date and ID.
         this.children = Object.entries(route.ticks)
           .map(
             ([tickId, tick]) =>
               new TickItem(this.id, parseInt(tickId), tick, this.routeId)
           )
-          .sort(
-            (a, b) =>
-              b.tickDate.localeCompare(a.tickDate) || b.tickId - a.tickId
-          );
+          .sort((a, b) => compareTicks(a.tickId, a.tick, b.tickId, b.tick))
+          .reverse();
       });
   }
 

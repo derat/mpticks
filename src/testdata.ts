@@ -6,6 +6,7 @@ import { ApiRoute, ApiTick } from '@/api';
 import { getRegion } from '@/convert';
 import {
   Counts,
+  compareTicks,
   countsVersion,
   isCleanTickStyle,
   Route,
@@ -133,8 +134,28 @@ export function testCounts(routeMap: Map<RouteId, Route>): Counts {
   const routes: Route[] = Array.from(routeMap.values());
   const ticks: Tick[] = routes.map(r => Object.values(r.ticks)).flat();
 
+  // Build a set of all ticks that were the first for their route.
+  const firstTicks = new Set<Tick>();
+  routes.forEach(route => {
+    let firstTickId: TickId = 0;
+    let firstTick: Tick | null = null;
+    Object.entries(route.ticks).forEach(([id, t]) => {
+      const tid = parseInt(id);
+      if (!firstTick || compareTicks(tid, t, firstTickId, firstTick) < 0) {
+        firstTickId = tid;
+        firstTick = t;
+      }
+    });
+    if (firstTick) firstTicks.add(firstTick);
+  });
+
   const counts: Counts = {
     version: countsVersion,
+    dateFirstTicks: countItems(
+      ticks,
+      t => t.date,
+      t => (firstTicks.has(t) ? 1 : 0)
+    ),
     datePitches: countItems(
       ticks,
       t => t.date,
@@ -180,8 +201,10 @@ export function testCounts(routeMap: Map<RouteId, Route>): Counts {
     tickStyleTicks: countItems(ticks, t => t.style),
   };
 
+  // TODO: Should technically also limit this to |numTopRoutes|.
   routeMap.forEach((r, rid) => {
-    counts.routeTicks[`${rid}|${r.name}`] = Object.keys(r.ticks).length;
+    const numTicks = Object.keys(r.ticks).length;
+    if (numTicks > 0) counts.routeTicks[`${rid}|${r.name}`] = numTicks;
   });
 
   return counts;

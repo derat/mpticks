@@ -6,6 +6,7 @@ import { getRegion } from '@/convert';
 import { parseDate, getDayOfWeek } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 import {
+  compareTicks,
   Counts,
   isCleanTickStyle,
   numTopRoutes,
@@ -28,49 +29,51 @@ export function addTicksToCounts(
   routes: Map<RouteId, Route>,
   remove = false
 ) {
-  const add = (
-    map: Record<string | number, number>,
-    key: string | number | undefined,
-    val: number | undefined = 1
-  ) => {
-    if (typeof key === 'undefined' || typeof val === 'undefined') return;
-
-    if (!remove) map[key] = map[key] + val || val;
-    else if (typeof map[key] !== 'undefined') map[key] -= val;
-
-    if (map[key] === 0) delete map[key];
-  };
-
   routeTicks.forEach((ticks: Map<TickId, Tick>, routeId: RouteId) => {
     const route = routes.get(routeId);
     if (!route) return;
+
+    const oldTicks: Record<TickId, Tick> = Object.assign({}, route.ticks);
+    if (remove) ticks.forEach((t, id) => (oldTicks[id] = t));
+    else ticks.forEach((_, id) => delete oldTicks[id]);
 
     // Overwrite old per-route counts.
     counts.routeTicks[`${routeId}|${route.name}`] = Object.keys(
       route.ticks
     ).length;
 
+    // Update the date of the route's first tick.
+    const oldFirstTickDate = findFirstTickDate(oldTicks);
+    const newFirstTickDate = findFirstTickDate(route.ticks);
+    if (newFirstTickDate != oldFirstTickDate) {
+      if (newFirstTickDate) add(counts.dateFirstTicks, newFirstTickDate, 1);
+      if (oldFirstTickDate) add(counts.dateFirstTicks, oldFirstTickDate, -1);
+    }
+
     const latLong = truncateLatLong(route.lat, route.long);
     const region = getRegion(route.location);
     ticks.forEach((tick: Tick, tickId: TickId) => {
       const dayOfWeek = getDayOfWeek(parseDate(tick.date));
+      const tickAmount = remove ? -1 : 1;
+      const pitchAmount = remove ? -tick.pitches : tick.pitches;
 
-      add(counts.datePitches, tick.date, tick.pitches);
-      add(counts.dateTicks, tick.date);
-      add(counts.dayOfWeekPitches, dayOfWeek, tick.pitches);
-      add(counts.dayOfWeekTicks, dayOfWeek);
+      // |dateFirstTicks| is updated above.
+      add(counts.datePitches, tick.date, pitchAmount);
+      add(counts.dateTicks, tick.date, tickAmount);
+      add(counts.dayOfWeekPitches, dayOfWeek, pitchAmount);
+      add(counts.dayOfWeekTicks, dayOfWeek, tickAmount);
       add(
         counts.gradeCleanTicks,
         route.grade,
-        isCleanTickStyle(tick.style) ? 1 : 0
+        isCleanTickStyle(tick.style) ? tickAmount : 0
       );
-      add(counts.gradeTicks, route.grade);
-      add(counts.latLongTicks, latLong);
-      add(counts.pitchesTicks, tick.pitches);
-      add(counts.regionTicks, region);
+      add(counts.gradeTicks, route.grade, tickAmount);
+      add(counts.latLongTicks, latLong, tickAmount);
+      add(counts.pitchesTicks, tick.pitches, tickAmount);
+      add(counts.regionTicks, region, tickAmount);
       // |routeTicks| is updated above and below.
-      add(counts.routeTypeTicks, route.type);
-      add(counts.tickStyleTicks, tick.style);
+      add(counts.routeTypeTicks, route.type, tickAmount);
+      add(counts.tickStyleTicks, tick.style, tickAmount);
     });
   });
 
@@ -85,7 +88,38 @@ export function addTicksToCounts(
   // UI, though, so it's probably not a big deal in practice.
   counts.routeTicks = Object.fromEntries(
     Object.entries(counts.routeTicks)
+      .filter(e => e[1] > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, numTopRoutes)
   );
+}
+
+// Adds |val| to |map|'s entry for |key|.
+// Does nothing if |key| or |val| are undefined.
+// Deletes the entry if it becomes zero or negative.
+function add(
+  map: Record<string | number, number>,
+  key: string | number | undefined,
+  val: number | undefined
+) {
+  if (typeof key === 'undefined' || typeof val === 'undefined') return;
+
+  if (typeof map[key] === 'undefined') map[key] = 0;
+  map[key] += val;
+  if (map[key] <= 0) delete map[key];
+}
+
+// Returns the date of the earliest tick in |ticks|, or an empty string if no
+// ticks are present.
+function findFirstTickDate(ticks: Record<TickId, Tick>): string {
+  let firstId: TickId = 0;
+  let firstTick: Tick | undefined = undefined;
+  Object.entries(ticks).forEach(([id, t]) => {
+    const tid = parseInt(id);
+    if (!firstTick || compareTicks(tid, t, firstId, firstTick) < 0) {
+      firstId = tid;
+      firstTick = t;
+    }
+  });
+  return firstTick ? firstTick!.date : ''; // seems like a TS bug
 }

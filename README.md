@@ -132,8 +132,10 @@ Aggregate pitch and tick counts are stored in a `counts` document in the `stats`
 subcollection under each user document. The document corresponds to the `Counts`
 interface:
 
+*   `dateFirstTicks` - Map field keyed by date as `YYYYMMDD`. Counts ticks that
+    were the first for their route.
 *   `datePitches` - Map field keyed by date as `YYYYMMDD`.
-*   `dateTicks` - Like `datePitches` but counting ticks.
+*   `dateTicks` - Map field keyed by date as `YYYYMMDD`.
 *   `dayOfWeekPitches` - Map field keyed by [ISO 8601 day of week] where `1` is
     Monday and `7` is Sunday.
 *   `dayOfWeekTicks` - Like `dayOfWeekPitches` but counting ticks.

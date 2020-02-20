@@ -85,6 +85,17 @@ export interface Tick {
   grade?: string; // user-supplied grade, e.g. '5.11a'
 }
 
+// Returns -1 if |a| precedes |b|, 1 if |b| precedes |a|, and 0 if they're the
+// same.
+export function compareTicks(
+  idA: TickId,
+  a: Tick,
+  idB: TickId,
+  b: Tick
+): number {
+  return a.date.localeCompare(b.date) || idA - idB;
+}
+
 // Corresponds to the |type| field returned by the get-routes API endpoint.
 //
 // Mountain Project's route-editing page offers a 'Route Type' section with
@@ -232,6 +243,7 @@ export interface Counts {
   // Value of |countsVersion| at the time when the Counts object was created.
   version: number;
 
+  dateFirstTicks: Record<string, number>; // 'YYYYMMDD'
   datePitches: Record<string, number>; // 'YYYYMMDD'
   dateTicks: Record<string, number>; // 'YYYYMMDD'
   dayOfWeekPitches: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
@@ -253,6 +265,7 @@ export const countsVersion = 1;
 export function newCounts(): Counts {
   return {
     version: countsVersion,
+    dateFirstTicks: {},
     datePitches: {},
     dateTicks: {},
     dayOfWeekPitches: {},

@@ -65,6 +65,6 @@ describe('addTicksToCounts', () => {
       routes,
       true /* remove */
     );
-    expect(counts).toEqual(testCounts(routes));
+    expect(counts).toEqual(newCounts());
   });
 });

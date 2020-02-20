@@ -19,6 +19,7 @@ describe('testCounts', () => {
 
     expect(testCounts(new Map([[rid, r]]))).toEqual({
       version: countsVersion,
+      dateFirstTicks: { [t.date]: 1 },
       datePitches: { [t.date]: t.pitches },
       dateTicks: { [t.date]: 1 },
       dayOfWeekPitches: { [getDayOfWeek(parseDate(t.date))]: t.pitches },
@@ -32,5 +33,16 @@ describe('testCounts', () => {
       routeTypeTicks: { [r.type]: 1 },
       tickStyleTicks: { [t.style]: 1 },
     });
+  });
+
+  it('correctly counts first ticks', () => {
+    const rid = 1;
+    const tid1 = 11;
+    const tid2 = 12;
+    const tid3 = 13;
+    const counts = testCounts(
+      new Map([[rid, testRoute(rid, [tid3, tid1, tid2])]])
+    );
+    expect(counts.dateFirstTicks).toEqual({ [testTick(tid1, rid).date]: 1 });
   });
 });
