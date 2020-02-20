@@ -438,7 +438,12 @@ export default class Import extends Vue {
       .get()
       .then(snap => {
         const counts: Counts = newCounts();
-        if (snap.exists) Object.assign(counts, snap.data()!);
+        if (snap.exists) {
+          // Copy over fields from Firestore while keeping unset versions.
+          const data = snap.data()!;
+          Object.assign(counts, data);
+          if (!data.hasOwnProperty('version')) counts.version = 0;
+        }
         addTicksToCounts(counts, routeTicks, routes);
         batch.set(countsRef(), counts);
       });

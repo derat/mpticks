@@ -223,9 +223,15 @@ export interface User {
 // The 'counts' document in the 'stats' subcollection. Contains tick and pitch
 // counts keyed by various values.
 //
-// Think long and hard before adding any new properties here, as existing
-// documents in Firestore won't include them.
+// To add a new field:
+// - Update addTicksToCounts() in stats.ts.
+// - Update testCounts() in testdata.ts.
+// - Increment the |countsVersion| constant in this file to force
+//   views/Stats.vue to regenerate stale documents.
 export interface Counts {
+  // Value of |countsVersion| at the time when the Counts object was created.
+  version: number;
+
   datePitches: Record<string, number>; // 'YYYYMMDD'
   dateTicks: Record<string, number>; // 'YYYYMMDD'
   dayOfWeekPitches: Record<number, number>; // ISO 8601: 1 is Monday, 7 is Sunday
@@ -240,9 +246,13 @@ export interface Counts {
   tickStyleTicks: Record<number, number>; // TickStyle (TS doesn't allow enum keys)
 }
 
+// Current version of the Counts interface.
+export const countsVersion = 1;
+
 // Returns an empty Counts object.
 export function newCounts(): Counts {
   return {
+    version: countsVersion,
     datePitches: {},
     dateTicks: {},
     dayOfWeekPitches: {},

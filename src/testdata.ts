@@ -6,6 +6,7 @@ import { ApiRoute, ApiTick } from '@/api';
 import { getRegion } from '@/convert';
 import {
   Counts,
+  countsVersion,
   isCleanTickStyle,
   Route,
   RouteId,
@@ -133,6 +134,7 @@ export function testCounts(routeMap: Map<RouteId, Route>): Counts {
   const ticks: Tick[] = routes.map(r => Object.values(r.ticks)).flat();
 
   const counts: Counts = {
+    version: countsVersion,
     datePitches: countItems(
       ticks,
       t => t.date,

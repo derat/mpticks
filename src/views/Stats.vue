@@ -113,6 +113,10 @@
     </div>
     <NoTicks v-if="ready && !haveStats" class="ma-3" />
     <Spinner v-else-if="!ready" />
+
+    <v-snackbar bottom color="info" :timeout="0" :value="rebuildingCounts">
+      Regenerating stats. This may take a while.
+    </v-snackbar>
   </div>
 </template>
 
@@ -131,12 +135,18 @@ import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
   Counts,
+  countsVersion,
+  newCounts,
+  Route,
   RouteId,
   RouteTypeToString,
+  Tick,
+  TickId,
   TickStyle,
   TickStyleToString,
   User,
 } from '@/models';
+import { addTicksToCounts } from '@/stats';
 
 enum Trim {
   ALL_ZEROS,
@@ -183,6 +193,7 @@ export default class Stats extends Vue {
   ready = false;
   haveStats = false;
   errorMsg = '';
+  rebuildingCounts = false;
 
   counts: Counts | null = null;
   userDoc: User | null = null;
@@ -215,9 +226,16 @@ export default class Stats extends Vue {
       countsRef()
         .get()
         .then(snap => {
-          if (snap.exists) {
+          if (!snap.exists) return Promise.resolve(null);
+          const counts = snap.data()! as Counts;
+          return this.needToRebuildCounts(counts)
+            ? this.rebuildCounts()
+            : counts;
+        })
+        .then(counts => {
+          if (counts) {
             this.haveStats = true;
-            this.counts = snap.data()! as Counts;
+            this.counts = counts;
             this.createCharts();
             this.createMap();
           }
@@ -690,11 +708,55 @@ export default class Stats extends Vue {
       : [];
   }
 
+  // Navigates to the Ticks view with |routeId| initially open.
   openRoute(routeId: RouteId) {
     this.$router.push({
       name: 'ticks',
       params: { initialRouteId: routeId.toString() },
     });
+  }
+
+  // Returns true if |counts| is stale and needs to be rebuilt.
+  needToRebuildCounts(counts: Counts) {
+    return (
+      typeof counts.version === 'undefined' || counts.version < countsVersion
+    );
+  }
+
+  // Loads all routes (read: expensive) and returns a promise for a regenerated
+  // Counts object incorporating all ticks. The UI is updated to display a
+  // message while stats are being updated.
+  rebuildCounts(): Promise<Counts> {
+    this.rebuildingCounts = true;
+
+    const counts = newCounts();
+    return userRef()
+      .collection('routes')
+      .get()
+      .then(snapshot => {
+        const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
+        const routes = new Map<RouteId, Route>();
+        snapshot.docs.forEach(doc => {
+          const routeId = parseInt(doc.id);
+          const route = doc.data() as Route;
+          routes.set(routeId, route);
+          routeTicks.set(
+            routeId,
+            new Map(
+              Object.entries(route.ticks).map(([tickId, tick]) => [
+                parseInt(tickId),
+                tick as Tick,
+              ])
+            )
+          );
+        });
+        addTicksToCounts(counts, routeTicks, routes);
+      })
+      .then(() => countsRef().set(counts))
+      .then(() => counts)
+      .finally(() => {
+        this.rebuildingCounts = false;
+      });
   }
 }
 </script>

@@ -152,6 +152,8 @@ interface:
     present.
 *   `routeTypeTicks` - Map field keyed by `RouteType` enum values.
 *   `tickStyleTicks` - Map field keyed by `TickStyle` enum values.
+*   `version` - Number field containing document version. Used to detect when
+    stats need to be regenerated.
 
 #### `imports` subcollection
 

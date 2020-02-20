@@ -7,7 +7,7 @@ import { testCounts, testRoute, testTick } from './testdata';
 import { getRegion } from '@/convert';
 import { getDayOfWeek, parseDate } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
-import { isCleanTickStyle } from '@/models';
+import { countsVersion, isCleanTickStyle } from '@/models';
 
 describe('testCounts', () => {
   it('correctly counts ticks', () => {
@@ -18,6 +18,7 @@ describe('testCounts', () => {
     const t = testTick(tid, rid);
 
     expect(testCounts(new Map([[rid, r]]))).toEqual({
+      version: countsVersion,
       datePitches: { [t.date]: t.pitches },
       dateTicks: { [t.date]: 1 },
       dayOfWeekPitches: { [getDayOfWeek(parseDate(t.date))]: t.pitches },

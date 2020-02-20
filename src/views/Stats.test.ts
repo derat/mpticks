@@ -18,16 +18,20 @@ import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 import Stats from './Stats.vue';
 import NoTicks from '@/components/NoTicks.vue';
 
-import { userRef, countsRef } from '@/docs';
+import { countsRef, userRef, routeRef } from '@/docs';
 import {
   Counts,
+  countsVersion,
   newCounts,
   numTopRoutes,
+  RouteId,
   RouteType,
   RouteTypeToString,
+  TickId,
   TickStyle,
   TickStyleToString,
 } from '@/models';
+import { testCounts, testRoute } from '@/testdata';
 
 setUpVuetifyTesting();
 
@@ -100,6 +104,7 @@ describe('Stats', () => {
     for (let i = 1; i <= numTopRoutes; i++) routeTicks[`${i}|Route ${i}`] = i;
 
     MockFirebase.setDoc(countsRef(), {
+      version: countsVersion,
       datePitches: { 20191120: 3, 20191231: 10, 20200101: 2, 20200102: 4 },
       dateTicks: { 20191120: 2, 20191231: 5, 20200101: 2, 20200102: 1 },
       dayOfWeekPitches: { 1: 2, 3: 8, 7: 5 },
@@ -252,5 +257,25 @@ describe('Stats', () => {
     MockFirebase.setDoc(userRef(), { maxTickId: 0, numRoutes: 1 });
     MockFirebase.setDoc(countsRef(), newCounts());
     await mountView();
+  });
+
+  it('rebuilds stale counts doc', async () => {
+    const rid: RouteId = 1;
+    const loc = ['A'];
+    const route = testRoute(rid, [2], loc);
+    MockFirebase.setDoc(routeRef(rid), route);
+    MockFirebase.setDoc(userRef(), { maxTickId: 0, numRoutes: 25 });
+    MockFirebase.setDoc(countsRef(), { version: countsVersion - 1 });
+    await mountView();
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
+      testCounts(new Map([[rid, route]]))
+    );
+
+    // The doc should also be rebuilt if it's missing the version field.
+    MockFirebase.setDoc(countsRef(), {});
+    await mountView();
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
+      testCounts(new Map([[rid, route]]))
+    );
   });
 });
