@@ -184,3 +184,43 @@ export function getRegion(loc: string[]): string {
   if (['Antarctica', 'Australia'].indexOf(loc[1]) != -1) return loc[1];
   return loc.length >= 3 ? loc[2] : loc[1];
 }
+
+// Simplifies a YDS rock grade from Mountain Project into a '5.x' string with an
+// optional trailing 'a', 'b', 'c', or 'd' letter for 5.10 and up. An empty
+// string is returned if the grade couldn't be parsed.
+//
+// See the 'Rating' menus in https://www.mountainproject.com/edit/route pages
+// for the full set ordering of grades. In short, though:
+//
+// 5.10a  5.10-  5.10a/b  5.10b  5.10  5.10b/c  5.10c  5.10+  5.10c/d  5.10d
+//
+// Note the strange placement of '-' between 'a' and 'a/b', but '+' between 'c'
+// and 'c/d' (instead of between 'c/d' and 'd'). To simplify things, this
+// function maps '-' to 'a', '+' to 'd', bare grades to 'b', and truncates the
+// letter after a slash.
+export function normalizeYdsGrade(grade: string): string {
+  if (grade == 'Easy 5th') return '5.0';
+
+  const m = grade.match(/^5\.(\d+)([-+a-d]?)/);
+  if (!m) return '';
+
+  const minor = m[1];
+  let suffix = m[2];
+
+  // For everything below 5.10, drop the suffix.
+  if (minor.length == 1) return `5.${minor}`;
+
+  if (suffix == '-') return `5.${minor}a`;
+  if (suffix == '+') return `5.${minor}d`;
+  if (suffix == '') return `5.${minor}b`; // could also go 'c' here
+  return `5.${minor}${suffix}`; // a-d
+}
+
+// Simplifies a V boulder grade from Mountain Project into a 'Vx' string, where
+// 'x' is 'B' or a number. An empty string is returned if the grade couldn't be
+// parsed.
+export function normalizeVGrade(grade: string): string {
+  if (grade == 'V-easy') return 'VB';
+  const m = grade.match(/^V\d+/);
+  return m ? m[0] : '';
+}

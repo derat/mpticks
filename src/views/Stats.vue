@@ -120,6 +120,7 @@ import Spinner from '@/components/Spinner.vue';
 import Chart from 'chart.js';
 import loadGoogleMapsApi from 'load-google-maps-api';
 
+import { normalizeVGrade, normalizeYdsGrade } from '@/convert';
 import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
 import {
@@ -352,16 +353,7 @@ export default class Stats extends Vue {
       id: 'rock-grade-ticks-chart',
       title: 'Rock Ticks by Grade',
       labels: rockGradeLabels,
-      labelFunc: (key: string) => {
-        const m = key.match(/^5\.(\d+)([a-d]?).*/);
-        if (!m) return '';
-
-        const minor = m[1];
-        const letter = m[2];
-        let label = `5.${minor}${letter}`;
-        if (minor.length == 2 && !letter) label += 'a';
-        return label;
-      },
+      labelFunc: key => normalizeYdsGrade(key),
       dataSets: [
         {
           data: this.counts.gradeCleanTicks,
@@ -385,10 +377,7 @@ export default class Stats extends Vue {
       id: 'boulder-grade-ticks-chart',
       title: 'Boulder Ticks by Grade',
       labels: boulderGradeLabels,
-      labelFunc: (key: string) => {
-        const m = key.match(/^(V(B|\d+)).*/);
-        return !m ? '' : m[1];
-      },
+      labelFunc: key => normalizeVGrade(key),
       dataSets: [
         {
           data: this.counts.gradeCleanTicks,

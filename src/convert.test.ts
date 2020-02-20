@@ -10,6 +10,8 @@ import {
   getRouteType,
   getTickStyle,
   makeAreaId,
+  normalizeVGrade,
+  normalizeYdsGrade,
   unknownRegion,
 } from '@/convert';
 import { RouteType, TickStyle } from '@/models';
@@ -222,6 +224,58 @@ describe('makeAreaId', () => {
       // It's just a nice-to-have, but check that the area ID decodes to the
       // original components joined by pipes.
       expect(decodeURIComponent(makeAreaId(location))).toBe(location.join('|'));
+    });
+  });
+});
+
+describe('normalizeYdsGrade', () => {
+  it('parses rock grades correctly', () => {
+    ([
+      ['Easy 5th', '5.0'],
+      ['5.0', '5.0'],
+      ['5.5+', '5.5'],
+      ['5.9-', '5.9'],
+      ['5.9', '5.9'],
+      ['5.9 PG-13', '5.9'],
+      ['5.9+', '5.9'],
+      ['5.10-', '5.10a'],
+      ['5.10a', '5.10a'],
+      ['5.10a/b', '5.10a'],
+      ['5.10b', '5.10b'],
+      ['5.10b/c', '5.10b'],
+      ['5.10', '5.10b'],
+      ['5.10c', '5.10c'],
+      ['5.10c/d', '5.10c'],
+      ['5.10d', '5.10d'],
+      ['5.10+', '5.10d'],
+      ['5.15d', '5.15d'],
+      ['3rd', ''],
+      ['4th', ''],
+      ['V1', ''],
+      ['', ''],
+    ] as [string, string][]).forEach(([input, output]) => {
+      expect(normalizeYdsGrade(input)).toBe(output);
+    });
+  });
+});
+
+describe('normalizeVGrade', () => {
+  it('parses boulder grades correctly', () => {
+    ([
+      ['V-easy', 'VB'],
+      ['V0-', 'V0'],
+      ['V0', 'V0'],
+      ['V0+', 'V0'],
+      ['V0-1', 'V0'],
+      ['V1', 'V1'],
+      ['V10', 'V10'],
+      ['V14+', 'V14'],
+      ['V14-15', 'V14'],
+      ['5.9', ''],
+      ['5.10a', ''],
+      ['', ''],
+    ] as [string, string][]).forEach(([input, output]) => {
+      expect(normalizeVGrade(input)).toBe(output);
     });
   });
 });
