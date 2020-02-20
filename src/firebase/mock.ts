@@ -109,7 +109,7 @@ class MockDocumentReference {
     );
   }
   set(data: DocData, options?: firebase.firestore.SetOptions) {
-    return Promise.resolve(MockFirebase.setDoc(this.path, data.options));
+    return Promise.resolve(MockFirebase.setDoc(this.path, data, options));
   }
   update(props: DocData) {
     return Promise.resolve(MockFirebase._updateDoc(this.path, props));
