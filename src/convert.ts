@@ -205,7 +205,7 @@ export function normalizeYdsGrade(grade: string): string {
   if (!m) return '';
 
   const minor = m[1];
-  let suffix = m[2];
+  const suffix = m[2];
 
   // For everything below 5.10, drop the suffix.
   if (minor.length == 1) return `5.${minor}`;
