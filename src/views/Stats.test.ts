@@ -141,13 +141,38 @@ describe('Stats', () => {
     expect(wrapper.find(NoTicks).exists()).toBe(false);
 
     expect(getCharts()).toEqual({
-      'Pitches by Year': {
+      'Yearly Pitches': {
         labels: ['2019', '2020'],
         data: [[13, 6]],
       },
-      'Pitches by Year and Month': {
+      'Monthly Pitches': {
         labels: ['2019-11', '2019-12', '2020-01'],
         data: [[3, 10, 6]],
+      },
+      'Weekly Pitches': {
+        labels: [
+          '2019-09-13',
+          '2019-09-20',
+          '2019-09-27',
+          '2019-10-04',
+          '2019-10-11',
+          '2019-10-18',
+          '2019-10-25',
+          '2019-11-01',
+          '2019-11-08',
+          '2019-11-15',
+          '2019-11-22',
+          '2019-11-29',
+          '2019-12-06',
+          '2019-12-13',
+          '2019-12-20',
+          '2019-12-27',
+          '2020-01-03',
+          '2020-01-10',
+          '2020-01-17',
+          '2020-01-24',
+        ],
+        data: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0]],
       },
       'Pitches by Month': {
         labels: 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' '),

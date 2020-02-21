@@ -30,6 +30,12 @@
       </v-row>
 
       <v-row>
+        <v-col v-bind="fullColProps">
+          <canvas id="week-pitches-chart" />
+        </v-col>
+      </v-row>
+
+      <v-row>
         <v-col v-bind="halfColProps">
           <canvas id="month-pitches-chart" />
         </v-col>
@@ -257,7 +263,7 @@ export default class Stats extends Vue {
     }
     this.addChart({
       id: 'year-pitches-chart',
-      title: 'Pitches by Year',
+      title: 'Yearly Pitches',
       labels: yearLabels,
       labelFunc: k => k.substring(0, 4),
       dataSets: [
@@ -282,7 +288,7 @@ export default class Stats extends Vue {
     }
     this.addChart({
       id: 'year-month-pitches-chart',
-      title: 'Pitches by Year and Month',
+      title: 'Monthly Pitches',
       labels: yearMonthLabels,
       labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
       dataSets: [
@@ -290,6 +296,36 @@ export default class Stats extends Vue {
           data: this.counts.datePitches,
           units: 'Pitches',
           color: colors.blueGrey.base,
+        },
+      ],
+      aspectRatio: fullAspectRatio,
+    });
+
+    // If today is 2020-01-20, then we'll want labels for '2020-01-14',
+    // '2020-01-07', etc. '20200114' through '20200120' should be mapped to
+    // '2020-01-14', '20200101' through '20200107' to '2020-01-07', and so on.
+    const numWeeks = 20;
+    const weekLabels: string[] = [];
+    const dateToWeekLabel: Record<string, string> = {}; // 'YYYYMMDD' keys
+
+    const d = new Date(Date.now()); // tests mock Date.now()
+    d.setDate(d.getDate() - numWeeks * 7);
+    for (let i = 0; i < numWeeks * 7; i++) {
+      d.setDate(d.getDate() + 1);
+      if (i % 7 == 0) weekLabels.push(formatDate(d, '%Y-%m-%d'));
+      dateToWeekLabel[formatDate(d, '%Y%m%d')] =
+        weekLabels[weekLabels.length - 1];
+    }
+    this.addChart({
+      id: 'week-pitches-chart',
+      title: 'Weekly Pitches',
+      labels: weekLabels,
+      labelFunc: k => dateToWeekLabel[k],
+      dataSets: [
+        {
+          data: this.counts.datePitches,
+          units: 'Pitches',
+          color: colors.blue.lighten3,
         },
       ],
       aspectRatio: fullAspectRatio,
