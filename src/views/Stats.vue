@@ -130,6 +130,7 @@ import Spinner from '@/components/Spinner.vue';
 import Chart from 'chart.js';
 import loadGoogleMapsApi from 'load-google-maps-api';
 
+import { newChart, makeWeekLabels, Trim } from '@/charts';
 import { normalizeVGrade, normalizeYdsGrade } from '@/convert';
 import { countsRef, userRef } from '@/docs';
 import { formatDate, parseDate } from '@/dateutil';
@@ -147,29 +148,6 @@ import {
   User,
 } from '@/models';
 import { addTicksToCounts } from '@/stats';
-
-enum Trim {
-  ALL_ZEROS,
-  ZEROS_AT_ENDS,
-}
-
-// A set of values to be drawn in a chart.
-interface ChartDataSet {
-  data: Record<string | number, number>; // keys are passed to |labelFunc|
-  units: string;
-  color: string;
-}
-
-// Information about how a chart should be rendered.
-interface ChartConfig {
-  id: string; // ID of canvas element
-  title: string;
-  labels: string[]; // labels for values in the order they'll be shown
-  labelFunc: (key: string) => string; // maps |dataSets| keys to |labels|
-  dataSets: ChartDataSet[];
-  trim?: Trim;
-  aspectRatio?: number; // default is 2
-}
 
 @Component({ components: { Alert, NoTicks, Spinner } })
 export default class Stats extends Vue {
@@ -279,19 +257,21 @@ export default class Stats extends Vue {
     ) {
       yearLabels.push(formatDate(date, '%Y'));
     }
-    this.addChart({
-      id: 'year-pitches-chart',
-      title: 'Yearly Pitches',
-      labels: yearLabels,
-      labelFunc: k => k.substring(0, 4),
-      dataSets: [
-        {
-          data: this.counts.datePitches,
-          units: 'Pitches',
-          color: colors.green.lighten2,
-        },
-      ],
-    });
+    this.charts.push(
+      newChart({
+        id: 'year-pitches-chart',
+        title: 'Yearly Pitches',
+        labels: yearLabels,
+        labelFunc: k => k.substring(0, 4),
+        dataSets: [
+          {
+            data: this.counts.datePitches,
+            units: 'Pitches',
+            color: colors.green.lighten2,
+          },
+        ],
+      })
+    );
 
     // TODO: Might need to cut off old dates in case someone has a long history.
     // The bars are pretty narrow after five years.
@@ -304,50 +284,40 @@ export default class Stats extends Vue {
     ) {
       yearMonthLabels.push(formatDate(date, '%Y-%m'));
     }
-    this.addChart({
-      id: 'year-month-pitches-chart',
-      title: 'Monthly Pitches',
-      labels: yearMonthLabels,
-      labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
-      dataSets: [
-        {
-          data: this.counts.datePitches,
-          units: 'Pitches',
-          color: colors.blueGrey.base,
-        },
-      ],
-      aspectRatio: fullAspectRatio,
-    });
+    this.charts.push(
+      newChart({
+        id: 'year-month-pitches-chart',
+        title: 'Monthly Pitches',
+        labels: yearMonthLabels,
+        labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
+        dataSets: [
+          {
+            data: this.counts.datePitches,
+            units: 'Pitches',
+            color: colors.blueGrey.base,
+          },
+        ],
+        aspectRatio: fullAspectRatio,
+      })
+    );
 
-    // If today is 2020-01-20, then we'll want labels for '2020-01-14',
-    // '2020-01-07', etc. '20200114' through '20200120' should be mapped to
-    // '2020-01-14', '20200101' through '20200107' to '2020-01-07', and so on.
-    const numWeeks = 20;
-    const weekLabels: string[] = [];
-    const dateToWeekLabel: Record<string, string> = {}; // 'YYYYMMDD' keys
-
-    const d = new Date(Date.now()); // tests mock Date.now()
-    d.setDate(d.getDate() - numWeeks * 7);
-    for (let i = 0; i < numWeeks * 7; i++) {
-      d.setDate(d.getDate() + 1);
-      if (i % 7 == 0) weekLabels.push(formatDate(d, '%Y-%m-%d'));
-      dateToWeekLabel[formatDate(d, '%Y%m%d')] =
-        weekLabels[weekLabels.length - 1];
-    }
-    this.addChart({
-      id: 'week-pitches-chart',
-      title: 'Weekly Pitches',
-      labels: weekLabels,
-      labelFunc: k => dateToWeekLabel[k],
-      dataSets: [
-        {
-          data: this.counts.datePitches,
-          units: 'Pitches',
-          color: colors.blue.lighten3,
-        },
-      ],
-      aspectRatio: fullAspectRatio,
-    });
+    const [weeklyLabels, weeklyDateToLabel] = makeWeekLabels(20);
+    this.charts.push(
+      newChart({
+        id: 'week-pitches-chart',
+        title: 'Weekly Pitches',
+        labels: weeklyLabels,
+        labelFunc: k => weeklyDateToLabel[k],
+        dataSets: [
+          {
+            data: this.counts.datePitches,
+            units: 'Pitches',
+            color: colors.blue.lighten3,
+          },
+        ],
+        aspectRatio: fullAspectRatio,
+      })
+    );
 
     const monthLabels = [
       'Jan',
@@ -363,34 +333,38 @@ export default class Stats extends Vue {
       'Nov',
       'Dec',
     ];
-    this.addChart({
-      id: 'month-pitches-chart',
-      title: 'Pitches by Month',
-      labels: monthLabels,
-      labelFunc: k => monthLabels[parseInt(k.substring(4, 6)) - 1],
-      dataSets: [
-        {
-          data: this.counts.datePitches,
-          units: 'Pitches',
-          color: colors.indigo.lighten2,
-        },
-      ],
-    });
+    this.charts.push(
+      newChart({
+        id: 'month-pitches-chart',
+        title: 'Pitches by Month',
+        labels: monthLabels,
+        labelFunc: k => monthLabels[parseInt(k.substring(4, 6)) - 1],
+        dataSets: [
+          {
+            data: this.counts.datePitches,
+            units: 'Pitches',
+            color: colors.indigo.lighten2,
+          },
+        ],
+      })
+    );
 
     const dayOfWeekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    this.addChart({
-      id: 'day-of-week-pitches-chart',
-      title: 'Pitches by Day of Week',
-      labels: dayOfWeekLabels,
-      labelFunc: k => dayOfWeekLabels[parseInt(k) - 1],
-      dataSets: [
-        {
-          data: this.counts.dayOfWeekPitches,
-          units: 'Pitches',
-          color: colors.brown.lighten2,
-        },
-      ],
-    });
+    this.charts.push(
+      newChart({
+        id: 'day-of-week-pitches-chart',
+        title: 'Pitches by Day of Week',
+        labels: dayOfWeekLabels,
+        labelFunc: k => dayOfWeekLabels[parseInt(k) - 1],
+        dataSets: [
+          {
+            data: this.counts.dayOfWeekPitches,
+            units: 'Pitches',
+            color: colors.brown.lighten2,
+          },
+        ],
+      })
+    );
 
     // Future-proof grade range.
     const rockGradeLabels: string[] = [];
@@ -403,50 +377,54 @@ export default class Stats extends Vue {
         });
       }
     }
-    this.addChart({
-      id: 'rock-grade-ticks-chart',
-      title: 'Rock Ticks by Grade',
-      labels: rockGradeLabels,
-      labelFunc: key => normalizeYdsGrade(key),
-      dataSets: [
-        {
-          data: this.counts.gradeCleanTicks,
-          units: 'Clean ticks',
-          color: colors.orange.lighten2,
-        },
-        {
-          data: this.counts.gradeTicks,
-          units: 'All ticks',
-          color: colors.red.lighten2,
-        },
-      ],
-      trim: Trim.ZEROS_AT_ENDS,
-      aspectRatio: fullAspectRatio,
-    });
+    this.charts.push(
+      newChart({
+        id: 'rock-grade-ticks-chart',
+        title: 'Rock Ticks by Grade',
+        labels: rockGradeLabels,
+        labelFunc: key => normalizeYdsGrade(key),
+        dataSets: [
+          {
+            data: this.counts.gradeCleanTicks,
+            units: 'Clean ticks',
+            color: colors.orange.lighten2,
+          },
+          {
+            data: this.counts.gradeTicks,
+            units: 'All ticks',
+            color: colors.red.lighten2,
+          },
+        ],
+        trim: Trim.ZEROS_AT_ENDS,
+        aspectRatio: fullAspectRatio,
+      })
+    );
 
     // Future-proof grade range.
     const boulderGradeLabels = ['VB'];
     for (let i = 0; i <= 20; i++) boulderGradeLabels.push(`V${i}`);
-    this.addChart({
-      id: 'boulder-grade-ticks-chart',
-      title: 'Boulder Ticks by Grade',
-      labels: boulderGradeLabels,
-      labelFunc: key => normalizeVGrade(key),
-      dataSets: [
-        {
-          data: this.counts.gradeCleanTicks,
-          units: 'Clean ticks',
-          color: colors.yellow.lighten2,
-        },
-        {
-          data: this.counts.gradeTicks,
-          units: 'All ticks',
-          color: colors.green.lighten2,
-        },
-      ],
-      trim: Trim.ZEROS_AT_ENDS,
-      aspectRatio: fullAspectRatio,
-    });
+    this.charts.push(
+      newChart({
+        id: 'boulder-grade-ticks-chart',
+        title: 'Boulder Ticks by Grade',
+        labels: boulderGradeLabels,
+        labelFunc: key => normalizeVGrade(key),
+        dataSets: [
+          {
+            data: this.counts.gradeCleanTicks,
+            units: 'Clean ticks',
+            color: colors.yellow.lighten2,
+          },
+          {
+            data: this.counts.gradeTicks,
+            units: 'All ticks',
+            color: colors.green.lighten2,
+          },
+        ],
+        trim: Trim.ZEROS_AT_ENDS,
+        aspectRatio: fullAspectRatio,
+      })
+    );
 
     const sortedPitches = Object.keys(this.counts.pitchesTicks)
       .sort((a, b) => parseInt(a) - parseInt(b))
@@ -454,20 +432,22 @@ export default class Stats extends Vue {
     const pitchesLabels = [
       ...Array(sortedPitches[sortedPitches.length - 1]).keys(),
     ].map(i => (i + 1).toString());
-    this.addChart({
-      id: 'pitches-ticks-chart',
-      title: 'Ticks by Pitches',
-      labels: pitchesLabels,
-      labelFunc: k => k,
-      dataSets: [
-        {
-          data: this.counts.pitchesTicks,
-          units: 'Ticks',
-          color: colors.teal.lighten3,
-        },
-      ],
-      trim: Trim.ZEROS_AT_ENDS,
-    });
+    this.charts.push(
+      newChart({
+        id: 'pitches-ticks-chart',
+        title: 'Ticks by Pitches',
+        labels: pitchesLabels,
+        labelFunc: k => k,
+        dataSets: [
+          {
+            data: this.counts.pitchesTicks,
+            units: 'Ticks',
+            color: colors.teal.lighten3,
+          },
+        ],
+        trim: Trim.ZEROS_AT_ENDS,
+      })
+    );
 
     const tickStyleLabels = [
       TickStyle.SOLO,
@@ -483,97 +463,20 @@ export default class Stats extends Vue {
       TickStyle.SEND,
       TickStyle.ATTEMPT,
     ].map(v => TickStyleToString(v));
-    this.addChart({
-      id: 'tick-style-ticks-chart',
-      title: 'Ticks by Style',
-      labels: tickStyleLabels,
-      labelFunc: k => TickStyleToString(parseInt(k)),
-      dataSets: [
-        {
-          data: this.counts.tickStyleTicks,
-          units: 'Ticks',
-          color: colors.blueGrey.base,
-        },
-      ],
-      trim: Trim.ALL_ZEROS,
-    });
-  }
-
-  // Creates a Chart object as described by |cfg| and appends it to
-  // |this.charts|.
-  addChart(cfg: ChartConfig) {
-    const labels = [...cfg.labels];
-
-    // Aggregate each data set's data into a map from label to value.
-    const dataSetLabelValues: Record<string, number>[] = cfg.dataSets.map(
-      ds => {
-        const values: Record<string, number> = {};
-        labels.forEach(l => (values[l] = 0));
-        Object.entries(ds.data).forEach(([key, val]) => {
-          const label = cfg.labelFunc(key.toString());
-          if (label && values.hasOwnProperty(label)) values[label] += val;
-        });
-        return values;
-      }
-    );
-
-    // Returns true if any data sets have nonzero values for |label|.
-    const labelHasValue = (label: string) =>
-      dataSetLabelValues.map(lv => lv[label]).find(v => !!v);
-
-    // Drop zero-valued labels if requested.
-    if (cfg.trim == Trim.ZEROS_AT_ENDS) {
-      while (labels.length && !labelHasValue(labels[0])) labels.shift();
-      while (labels.length && !labelHasValue(labels[labels.length - 1])) {
-        labels.pop();
-      }
-    } else if (cfg.trim == Trim.ALL_ZEROS) {
-      let i = labels.length;
-      while (i--) {
-        if (!labelHasValue(labels[i])) labels.splice(i, 1);
-      }
-    }
-
-    // We don't test that this is defined since it's missing during unit tests,
-    // presumably because jsdom doesn't support <canvas>. I briefly tried
-    // various packages for adding canvas support but couldn't get them to work.
-    const canvas = document.getElementById(cfg.id) as HTMLCanvasElement;
     this.charts.push(
-      new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: cfg.dataSets.map((ds, i) => ({
-            label: ds.units,
-            data: labels.map(label => dataSetLabelValues[i][label]),
-            backgroundColor: ds.color,
-            // Avoid letting bars get super-wide if someone has e.g. only
-            // climbed one or two grades.
-            maxBarThickness: 60,
-          })),
-        },
-        options: {
-          aspectRatio: cfg.aspectRatio || 2,
-          legend: { display: false },
-          title: {
-            display: true,
-            text: cfg.title,
+      newChart({
+        id: 'tick-style-ticks-chart',
+        title: 'Ticks by Style',
+        labels: tickStyleLabels,
+        labelFunc: k => TickStyleToString(parseInt(k)),
+        dataSets: [
+          {
+            data: this.counts.tickStyleTicks,
+            units: 'Ticks',
+            color: colors.blueGrey.base,
           },
-          scales: {
-            xAxes: [
-              {
-                gridLines: { drawOnChartArea: false },
-                stacked: true,
-              },
-            ],
-            yAxes: [
-              {
-                stacked: false,
-                ticks: { beginAtZero: true, maxTicksLimit: 8 },
-              },
-            ],
-          },
-        },
+        ],
+        trim: Trim.ALL_ZEROS,
       })
     );
   }
