@@ -7,8 +7,9 @@
     <Alert :text.sync="errorMsg" class="mx-3 mb-3" />
 
     <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
-       to cancel out with padding. All of this seems to result in the page being
-       horizontally scrollable on mobile, so just zero everything out. -->
+         to cancel out with padding. All of this seems to result in the page
+         being horizontally scrollable on mobile, so just zero everything out.
+    -->
     <v-row v-if="haveTicks" class="ma-0">
       <v-col cols="12" lg="8" class="pa-0">
         <v-treeview
@@ -90,7 +91,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import Alert from '@/components/Alert.vue';
 import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
@@ -299,18 +300,15 @@ export default class Ticks extends Vue {
   errorMsg = '';
 
   items: Item[] = [];
+  openIds: string[] = []; // sync bound to v-treeview to contain open item IDs
 
   deleting = false; // true while tick is being deleted
   deleteDialogShown = false; // model for delete dialog
   deleteTickId: TickId = 0; // set when delete icon clicked
   deleteRouteId: RouteId = 0; // set when delete icon clicked
 
-  // Synchronously bound to v-treeview to reflect the |id| fields of open items.
-  openIds: string[] = [];
-
-  // |id| field of the AreaItem that is the parent to the RouteItem representing
-  // |initialRouteId|. Cleared after the route is opened.
-  initialRouteParentId = '';
+  openingInitialRoute = false; // true while |initialRouteId| is being opened
+  initialRouteParentId = ''; // |id| field of |initialRouteId|'s parent AreaItem
 
   mounted() {
     const areasPromise = areaMapRef()
@@ -338,7 +336,7 @@ export default class Ticks extends Vue {
     // After both the route and area map are loaded, we can open the route.
     Promise.all([routePromise, areasPromise])
       .then(([location]) => {
-        if (location) this.openRoute(this.initialRouteId!, location);
+        if (location) this.openInitialRoute(location);
       })
       .catch(err => {
         this.errorMsg = `Failed to load ticks: ${err.message}`;
@@ -347,9 +345,12 @@ export default class Ticks extends Vue {
       .finally(() => (this.ready = true));
   }
 
-  // Asynchronously open the RouteItem identified by |routeId|. The hierarchy of
-  // AreaItems leading to it (identified by |location|) are opened first.
-  openRoute(routeId: RouteId, location: string[]) {
+  // Asynchronously open the RouteItem identified by |initialRouteId|. The
+  // hierarchy of AreaItems leading to it (identified by |location|) are opened
+  // first.
+  openInitialRoute(location: string[]) {
+    this.openingInitialRoute = true;
+
     // Open the area corresponding to each location component.
     let id = '';
     this.openIds.push(...location.map(c => (id += (id ? '|' : '') + c)));
@@ -385,10 +386,51 @@ export default class Ticks extends Vue {
         const el = document.getElementById(`route-${this.initialRouteId}`);
         if (el) el.scrollIntoView({ block: 'center' });
         this.openIds.push(...ids);
+        window.setTimeout(() => {
+          this.openingInitialRoute = false;
+        });
       });
 
       this.initialRouteParentId = '';
     });
+  }
+
+  // Finds the Item object in |items| with the supplied ID.
+  // The |item| arg is used internally.
+  findItem(id: string, item?: Item): Item | null {
+    if (item && item.id == id) return item;
+
+    const children = item ? item.children : this.items;
+    if (children) {
+      for (const child of children) {
+        const it = this.findItem(id, child);
+        if (it) return it;
+      }
+    }
+    return null;
+  }
+
+  @Watch('openIds')
+  onOpenIdsUpdate(updated: string[], prev: string[]) {
+    // Don't mess with anything if we're still opening the initial route.
+    if (this.openingInitialRoute) return;
+
+    // Make sure that a single item was just opened.
+    const newIds: string[] = [];
+    for (const id of updated) if (prev.indexOf(id) == -1) newIds.push(id);
+    if (newIds.length != 1) return;
+
+    // Expand all child items that have a single child. Do everything here in a
+    // single step instead of incrementally on each successive change to
+    // |openIds| since it doesn't seem to get updated properly (maybe related to
+    // https://github.com/vuetifyjs/vuetify/issues/10583).
+    for (
+      let item = this.findItem(newIds[0]);
+      item && item.children && item.children.length == 1;
+      item = item.children[0]
+    ) {
+      this.openIds.push(item.children[0].id);
+    }
   }
 
   onDeleteIconClick(tickId: TickId, routeId: RouteId) {

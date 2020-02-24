@@ -151,12 +151,12 @@ describe('Ticks', () => {
     expect(wrapper.find(NoTicks).exists()).toBe(false);
     expect(getLabels()).toEqual([area1, area2]);
 
-    // Expand the first area to show its subarea.
+    // Expand the first area to show its subarea. Its route will also be
+    // auto-opened since it has no siblings (but this probably only happens
+    // since the test is running in sync mode -- in real life, the route list
+    // would be asynchronously loaded, which seems to make it not be reflected
+    // properly in v-treeview's list of open IDs).
     await toggleItem(0);
-    expect(getLabels()).toEqual([area1, subArea1, area2]);
-
-    // Expanding the subarea should show its route.
-    await toggleItem(1);
     expect(getLabels()).toEqual([
       area1,
       subArea1,
@@ -185,6 +185,17 @@ describe('Ticks', () => {
       getRouteLabel(route2),
       getTickLabel(tick3),
       getTickLabel(tick2),
+      getRouteLabel(route3),
+    ]);
+
+    // Click the route again to hide its ticks.
+    await toggleItem(4);
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      area2,
+      getRouteLabel(route2),
       getRouteLabel(route3),
     ]);
   });
@@ -226,7 +237,14 @@ describe('Ticks', () => {
     // Show the first route's ticks.
     await mountView();
     await toggleItem(0);
-    await toggleItem(1);
+    // The subarea gets opened automatically here. See the comment in the 'loads
+    // and displays data' test.
+    expect(getLabels()).toEqual([
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      area2,
+    ]);
     await toggleItem(2);
     expect(getLabels()).toEqual([
       area1,
