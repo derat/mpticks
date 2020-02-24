@@ -88,7 +88,10 @@
 
       <v-row>
         <v-col v-bind="halfColProps">
-          <canvas id="new-routes-chart" />
+          <canvas id="year-month-rock-grade-ticks-chart" />
+        </v-col>
+        <v-col v-bind="halfColProps">
+          <canvas id="new-route-ticks-chart" />
         </v-col>
       </v-row>
 
@@ -135,6 +138,7 @@ import Chart from 'chart.js';
 import loadGoogleMapsApi from 'load-google-maps-api';
 
 import {
+  ChartDataSet,
   makeMonthLabels,
   makeWeekLabels,
   makeYearLabels,
@@ -430,13 +434,50 @@ export default class Stats extends Vue {
       })
     );
 
+    const monthGradeDataSets: ChartDataSet[] = [];
+    ([
+      ['≤ 5.7 Ticks', /^5\.[0-7]($|[^0-9])/, colors.purple.base],
+      ['5.8 Ticks', /^5\.8/, colors.indigo.base],
+      ['5.9 Ticks', /^5\.9/, colors.blue.base],
+      ['5.10 Ticks', /^5\.10/, colors.green.base],
+      ['5.11 Ticks', /^5\.11/, colors.lime.darken1],
+      ['5.12 Ticks', /^5\.12/, colors.amber.base],
+      ['5.13 Ticks', /^5\.13/, colors.orange.base],
+      ['5.14 Ticks', /^5\.14/, colors.red.base],
+      ['≥ 5.15 Ticks', /^5\.1[5-9]/, colors.pink.base],
+    ] as [string, RegExp, string][]).forEach(([units, re, color]) => {
+      const data: Record<string, number> = Object.keys(
+        this.counts!.monthGradeTicks
+      )
+        .filter(k => k.slice(7).match(re))
+        .reduce((m: Record<string, number>, k: string) => {
+          const yearMonth = `${k.slice(0, 4)}-${k.slice(4, 6)}`;
+          m[yearMonth] = (m[yearMonth] || 0) + this.counts!.monthGradeTicks[k];
+          return m;
+        }, {});
+      if (Object.values(data).find(v => v > 0)) {
+        monthGradeDataSets.push({ data, units, color });
+      }
+    });
+    this.charts.push(
+      // TODO: Show legend?
+      newChart({
+        id: 'year-month-rock-grade-ticks-chart',
+        title: 'Monthly Rock Ticks by Grade',
+        labels: makeMonthLabels(startDate, now).slice(-12),
+        labelFunc: k => k,
+        dataSets: monthGradeDataSets,
+        line: true,
+      })
+    );
+
     const [newRoutesLabels, newRoutesDateToLabel] = makeWeekLabels(
       getWeekStart(12),
       now
     );
     this.charts.push(
       newChart({
-        id: 'new-routes-chart',
+        id: 'new-route-ticks-chart',
         title: 'Weekly New Routes',
         labels: newRoutesLabels,
         labelFunc: k => newRoutesDateToLabel[k],

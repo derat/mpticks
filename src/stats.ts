@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import { getRegion } from '@/convert';
-import { parseDate, getDayOfWeek } from '@/dateutil';
+import { formatDateString, getDayOfWeek, parseDate } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 import {
   compareTicks,
@@ -69,6 +69,11 @@ export function addTicksToCounts(
       );
       add(counts.gradeTicks, route.grade, tickAmount);
       add(counts.latLongTicks, latLong, tickAmount);
+      add(
+        counts.monthGradeTicks,
+        `${formatDateString(tick.date, '%Y%m')}|${route.grade}`,
+        tickAmount
+      );
       add(counts.pitchesTicks, tick.pitches, tickAmount);
       add(counts.regionTicks, region, tickAmount);
       // |routeTicks| is updated above and below.

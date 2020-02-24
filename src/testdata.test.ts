@@ -27,6 +27,7 @@ describe('testCounts', () => {
       gradeCleanTicks: isCleanTickStyle(t.style) ? { [r.grade]: 1 } : {},
       gradeTicks: { [r.grade]: 1 },
       latLongTicks: { [truncateLatLong(r.lat, r.long)]: 1 },
+      monthGradeTicks: { [`${t.date.slice(0, 6)}|${r.grade}`]: 1 },
       pitchesTicks: { [t.pitches]: 1 },
       regionTicks: { [getRegion(loc)]: 1 },
       routeTicks: { [`${rid}|${r.name}`]: 1 },

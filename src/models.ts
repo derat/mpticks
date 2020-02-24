@@ -251,6 +251,7 @@ export interface Counts {
   gradeCleanTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   gradeTicks: Record<string, number>; // '5.10a PG-13', 'V3', etc.
   latLongTicks: Record<string, number>; // '39.94,-105.01' (1.1132 km accuracy)
+  monthGradeTicks: Record<string, number>; // 'YYYYMM|5.10a PG-13', etc.
   pitchesTicks: Record<number, number>; // pitch count from tick
   regionTicks: Record<string, number>; // 'California', 'China', etc.
   routeTicks: Record<string, number>; // 'id|name', e.g. '105924807|The Nose'
@@ -259,7 +260,7 @@ export interface Counts {
 }
 
 // Current version of the Counts interface.
-export const countsVersion = 1;
+export const countsVersion = 2;
 
 // Returns an empty Counts object.
 export function newCounts(): Counts {
@@ -273,6 +274,7 @@ export function newCounts(): Counts {
     gradeCleanTicks: {},
     gradeTicks: {},
     latLongTicks: {},
+    monthGradeTicks: {},
     pitchesTicks: {},
     regionTicks: {},
     routeTicks: {},

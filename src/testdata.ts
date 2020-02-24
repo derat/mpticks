@@ -17,7 +17,12 @@ import {
   TickId,
   TickStyle,
 } from '@/models';
-import { getDayOfWeek, formatDate, parseDate } from '@/dateutil';
+import {
+  formatDate,
+  formatDateString,
+  getDayOfWeek,
+  parseDate,
+} from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 
 // Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
@@ -149,6 +154,13 @@ export function testCounts(routeMap: Map<RouteId, Route>): Counts {
     if (firstTick) firstTicks.add(firstTick);
   });
 
+  const tickRoutes = new Map<Tick, Route>();
+  routeMap.forEach((route: Route) => {
+    Object.values(route.ticks).forEach(tick => {
+      tickRoutes.set(tick, route);
+    });
+  });
+
   const counts: Counts = {
     version: countsVersion,
     dateFirstTicks: countItems(
@@ -185,6 +197,10 @@ export function testCounts(routeMap: Map<RouteId, Route>): Counts {
       routes,
       r => truncateLatLong(r.lat, r.long),
       r => Object.keys(r.ticks).length
+    ),
+    monthGradeTicks: countItems(
+      ticks,
+      t => `${formatDateString(t.date, '%Y%m')}|${tickRoutes.get(t)!.grade}`
     ),
     pitchesTicks: countItems(ticks, t => t.pitches),
     regionTicks: countItems(

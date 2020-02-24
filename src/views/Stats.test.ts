@@ -133,6 +133,17 @@ describe('Stats', () => {
         V10: 4,
       },
       latLongTicks: { '0,0': 1 },
+      monthGradeTicks: {
+        // This chart uses the start date from |datePitches|, so these dates
+        // need to use the same range as it.
+        '201911|5.7+': 1,
+        '201911|5.12': 2,
+        '201912|5.8': 4,
+        '201912|5.8+': 8,
+        '202001|5.10a PG-13': 16,
+        '202001|5.6': 32,
+        '202001|V3': 64,
+      },
       pitchesTicks: { 1: 20, 2: 3, 4: 1 },
       regionTicks: { California: 1, Arizona: 20, Canada: 5 },
       routeTicks,
@@ -198,6 +209,15 @@ describe('Stats', () => {
         data: [
           [3, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 1],
           [2, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+        ],
+      },
+      'Monthly Rock Ticks by Grade': {
+        labels: ['2019-11', '2019-12', '2020-01'],
+        data: [
+          [1, 0, 32], // 5.7 and lower
+          [0, 12, 0], // 5.8
+          [0, 0, 16], // 5.10
+          [2, 0, 0], // 5.12
         ],
       },
       'Weekly New Routes': {

@@ -25,6 +25,7 @@ export interface ChartConfig {
   labels: string[]; // labels for values in the order they'll be shown
   labelFunc: (key: string) => string; // maps |dataSets| keys to |labels|
   dataSets: ChartDataSet[];
+  line?: boolean;
   trim?: Trim;
   aspectRatio?: number; // default is 2
 }
@@ -67,7 +68,7 @@ export function newChart(cfg: ChartConfig) {
   // various packages for adding canvas support but couldn't get them to work.
   const canvas = document.getElementById(cfg.id) as HTMLCanvasElement;
   return new Chart(canvas, {
-    type: 'bar',
+    type: cfg.line ? 'line' : 'bar',
     data: {
       labels,
       datasets: cfg.dataSets.map((ds, i) => ({
@@ -77,6 +78,11 @@ export function newChart(cfg: ChartConfig) {
         // Avoid letting bars get super-wide if someone has e.g. only
         // climbed one or two grades.
         maxBarThickness: 60,
+        // These are specific to line charts.
+        borderColor: ds.color,
+        borderWidth: 1,
+        fill: !cfg.line,
+        pointRadius: 1.5,
       })),
     },
     options: {
