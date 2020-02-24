@@ -137,7 +137,7 @@ import loadGoogleMapsApi from 'load-google-maps-api';
 import { newChart, makeWeekLabels, Trim } from '@/charts';
 import { normalizeVGrade, normalizeYdsGrade } from '@/convert';
 import { countsRef, userRef } from '@/docs';
-import { formatDate, parseDate } from '@/dateutil';
+import { formatDate, formatDateString, parseDate } from '@/dateutil';
 import {
   Counts,
   countsVersion,
@@ -266,7 +266,7 @@ export default class Stats extends Vue {
         id: 'year-pitches-chart',
         title: 'Yearly Pitches',
         labels: yearLabels,
-        labelFunc: k => k.substring(0, 4),
+        labelFunc: k => formatDateString(k, '%Y'),
         dataSets: [
           {
             data: this.counts.datePitches,
@@ -293,7 +293,7 @@ export default class Stats extends Vue {
         id: 'year-month-pitches-chart',
         title: 'Monthly Pitches',
         labels: yearMonthLabels,
-        labelFunc: k => `${k.substring(0, 4)}-${k.substring(4, 6)}`,
+        labelFunc: k => formatDateString(k, '%Y-%m'),
         dataSets: [
           {
             data: this.counts.datePitches,
@@ -342,7 +342,7 @@ export default class Stats extends Vue {
         id: 'month-pitches-chart',
         title: 'Pitches by Month',
         labels: monthLabels,
-        labelFunc: k => monthLabels[parseInt(k.substring(4, 6)) - 1],
+        labelFunc: k => monthLabels[parseInt(formatDateString(k, '%m')) - 1],
         dataSets: [
           {
             data: this.counts.datePitches,

@@ -18,6 +18,7 @@ import {
 import flushPromises from 'flush-promises';
 
 import { makeAreaId } from '@/convert';
+import { formatDateString } from '@/dateutil';
 import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
 import {
   Route,
@@ -138,11 +139,9 @@ describe('Ticks', () => {
 
   // Returns the label that is used for |tick|.
   function getTickLabel(tick: Tick) {
-    const year = tick.date.substring(0, 4);
-    const month = tick.date.substring(4, 6);
-    const day = tick.date.substring(6, 8);
+    const date = formatDateString(tick.date, '%Y-%m-%d');
     const style = TickStyleToString(tick.style);
-    return `${year}-${month}-${day} ${style} ${tick.pitches}p delete ${tick.notes}`;
+    return `${date} ${style} ${tick.pitches}p delete ${tick.notes}`;
   }
 
   it('loads and displays data', async () => {

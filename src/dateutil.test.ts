@@ -2,7 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { formatDate, getDayOfWeek, parseDate } from './dateutil';
+import {
+  formatDate,
+  formatDateString,
+  getDayOfWeek,
+  parseDate,
+} from './dateutil';
 
 describe('parseDate', () => {
   it('parses dates with two-digit values', () => {
@@ -19,11 +24,24 @@ describe('parseDate', () => {
     expect(d.getDate()).toBe(1);
   });
 
+  it('parses dates with maximal values', () => {
+    const d = parseDate('99991231');
+    expect(d.getFullYear()).toBe(9999);
+    expect(d.getMonth()).toBe(11);
+    expect(d.getDate()).toBe(31);
+  });
+
   it('throws errors for bad input', () => {
     expect(() => parseDate('')).toThrow();
     expect(() => parseDate('2020011')).toThrow();
     expect(() => parseDate('202001012')).toThrow();
     expect(() => parseDate('2020-01-01')).toThrow();
+    expect(() => parseDate('20200001')).toThrow();
+    expect(() => parseDate('20201301')).toThrow();
+    expect(() => parseDate('20209901')).toThrow();
+    expect(() => parseDate('20200100')).toThrow();
+    expect(() => parseDate('20200132')).toThrow();
+    expect(() => parseDate('20200199')).toThrow();
     expect(() => parseDate('abcdefgh')).toThrow();
   });
 });
@@ -34,6 +52,7 @@ describe('formatDate', () => {
     expect(formatDate(date, '%Y-%m-%d')).toBe('2019-01-02');
     expect(formatDate(date, '%Y%m%d')).toBe('20190102');
     expect(formatDate(date, '%Y%m')).toBe('201901');
+    expect(formatDate(date, '%Y')).toBe('2019');
   });
 
   it('formats two-digit numbers correctly', () => {
@@ -45,6 +64,24 @@ describe('formatDate', () => {
 
   it('throws errors for invalid format codes', () => {
     expect(() => formatDate(new Date(), '%a')).toThrow();
+  });
+});
+
+describe('formatDateString', () => {
+  it('formats single-digit numbers correctly', () => {
+    expect(formatDateString('20190102', '%Y-%m-%d')).toBe('2019-01-02');
+    expect(formatDateString('20190102', '%Y%m%d')).toBe('20190102');
+    expect(formatDateString('20190102', '%Y%m')).toBe('201901');
+    expect(formatDateString('20190102', '%Y')).toBe('2019');
+  });
+
+  it('accepts minimal and maximal values', () => {
+    expect(formatDateString('00000101', '%Y-%m-%d')).toBe('0000-01-01');
+    expect(formatDateString('99991231', '%Y-%m-%d')).toBe('9999-12-31');
+  });
+
+  it('throws errors for invalid format codes', () => {
+    expect(() => formatDateString('20200101', '%a')).toThrow();
   });
 });
 

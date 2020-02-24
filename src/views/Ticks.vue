@@ -97,6 +97,7 @@ import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
 import app from '@/firebase';
+import { formatDateString } from '@/dateutil';
 import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
 import {
   Area,
@@ -149,10 +150,7 @@ class TickItem implements Item {
   }
 
   get tickDate(): string {
-    const year = this.tick.date.substring(0, 4);
-    const month = this.tick.date.substring(4, 6);
-    const day = this.tick.date.substring(6, 8);
-    return `${year}-${month}-${day}`;
+    return formatDateString(this.tick.date, '%Y-%m-%d');
   }
   get tickStyle(): string {
     return TickStyleToString(this.tick.style);
