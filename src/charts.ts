@@ -104,6 +104,35 @@ export function newChart(cfg: ChartConfig) {
   });
 }
 
+// Returns labels of the form 'YYYY' for years between |start| and |end|.
+export function makeYearLabels(start: Date, end: Date): string[] {
+  const labels: string[] = [];
+  for (
+    let date = new Date(start.getTime()); // avoid mutating |start|
+    date.getFullYear() <= end.getFullYear();
+    date.setFullYear(date.getFullYear() + 1)
+  ) {
+    labels.push(formatDate(date, '%Y'));
+  }
+  return labels;
+}
+
+// Returns labels of the form 'YYYY-MM' for months between |start| and |end|.
+// TODO: Consider adding a |maxLabels| parameter.
+export function makeMonthLabels(start: Date, end: Date): string[] {
+  const labels: string[] = [];
+  for (
+    let date = new Date(start.getTime()); // avoid mutating |start|
+    date.getFullYear() < end.getFullYear() ||
+    (date.getFullYear() == end.getFullYear() &&
+      date.getMonth() <= end.getMonth());
+    date.setMonth(date.getMonth() + 1)
+  ) {
+    labels.push(formatDate(date, '%Y-%m'));
+  }
+  return labels;
+}
+
 // Returns 'YYYY-MM-DD' labels for |numWeeks| preceding today, along with a map
 // from 'YYYYMMDD' dates to week label.
 export function makeWeekLabels(

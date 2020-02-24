@@ -2,7 +2,53 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { makeWeekLabels } from '@/charts';
+import { makeMonthLabels, makeWeekLabels, makeYearLabels } from '@/charts';
+
+describe('makeYearLabels', () => {
+  it('correctly iterates over years', () => {
+    expect(
+      makeYearLabels(new Date(1996, 5, 20), new Date(2001, 11, 31))
+    ).toEqual(['1996', '1997', '1998', '1999', '2000', '2001']);
+  });
+
+  it('handles a single year', () => {
+    expect(
+      makeYearLabels(new Date(2020, 0, 1), new Date(2020, 11, 31))
+    ).toEqual(['2020']);
+  });
+
+  it('handles out-of-order years', () => {
+    expect(makeYearLabels(new Date(2010, 0, 1), new Date(2009, 0, 1))).toEqual(
+      []
+    );
+  });
+});
+
+describe('makeMonthLabels', () => {
+  it('handles a single month', () => {
+    expect(
+      makeMonthLabels(new Date(2020, 2, 23), new Date(2020, 2, 26))
+    ).toEqual(['2020-03']);
+  });
+
+  it('handles ranges within a single year', () => {
+    expect(
+      makeMonthLabels(new Date(2020, 2, 23), new Date(2020, 6, 2))
+    ).toEqual(['2020-03', '2020-04', '2020-05', '2020-06', '2020-07']);
+  });
+
+  it('handles ranges across multiple years', () => {
+    expect(
+      makeMonthLabels(new Date(2015, 10, 4), new Date(2016, 1, 28))
+    ).toEqual(['2015-11', '2015-12', '2016-01', '2016-02']);
+  });
+
+  it('handles out-of-order months', () => {
+    expect(
+      makeMonthLabels(new Date(2015, 10, 4), new Date(2014, 4, 28))
+    ).toEqual([]);
+  });
+});
 
 describe('makeWeekLabels', () => {
   it('returns expected labels and map', () => {

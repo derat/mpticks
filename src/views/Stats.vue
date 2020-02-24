@@ -134,7 +134,13 @@ import Spinner from '@/components/Spinner.vue';
 import Chart from 'chart.js';
 import loadGoogleMapsApi from 'load-google-maps-api';
 
-import { newChart, makeWeekLabels, Trim } from '@/charts';
+import {
+  makeMonthLabels,
+  makeWeekLabels,
+  makeYearLabels,
+  newChart,
+  Trim,
+} from '@/charts';
 import { normalizeVGrade, normalizeYdsGrade } from '@/convert';
 import { countsRef, userRef } from '@/docs';
 import { formatDate, formatDateString, parseDate } from '@/dateutil';
@@ -251,21 +257,14 @@ export default class Stats extends Vue {
 
     const sortedDates = Object.keys(this.counts.datePitches).sort();
     if (!sortedDates.length) return; // deleted all ticks?
+    const startDate = parseDate(sortedDates[0]);
     const endDate = parseDate(sortedDates[sortedDates.length - 1]);
 
-    const yearLabels: string[] = [];
-    for (
-      let date = parseDate(sortedDates[0]);
-      date.getFullYear() <= endDate.getFullYear();
-      date.setFullYear(date.getFullYear() + 1)
-    ) {
-      yearLabels.push(formatDate(date, '%Y'));
-    }
     this.charts.push(
       newChart({
         id: 'year-pitches-chart',
         title: 'Yearly Pitches',
-        labels: yearLabels,
+        labels: makeYearLabels(startDate, endDate),
         labelFunc: k => formatDateString(k, '%Y'),
         dataSets: [
           {
@@ -277,22 +276,12 @@ export default class Stats extends Vue {
       })
     );
 
-    // TODO: Might need to cut off old dates in case someone has a long history.
-    // The bars are pretty narrow after five years.
-    const yearMonthLabels: string[] = [];
-    for (
-      let date = parseDate(sortedDates[0]);
-      date.getFullYear() < endDate.getFullYear() ||
-      date.getMonth() <= endDate.getMonth();
-      date.setMonth(date.getMonth() + 1)
-    ) {
-      yearMonthLabels.push(formatDate(date, '%Y-%m'));
-    }
     this.charts.push(
       newChart({
         id: 'year-month-pitches-chart',
         title: 'Monthly Pitches',
-        labels: yearMonthLabels,
+        // Limit to 4 years of history to keep it readable.
+        labels: makeMonthLabels(startDate, endDate).slice(-48),
         labelFunc: k => formatDateString(k, '%Y-%m'),
         dataSets: [
           {
