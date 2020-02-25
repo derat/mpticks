@@ -258,13 +258,21 @@ export default class Stats extends Vue {
     const sortedDates = Object.keys(this.counts.datePitches).sort();
     if (!sortedDates.length) return; // deleted all ticks?
     const startDate = parseDate(sortedDates[0]);
-    const endDate = parseDate(sortedDates[sortedDates.length - 1]);
+    const now = new Date(Date.now()); // tests mock Date.now()
+
+    // Gets the date corresponding to |numWeeks| before |now|.
+    // If |startDate| is later than that date, returns |startDate| instead.
+    const getWeekStart = (numWeeks: number): Date => {
+      const d = new Date(now.getTime());
+      d.setDate(d.getDate() - numWeeks * 7 + 1);
+      return d > startDate ? d : startDate;
+    };
 
     this.charts.push(
       newChart({
         id: 'year-pitches-chart',
         title: 'Yearly Pitches',
-        labels: makeYearLabels(startDate, endDate),
+        labels: makeYearLabels(startDate, now),
         labelFunc: k => formatDateString(k, '%Y'),
         dataSets: [
           {
@@ -281,7 +289,7 @@ export default class Stats extends Vue {
         id: 'year-month-pitches-chart',
         title: 'Monthly Pitches',
         // Limit to 4 years of history to keep it readable.
-        labels: makeMonthLabels(startDate, endDate).slice(-48),
+        labels: makeMonthLabels(startDate, now).slice(-48),
         labelFunc: k => formatDateString(k, '%Y-%m'),
         dataSets: [
           {
@@ -294,7 +302,10 @@ export default class Stats extends Vue {
       })
     );
 
-    const [weeklyLabels, weeklyDateToLabel] = makeWeekLabels(20);
+    const [weeklyLabels, weeklyDateToLabel] = makeWeekLabels(
+      getWeekStart(26),
+      now
+    );
     this.charts.push(
       newChart({
         id: 'week-pitches-chart',
@@ -419,7 +430,10 @@ export default class Stats extends Vue {
       })
     );
 
-    const [newRoutesLabels, newRoutesDateToLabel] = makeWeekLabels(12);
+    const [newRoutesLabels, newRoutesDateToLabel] = makeWeekLabels(
+      getWeekStart(12),
+      now
+    );
     this.charts.push(
       newChart({
         id: 'new-routes-chart',

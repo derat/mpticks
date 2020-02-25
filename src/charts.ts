@@ -118,7 +118,6 @@ export function makeYearLabels(start: Date, end: Date): string[] {
 }
 
 // Returns labels of the form 'YYYY-MM' for months between |start| and |end|.
-// TODO: Consider adding a |maxLabels| parameter.
 export function makeMonthLabels(start: Date, end: Date): string[] {
   const labels: string[] = [];
   for (
@@ -133,21 +132,26 @@ export function makeMonthLabels(start: Date, end: Date): string[] {
   return labels;
 }
 
-// Returns 'YYYY-MM-DD' labels for |numWeeks| preceding today, along with a map
-// from 'YYYYMMDD' dates to week label.
+// Returns 'YYYY-MM-DD' labels at weekly intervals between |start| and |end|,
+// along with a map from 'YYYYMMDD' dates to week label.
+//
+// The final label will be the first day in the seven-day period ending at
+// |end|. For example, if |end| is 2020-01-20, then the final label will be
+// '2020-01-14', and '20200114' through '20200120' will be mapped to
+// '2020-01-14'. The first label will be first day in the seven-day period that
+// includes |start|.
 export function makeWeekLabels(
-  numWeeks: number
+  start: Date,
+  end: Date
 ): [string[], Record<string, string>] {
   const labels: string[] = [];
   const dateToLabel: Record<string, string> = {}; // 'YYYYMMDD' keys
 
-  // If today is 2020-01-20, then we'll want labels for '2020-01-14',
-  // '2020-01-07', etc. '20200114' through '20200120' should be mapped to
-  // '2020-01-14', '20200101' through '20200107' to '2020-01-07', and so on.
-  const d = new Date(Date.now()); // tests mock Date.now()
-  d.setDate(d.getDate() - numWeeks * 7);
-  for (let i = 0; i < numWeeks * 7; i++) {
-    d.setDate(d.getDate() + 1);
+  const d = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  d.setDate(d.getDate() - 6);
+  while (d > start) d.setDate(d.getDate() - 7);
+
+  for (let i = 0; d <= end; d.setDate(d.getDate() + 1), i++) {
     if (i % 7 == 0) labels.push(formatDate(d, '%Y-%m-%d'));
     dateToLabel[formatDate(d, '%Y%m%d')] = labels[labels.length - 1];
   }

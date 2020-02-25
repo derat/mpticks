@@ -52,9 +52,10 @@ describe('makeMonthLabels', () => {
 
 describe('makeWeekLabels', () => {
   it('returns expected labels and map', () => {
-    const mockTime = new Date(2020, 0, 1).getTime();
-    const dateSpy = jest.spyOn(Date, 'now').mockImplementation(() => mockTime);
-    const [labels, dateToLabel] = makeWeekLabels(2);
+    const [labels, dateToLabel] = makeWeekLabels(
+      new Date(2019, 11, 21),
+      new Date(2020, 0, 1)
+    );
     expect(labels).toEqual(['2019-12-19', '2019-12-26']);
     expect(dateToLabel).toEqual({
       20191219: '2019-12-19',
