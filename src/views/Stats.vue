@@ -436,15 +436,15 @@ export default class Stats extends Vue {
 
     const monthGradeDataSets: ChartDataSet[] = [];
     ([
-      ['≤ 5.7 Ticks', /^5\.[0-7]($|[^0-9])/, colors.purple.base],
-      ['5.8 Ticks', /^5\.8/, colors.indigo.base],
-      ['5.9 Ticks', /^5\.9/, colors.blue.base],
-      ['5.10 Ticks', /^5\.10/, colors.green.base],
-      ['5.11 Ticks', /^5\.11/, colors.lime.darken1],
-      ['5.12 Ticks', /^5\.12/, colors.amber.base],
-      ['5.13 Ticks', /^5\.13/, colors.orange.base],
-      ['5.14 Ticks', /^5\.14/, colors.red.base],
-      ['≥ 5.15 Ticks', /^5\.1[5-9]/, colors.pink.base],
+      ['≤ 5.7', /^5\.[0-7]($|[^0-9])/, colors.purple.base],
+      ['5.8', /^5\.8/, colors.indigo.base],
+      ['5.9', /^5\.9/, colors.blue.base],
+      ['5.10', /^5\.10/, colors.green.base],
+      ['5.11', /^5\.11/, colors.lime.darken1],
+      ['5.12', /^5\.12/, colors.amber.base],
+      ['5.13', /^5\.13/, colors.orange.base],
+      ['5.14', /^5\.14/, colors.red.base],
+      ['≥ 5.15', /^5\.1[5-9]/, colors.pink.base],
     ] as [string, RegExp, string][]).forEach(([units, re, color]) => {
       const data: Record<string, number> = Object.keys(
         this.counts!.monthGradeTicks
@@ -460,7 +460,6 @@ export default class Stats extends Vue {
       }
     });
     this.charts.push(
-      // TODO: Show legend?
       newChart({
         id: 'year-month-rock-grade-ticks-chart',
         title: 'Monthly Rock Ticks by Grade',
@@ -468,6 +467,7 @@ export default class Stats extends Vue {
         labelFunc: k => k,
         dataSets: monthGradeDataSets,
         line: true,
+        legend: true,
       })
     );
 

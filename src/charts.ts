@@ -26,6 +26,7 @@ export interface ChartConfig {
   labelFunc: (key: string) => string; // maps |dataSets| keys to |labels|
   dataSets: ChartDataSet[];
   line?: boolean;
+  legend?: boolean;
   trim?: Trim;
   aspectRatio?: number; // default is 2
 }
@@ -87,7 +88,11 @@ export function newChart(cfg: ChartConfig) {
     },
     options: {
       aspectRatio: cfg.aspectRatio || 2,
-      legend: { display: false },
+      legend: {
+        display: !!cfg.legend,
+        position: 'top',
+        labels: { boxWidth: 12 },
+      },
       title: {
         display: true,
         text: cfg.title,
