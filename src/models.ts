@@ -239,6 +239,7 @@ export interface User {
 // - Update testCounts() in testdata.ts.
 // - Increment the |countsVersion| constant in this file to force
 //   views/Stats.vue to regenerate stale documents.
+// - Document the field in README.md.
 export interface Counts {
   // Value of |countsVersion| at the time when the Counts object was created.
   version: number;

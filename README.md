@@ -4,9 +4,9 @@
 
 ## Background
 
-This is a web app for importing and visualizing ticks (i.e. personal history)
-from [Mountain Project], a popular website that collects user-supplied
-information about rock climbing areas.
+[mpticks.web.app] is a web app for importing and visualizing ticks (i.e.
+personal history) from [Mountain Project], a popular website that collects
+user-supplied information about rock climbing areas.
 
 Mountain Project's user pages display pitches/routes/days-out over different
 periods of time, implying that users are expected to tick all their climbs
@@ -23,11 +23,21 @@ There are many different opinions about how ticks should be used:
 It doesn't look like a "private ticks" feature is going to be added to Mountain
 Project anytime soon, hence the existence of this app.
 
+[mpticks.web.app]: https://mpticks.web.app/
 [Mountain Project]: https://www.mountainproject.com/
 [Suggestion: Private Ticks Option]: https://www.mountainproject.com/forum/topic/111808954/suggestion-private-ticks-option
 [Hiding tick list from profile]: https://www.mountainproject.com/forum/topic/113634433/hiding-tick-list-from-profile
 [Ticks posted on mountain project page]: https://www.mountainproject.com/forum/topic/107421753/ticks-posted-on-mountain-project-page
 [Tick Lists]: https://www.mountainproject.com/forum/topic/106511221/tick-lists
+
+## Usage
+
+1.  Log in to the app by going to [mpticks.web.app].
+2.  Enter the email address that you use to log in to Mountain Project and your
+    [private API key] and import your ticks.
+3.  View your ticks, look at your stats, export your ticks and routes, etc.
+
+[private API key]: https://www.mountainproject.com/data
 
 ## Cloud Firestore data
 
@@ -146,6 +156,8 @@ interface:
 *   `latLongTicks` - Map field keyed by comma-separated route latitude and
     longitude rounded to two decimal places of precision, e.g.
     `'39.94,-105.02'`.
+*   `monthGradeTicks` - Map field keyed by pipe-separated `YYYYMM` date and
+    grade, e.g. `'201910|5.10a PG-13'`.
 *   `pitchesTicks` - Map field keyed by number of pitches in each tick.
 *   `regionTicks` - Map field keyed by route region (U.S. state/territory or
     country).
