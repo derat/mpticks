@@ -32,7 +32,7 @@ import {
 import { testCounts, testRoute, testRouteSummary, testTick } from '@/testdata';
 
 import NoTicks from '@/components/NoTicks.vue';
-import Ticks from './Ticks.vue';
+import Ticks, { compareNames } from './Ticks.vue';
 
 setUpVuetifyTesting();
 
@@ -303,5 +303,22 @@ describe('Ticks', () => {
     MockFirebase.currentUser = new MockUser(testUid, 'Test User');
     await mountView();
     expect(wrapper.find(NoTicks).exists()).toBe(true);
+  });
+});
+
+describe('compareNames', () => {
+  it('compares names with and without number prefixes', () => {
+    ([
+      ['a', 'a', 0],
+      ['a', 'b', -1],
+      ['b', 'a', 1],
+      ['1. a', '1. a', 0],
+      ['1. a', '1. b', -1],
+      ['1. b', '1. a', 1],
+      ['2. a', '1. a', 1],
+      ['9. b', '10. a', -1],
+    ] as [string, string, number][]).forEach(([a, b, exp]) => {
+      expect(Math.sign(compareNames(a, b))).toBe(exp);
+    });
   });
 });

@@ -115,6 +115,17 @@ import {
 } from '@/models';
 import { addTicksToCounts } from '@/stats';
 
+// Compares |a| and |b| in a manner similar to String.prototype.localeCompare,
+// but performs a numeric comparison if both |a| and |b| start with digits so
+// that e.g. '9. Foo' will precede '10. Bar'. Exported for unit tests.
+export function compareNames(a: string, b: string): number {
+  const am = a.match(/^\d+/);
+  const bm = b.match(/^\d+/);
+  if (am && bm && am[0] != bm[0]) return parseInt(am[0]) - parseInt(bm[0]);
+
+  return a.localeCompare(b);
+}
+
 // Interface for items in the v-treeview.
 interface Item {
   readonly id: string; // default 'item-key' property for v-treeview
@@ -256,7 +267,7 @@ class AreaItem implements Item {
     // there are routes in this area), leave |children| empty until we're
     // clicked so we can dynamically load the routes.
     this.childAreas = Object.entries(map.children || {})
-      .sort()
+      .sort((a, b) => compareNames(a[0], b[0]))
       .map(([childName, child]) => new AreaItem(this.id, child, childName));
     this.children = this.areaId ? [] : this.childAreas;
   }
@@ -277,7 +288,7 @@ class AreaItem implements Item {
               ([routeId, route]) =>
                 new RouteItem(this.id, parseInt(routeId), route)
             )
-            .sort((a, b) => a.routeName.localeCompare(b.routeName))
+            .sort((a, b) => compareNames(a.routeName, b.routeName))
         );
       });
   }
