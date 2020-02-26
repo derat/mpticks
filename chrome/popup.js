@@ -12,7 +12,7 @@ import {
 import { groupAndSortTicks } from './ticks.js';
 
 // Can be set to true for development.
-const useFakeApi = true;
+const useFakeApi = false;
 
 // Contains numeric tick IDs that should be deleted.
 const tickIdsToDelete = new Set();
@@ -40,9 +40,7 @@ function updateTickList(routeTicks, tickIdsToDelete) {
       const tickList = document.createElement('ul');
       tickList.classList.add('tick-list');
       ticks
-        // TODO: These should technically also be sorted by tick ID, but this is
-        // just the order in which we display the ticks so it's not a big deal.
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => a.date.localeCompare(b.date) || a.tickId - b.tickId)
         .forEach(tick => {
           const tickItem = document.createElement('li');
           if (tickIdsToDelete.has(tick.tickId)) {
