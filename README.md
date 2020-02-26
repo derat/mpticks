@@ -4,14 +4,15 @@
 
 ## Background
 
-[mpticks.web.app] is a web app for importing and visualizing ticks (i.e.
-personal history) from [Mountain Project], a popular website that collects
-user-supplied information about rock climbing areas.
+[mpticks.web.app] is an app for importing and visualizing ticks (i.e. personal
+history) from [Mountain Project], a popular website that collects user-supplied
+information about rock climbing areas.
 
 Mountain Project's user pages display pitches/routes/days-out over different
 periods of time, implying that users are expected to tick all their climbs
-(including when repeated routes). However, doing so ends up cluttering per-route
-tick lists with the same names over and over and with users' personal notes.
+(including when repeating routes). However, doing so ends up cluttering
+per-route tick lists with the same names over and over and with users' personal
+notes.
 
 There are many different opinions about how ticks should be used:
 
