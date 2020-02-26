@@ -40,6 +40,33 @@ Project anytime soon, hence the existence of this app.
 
 [private API key]: https://www.mountainproject.com/data
 
+## Frequently Asked Questions
+
+### Why do the 90-day counts on the Stats page differ from the Tick Breakdown shown by Mountain Project?
+
+I believe that Mountain Project is actually showing 91 days' worth of data
+there. To use a simpler example, I'd expect "2 days" to include only today and
+yesterday, i.e. two days of data. I think that Mountain Project's code would
+include today, yesterday, plus the day before, i.e. three days.
+
+### What happens if an area gets renamed on Mountain Project?
+
+Routes within the area that are imported before and after the rename will end up
+in different areas on the Ticks page.
+
+Mountain Project's `get-routes` API endpoint only provides a list of the area
+names for each route, e.g. `['New York', 'Gunks', 'Sky Top']` for route
+`111251312`. It doesn't provide the underlying area IDs (`[105800424, 105798167,
+105799181]` in this case), which would presumably stay constant even if the
+corresponding names are changed.
+
+When a route is imported (which only happens the first time it's ticked),
+mpticks uses its area list to determine its location on the Ticks page. The
+route's location doesn't get updated if or when areas are renamed later.
+
+I sent a feature request via the MP feedback form on 2020-02-19 but didn't hear
+back from anyone.
+
 ## Cloud Firestore data
 
 ### How ticks are stored
