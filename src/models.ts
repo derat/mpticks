@@ -229,6 +229,10 @@ export interface User {
   // The number of routes that have been imported (i.e. the number of distinct
   // routes with ticks).
   numRoutes: number;
+  // Number of times that ticks have been imported.
+  numImports: number;
+  // Time of the last import.
+  lastImportTime: Date;
 }
 
 // The 'counts' document in the 'stats' subcollection. Contains tick and pitch

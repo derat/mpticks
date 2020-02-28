@@ -77,6 +77,10 @@ describe('Import', () => {
   const loc = ['A', 'B'];
   const aid = makeAreaId(loc);
 
+  // https://stackoverflow.com/a/57599680/6882947
+  let mockTime = new Date(2020, 0, 1).getTime();
+  const dateSpy = jest.spyOn(Date, 'now').mockImplementation(() => mockTime);
+
   beforeEach(async () => {
     mockAxios.reset();
     MockFirebase.reset();
@@ -138,6 +142,8 @@ describe('Import', () => {
     expect(MockFirebase.getDoc(userRef())).toEqual({
       maxTickId: tid1,
       numRoutes: 1,
+      numImports: 1,
+      lastImportTime: new Date(mockTime),
     });
     expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(r1);
     expect(MockFirebase.getDoc(areaRef(aid))).toEqual({
@@ -155,7 +161,12 @@ describe('Import', () => {
     // Start out with a single route with a single tick.
     let r1 = testRoute(rid1, [tid1], loc);
     const t1 = testTick(tid1, rid1);
-    MockFirebase.setDoc(userRef(), { maxTickId: tid1, numRoutes: 1 });
+    MockFirebase.setDoc(userRef(), {
+      maxTickId: tid1,
+      numRoutes: 1,
+      numImports: 10,
+      lastImportTime: new Date(2019, 11, 15),
+    });
     MockFirebase.setDoc(routeRef(rid1), r1);
     MockFirebase.setDoc(areaRef(aid), {
       routes: { [rid1]: testRouteSummary(rid1) },
@@ -179,6 +190,8 @@ describe('Import', () => {
     expect(MockFirebase.getDoc(userRef())).toEqual({
       maxTickId: tid3,
       numRoutes: 2,
+      numImports: 11,
+      lastImportTime: new Date(mockTime),
     });
     expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(
       testRoute(rid1, [tid1, tid2], loc)

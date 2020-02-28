@@ -142,9 +142,8 @@ export default class Import extends Vue {
   // Whether the form contains valid input.
   valid = false;
 
-  // Time at which the current import started in toISOString() format, e.g.
-  // '2020-02-09T13:34:03.195Z'. Empty when not importing.
-  importStartTime = '';
+  // Time at which the current import started. Null when not importing.
+  importStartTime: Date | null = null;
 
   // Rules for input fields.
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
@@ -187,12 +186,23 @@ export default class Import extends Vue {
       window.localStorage.removeItem(this.keyItem);
     }
 
+    this.importStartTime = new Date(Date.now()); // tests mock Date.now()
+    this.errorMsg = '';
+
     const routes = new Map<RouteId, Route>();
     const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
-    const batch = app.firestore().batch();
 
-    this.importStartTime = new Date().toISOString();
-    this.errorMsg = '';
+    const batch = app.firestore().batch();
+    batch.set(
+      userRef(),
+      {
+        // Sets the field to 1 if it doesn't exist already.
+        numImports: firebase.firestore.FieldValue.increment(1),
+        lastImportTime: this.importStartTime,
+      },
+      { merge: true }
+    );
+
     this.getTicks(routeTicks, batch)
       .then(() => this.getRoutes(Array.from(routeTicks.keys()), routes, batch))
       .then(() => this.updateRoutes(routeTicks, routes, batch))
@@ -210,7 +220,7 @@ export default class Import extends Vue {
         this.log(msg, true);
       })
       .finally(() => {
-        this.importStartTime = '';
+        this.importStartTime = null;
       });
   }
 
@@ -247,12 +257,17 @@ export default class Import extends Vue {
 
           // Save the original data from the API "just in case".
           for (let i = 0; i * importedTicksBatchSize < apiTicks.length; i++) {
-            batch.set(importsRef().doc(`${this.importStartTime}.ticks.${i}`), {
-              ticks: apiTicks.slice(
-                i * importedTicksBatchSize,
-                (i + 1) * importedTicksBatchSize
+            batch.set(
+              importsRef().doc(
+                `${this.importStartTime!.toISOString()}.ticks.${i}`
               ),
-            });
+              {
+                ticks: apiTicks.slice(
+                  i * importedTicksBatchSize,
+                  (i + 1) * importedTicksBatchSize
+                ),
+              }
+            );
           }
         });
       });
@@ -298,12 +313,17 @@ export default class Import extends Vue {
 
         // Save the original data from Mountain Project.
         for (let i = 0; i * importedRoutesBatchSize < apiRoutes.length; i++) {
-          batch.set(importsRef().doc(`${this.importStartTime}.routes.${i}`), {
-            routes: apiRoutes.slice(
-              i * importedRoutesBatchSize,
-              (i + 1) * importedRoutesBatchSize
+          batch.set(
+            importsRef().doc(
+              `${this.importStartTime!.toISOString()}.routes.${i}`
             ),
-          });
+            {
+              routes: apiRoutes.slice(
+                i * importedRoutesBatchSize,
+                (i + 1) * importedRoutesBatchSize
+              ),
+            }
+          );
         }
 
         // Load and update Firestore area documents to list the new routes.

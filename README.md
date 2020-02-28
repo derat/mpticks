@@ -117,6 +117,9 @@ names corresponding to Firebase user IDs and correspond to the `User` interface:
     imported.
 *   `numRoutes`: Number field containing the number of routes that have been
     imported (and hence climbed).
+*   `numImports`: Number field containing the number of successful imports.
+*   `lastImportTime`: Date field containing the start time of the last
+    successful import.
 
 #### `routes` subcollection
 
