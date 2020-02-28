@@ -42,6 +42,41 @@ Project anytime soon, hence the existence of this app.
 
 ## Frequently Asked Questions
 
+### What does it do?
+
+The [Import page] uses the `get-ticks` [Mountain Project Data API] endpoint to
+fetch your new ticks. It then uses the `get-routes` endpoint to get information
+about any ticked routes that haven't previously been seen. Your new ticks,
+routes, and updated stats are saved to [Cloud Firestore].
+
+The [Ticks page] displays an expandable tree of areas, routes, and ticks that
+have been imported. Individual ticks can also be deleted from Cloud Firestore.
+
+The [Stats page] displays charts, tables, and maps summarizing your tick
+information. If the schema of the `Counts` object that is used to store stats
+has changed since the last time that ticks were imported, the `Counts` object is
+automatically regenerated.
+
+The [Export page] lets you download all of your raw tick and route objects that
+were fetched from Mountain Project via the `get-ticks` and `get-routes`
+endpoints.
+
+[Import page]: ./src/views/Import.vue
+[Mountain Project Data API]: https://www.mountainproject.com/data
+[Cloud Firestore]: https://firebase.google.com/docs/firestore
+[Ticks page]: ./src/views/Ticks.vue
+[Stats page]: ./src/views/Stats.vue
+[Export page]: ./src/views/Export.vue
+
+### Can I enter ticks directly into mpticks instead of needing to import them from Mountain Project?
+
+Unfortunately, no. As far as I can see, Mountain Project doesn't provide an API
+endpoint for searching for routes (besides `get-routes-for-lat-long`, which
+returns up to 500 routes within up to 200 miles of a (latitude, longitude)
+pair). As such, there's no easy way for this app to know anything about a given
+route unless it's already been imported using `get-routes` due to having been
+previously ticked.
+
 ### Why do the 90-day counts on the Stats page differ from the Tick Breakdown shown by Mountain Project?
 
 I believe that Mountain Project is actually showing 91 days' worth of data
@@ -100,7 +135,6 @@ better than the "each tick in its own document" approach for users who don't
 repeat routes yet still have thousands of ticks, but I'm hopeful that that will
 be an uncommon scenario.
 
-[Cloud Firestore]: https://firebase.google.com/docs/firestore
 [Google's pricing model for Cloud Firestore]: https://firebase.google.com/docs/firestore/quotas
 
 ### Schema
