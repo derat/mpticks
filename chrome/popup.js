@@ -114,7 +114,9 @@ function onLoadClicked() {
 
       updateTickList(routeTicks, tickIdsToDelete, routeNames);
       document.getElementById('screen-1').classList.add('hidden');
-      document.getElementById('screen-2').classList.remove('hidden');
+      document
+        .getElementById(tickIdsToDelete.size ? 'screen-2' : 'screen-2-empty')
+        .classList.remove('hidden');
     })
     .catch(err => {
       displayError(err);
