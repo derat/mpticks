@@ -29,7 +29,11 @@ body {
   font-size: 12px;
   margin: 8px 0 8px 16px;
 }
+.route {
+  font-weight: bold;
+}
 .tick-list {
+  font-weight: normal;
   margin: 0;
   padding-left: 24px;
 }

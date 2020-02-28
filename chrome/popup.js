@@ -4,8 +4,10 @@
 
 import {
   getCreds,
+  getRoutes,
   getTicks,
   deleteTicks,
+  fakeGetRoutes,
   fakeGetTicks,
   fakeDeleteTicks,
 } from './api.js';
@@ -20,8 +22,9 @@ const tickIdsToDelete = new Set();
 // Updates the 'route-container' element to list the routes and ticks in
 // |routeTicks|, an object mapping from route ID to array of ticks. Ticks with
 // IDs in |tickIdsToDelete|, a Set of numbers, will be displayed in a
-// crossed-out state.
-function updateTickList(routeTicks, tickIdsToDelete) {
+// crossed-out state. |routeNames| is an object mapping from route ID to route
+// name.
+function updateTickList(routeTicks, tickIdsToDelete, routeNames) {
   const cont = document.getElementById('route-container');
   while (cont.firstChild) cont.removeChild(cont.firstChild);
 
@@ -32,8 +35,11 @@ function updateTickList(routeTicks, tickIdsToDelete) {
       // Skip the route if none of its ticks are being deleted.
       if (!ticks.find(t => tickIdsToDelete.has(t.tickId))) return;
 
+      const routeName = routeNames[routeId] || 'Unknown';
       const routeDiv = document.createElement('div');
-      routeDiv.appendChild(document.createTextNode(`Route ${routeId}`));
+      routeDiv.appendChild(
+        document.createTextNode(`${routeName} (${routeId})`)
+      );
       routeDiv.classList.add('route');
       cont.appendChild(routeDiv);
 
@@ -72,22 +78,41 @@ function hideError() {
 // Handles the 'Load ticks' button being clicked.
 function onLoadClicked() {
   const button = document.getElementById('load-button');
-  button.innerText = 'Loading ticks...';
   button.disabled = 'disabled';
   hideError();
 
-  (useFakeApi
-    ? fakeGetTicks()
-    : getCreds().then(([email, key]) => getTicks(email, key))
-  )
+  let email = '';
+  let key = '';
+  let routeTicks; // map from route ID to array of sorted tick objects
+
+  button.innerText = 'Loading credentials...';
+  (useFakeApi ? Promise.resolve(['', '']) : getCreds())
+    .then(creds => {
+      email = creds[0];
+      key = creds[1];
+      button.innerText = 'Loading ticks...';
+      return useFakeApi ? fakeGetTicks() : getTicks(email, key);
+    })
     .then(ticks => {
-      const routeTicks = groupAndSortTicks(ticks);
-      Object.values(routeTicks).forEach(ticks => {
+      routeTicks = groupAndSortTicks(ticks);
+
+      const routeIdsToUpdate = [];
+      Object.entries(routeTicks).forEach(([routeId, ticks]) => {
         // Preserve the first/best tick from each route's list.
         ticks.slice(1).forEach(t => tickIdsToDelete.add(t.tickId));
+        if (ticks.length > 1) routeIdsToUpdate.push(routeId);
       });
 
-      updateTickList(routeTicks, tickIdsToDelete);
+      button.innerText = 'Loading routes...';
+      return useFakeApi
+        ? fakeGetRoutes(routeIdsToUpdate)
+        : getRoutes(routeIdsToUpdate, key);
+    })
+    .then(routes => {
+      const routeNames = {}; // keyed by route ID
+      for (const r of routes) routeNames[r.id] = r.name;
+
+      updateTickList(routeTicks, tickIdsToDelete, routeNames);
       document.getElementById('screen-1').classList.add('hidden');
       document.getElementById('screen-2').classList.remove('hidden');
     })

@@ -75,6 +75,24 @@ export function getTicks(email, key, ticks = []) {
   });
 }
 
+// Fetches and returns the requested routes from Mountain Project.
+// See the documented TypeScript getRoutes() function in src/api.ts.
+export function getRoutes(routeIds, key, routes = []) {
+  if (!routeIds.length) return Promise.resolve([]);
+
+  const maxRoutes = 200;
+  return getUrl(
+    'https://www.mountainproject.com/data/get-routes' +
+      `?key=${key}&routeIds=${routeIds.slice(0, maxRoutes).join(',')}`
+  ).then(body => {
+    const result = JSON.parse(body);
+    if (!result.success) throw new Error('API reported failure');
+    routes = routes.concat(result.routes);
+    if (routeIds.length <= maxRoutes) return routes;
+    return getRoutes(routeIds.slice(maxRoutes), key, routes);
+  });
+}
+
 // Deletes the ticks in |tickIds| (a Set of numbers) and returns a void promise
 // that is resolved once all ticks are deleted. If |cb| is defined, it is
 // invoked after each successful deletion with the ID of the just-deleted tick.
@@ -107,6 +125,25 @@ export function fakeGetTicks() {
       });
     }
     window.setTimeout(() => resolve(ticks), 500);
+  });
+}
+
+// Fake version of getRoutes() that returns a promise that's resolved with fake
+// data for the supplied route IDs after a short delay.
+export function fakeGetRoutes(routeIds) {
+  return new Promise(resolve => {
+    window.setTimeout(() =>
+      resolve(
+        routeIds.map(
+          id => ({
+            id,
+            name: `Route #${id}`,
+            // We don't use any other fields.
+          }),
+          500
+        )
+      )
+    );
   });
 }
 
