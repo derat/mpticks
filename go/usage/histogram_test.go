@@ -45,11 +45,9 @@ func TestHistogramUneven(t *testing.T) {
 	if err := h.write(&b, 2); err != nil {
 		t.Fatal("write failed: ", err)
 	}
-	const exp = `   <1 |
-  1-3 |## 3
+	const exp = `  1-3 |## 3
   4-6 |## 3
  7-10 |## 4
-  >10 |
 `
 	if b.String() != exp {
 		t.Errorf("write produced %q; want %q", b.String(), exp)

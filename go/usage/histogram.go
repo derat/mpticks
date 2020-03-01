@@ -97,11 +97,15 @@ func (h *histogram) write(w io.Writer, width int) error {
 		_, perr = fmt.Fprintf(w, fs, label, bar)
 	}
 
-	pl(fmt.Sprintf("<%v", h.buckets[0].min), h.underflow)
+	if h.underflow > 0 {
+		pl(fmt.Sprintf("<%v", h.buckets[0].min), h.underflow)
+	}
 	for _, b := range h.buckets {
 		pl(fmt.Sprintf("%v-%v", b.min, b.max), b.count)
 	}
-	pl(fmt.Sprintf(">%v", h.buckets[len(h.buckets)-1].max), h.overflow)
+	if h.overflow > 0 {
+		pl(fmt.Sprintf(">%v", h.buckets[len(h.buckets)-1].max), h.overflow)
+	}
 
 	return perr
 }
