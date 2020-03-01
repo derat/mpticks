@@ -1,10 +1,25 @@
-language: node_js
-node_js: lts/*
-install:
-  - npm install
-script:
-  - npm run test:unit
 notifications:
   email:
     on_success: never
     on_failure: always
+
+matrix:
+  include:
+    - language: node_js
+      node_js: lts/*
+      install:
+        - npm install
+      script:
+        - npm run test:unit
+    - language: go
+      # Cloud Functions currently uses a Go runtime based on 1.11.6:
+      # https://cloud.google.com/functions/docs/concepts/go-runtime
+      # When "1.11.6", "1.12.x", or even "stable" is requested via the "go"
+      # parameter, travis_setup_go produces a useless "I don't have any idea
+      # what to do with '1.12.7'" error: https://travis-ci.community/t/4057
+      env: GO111MODULE=on
+      git:
+        depth: 1
+      script:
+        - go vet mpticks/go/...
+        - go test -v mpticks/go/...
