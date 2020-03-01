@@ -15,7 +15,7 @@ func TestHistogramEven(t *testing.T) {
 		h.add(int64(i))
 	}
 	var b bytes.Buffer
-	if err := h.write(&b, 5); err != nil {
+	if err := h.write(&b, 0, 5); err != nil {
 		t.Fatal("write failed: ", err)
 	}
 	const exp = `   <1 |### 1
@@ -42,7 +42,7 @@ func TestHistogramUneven(t *testing.T) {
 		h.add(int64(i))
 	}
 	var b bytes.Buffer
-	if err := h.write(&b, 2); err != nil {
+	if err := h.write(&b, 0, 2); err != nil {
 		t.Fatal("write failed: ", err)
 	}
 	const exp = `  1-3 |## 3

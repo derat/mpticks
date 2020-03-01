@@ -25,10 +25,10 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	numUsers := 0
-	numImportsHist := newHistogram(0, 100, 5)
-	numRoutesHist := newHistogram(0, 2500, 10)
-	numTicksHist := newHistogram(0, 5000, 10)
+	users := 0
+	importsHist := newHistogram(0, 100, 5)
+	routesHist := newHistogram(0, 2500, 10)
+	ticksHist := newHistogram(0, 5000, 10)
 
 	var countsRefs []*firestore.DocumentRef // users/<uid>/stats/counts
 
@@ -53,9 +53,9 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		numUsers++
-		numRoutesHist.add(user.NumRoutes)
-		numImportsHist.add(user.NumImports)
+		users++
+		routesHist.add(user.NumRoutes)
+		importsHist.add(user.NumImports)
 
 		countsRefs = append(countsRefs, doc.Ref.Collection("stats").Doc("counts"))
 	}
@@ -73,18 +73,20 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 			http.Error(w, fmt.Sprintf("Failed decoding %v: %v", doc.Ref.Path, err), http.StatusInternalServerError)
 			return
 		}
-		var numTicks int64
+		var tc int64
 		for _, ticks := range counts.DateTicks {
-			numTicks += ticks
+			tc += ticks
 		}
-		numTicksHist.add(numTicks)
+		ticksHist.add(tc)
 	}
 
-	fmt.Fprintf(w, "Users: %v\n", numUsers)
-	fmt.Fprintf(w, "\nImports:\n")
-	numImportsHist.write(w, 20)
-	fmt.Fprintf(w, "\nRoutes:\n")
-	numRoutesHist.write(w, 20)
-	fmt.Fprintf(w, "\nTicks:\n")
-	numTicksHist.write(w, 20)
+	writeHist := func(title string, h *histogram) {
+		fmt.Fprintf(w, "\n%s:\n", title)
+		h.write(w, 10, 20)
+	}
+
+	fmt.Fprintf(w, "Users: %v\n", users)
+	writeHist("Imports", importsHist)
+	writeHist("Routes", routesHist)
+	writeHist("Ticks", ticksHist)
 }

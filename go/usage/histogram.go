@@ -60,9 +60,7 @@ func (h *histogram) add(n int64) {
 		// To work around this, use the next smaller or larger bucket if needed.
 		// Maybe there's an easier way to do this, but I'm not seeing it...
 		i := int(float64(n-h.buckets[0].min) / h.step)
-		if n < h.buckets[i].min {
-			i--
-		} else if n > h.buckets[i].max {
+		if n > h.buckets[i].max {
 			i++
 		}
 		h.buckets[i].count++
@@ -70,8 +68,9 @@ func (h *histogram) add(n int64) {
 }
 
 // write writes a string representation of the histogram to w.
-// width specifies the width in characters of the bar used for the largest count.
-func (h *histogram) write(w io.Writer, width int) error {
+// labelWidth specifies a lower bound for the width to use for labels.
+// barWidth specifies the width of the bar used for the largest count.
+func (h *histogram) write(w io.Writer, labelWidth, barWidth int) error {
 	maxCount := 0
 	for _, b := range h.buckets {
 		if b.count > maxCount {
@@ -81,7 +80,7 @@ func (h *histogram) write(w io.Writer, width int) error {
 
 	// Figure out how much space to use for the labels on the left.
 	nw := len(strconv.FormatInt(h.buckets[len(h.buckets)-1].max+1, 10))
-	lw := 2*nw + 1
+	lw := int(math.Max(float64(2*nw+1), float64(labelWidth)))
 	fs := fmt.Sprintf("%%%ds |%%s\n", lw)
 
 	var perr error
@@ -89,7 +88,7 @@ func (h *histogram) write(w io.Writer, width int) error {
 		if perr != nil {
 			return
 		}
-		bw := int(math.Round(float64(count) / float64(maxCount) * float64(width)))
+		bw := int(math.Round(float64(count) / float64(maxCount) * float64(barWidth)))
 		bar := strings.Repeat("#", bw)
 		if len(bar) > 0 {
 			bar += " " + strconv.Itoa(count)
