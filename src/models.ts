@@ -181,7 +181,7 @@ export interface RouteSummary {
 // components of the |location| field returned by the get-routes API endpoint,
 // e.g. 'Colorado|Boulder|Flatirons|South|The Maiden'. Some characters are
 // escaped due to limitations in Firestore path components; see makeAreaId() in
-// convert.ts.
+// update.ts.
 //
 // This is used as the document ID for the corresponding AreaMap in the |areas|
 // subcollection.
@@ -239,7 +239,7 @@ export interface User {
 // counts keyed by various values.
 //
 // To add a new field:
-// - Update addTicksToCounts() in stats.ts.
+// - Update addTicksToCounts() in update.ts.
 // - Update testCounts() in testdata.ts.
 // - Increment the |countsVersion| constant in this file to force
 //   views/Stats.vue to regenerate stale documents.

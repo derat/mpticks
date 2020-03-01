@@ -98,13 +98,12 @@ import Spinner from '@/components/Spinner.vue';
 
 import app from '@/firebase';
 import { formatDateString } from '@/dateutil';
-import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
+import { areaMapRef, areaRef, routeRef } from '@/docs';
 import {
   Area,
   AreaId,
   AreaMap,
   compareTicks,
-  Counts,
   Route,
   RouteId,
   RouteSummary,
@@ -113,7 +112,7 @@ import {
   TickStyle,
   TickStyleToString,
 } from '@/models';
-import { addTicksToCounts } from '@/stats';
+import { deleteTick } from '@/update';
 
 // Compares |a| and |b| in a manner similar to String.prototype.localeCompare,
 // but performs a numeric comparison if both |a| and |b| start with digits so
@@ -456,46 +455,12 @@ export default class Ticks extends Vue {
 
   onDeleteConfirm() {
     this.deleting = true;
-    const tickId = this.deleteTickId;
-    const routeId = this.deleteRouteId;
-
-    Promise.all([
-      routeRef(routeId)
-        .get()
-        .then(snap => {
-          if (!snap.exists) throw new Error(`Can't find route ${routeId}`);
-          return snap.data() as Route;
-        }),
-      countsRef()
-        .get()
-        .then(snap => {
-          if (!snap.exists) throw new Error("Can't find stats");
-          return snap.data() as Counts;
-        }),
-    ])
-      .then(([route, counts]) => {
-        const tick = route.ticks[tickId];
-        if (!tick) throw new Error(`Can't find tick ${tickId}`);
-
-        const batch = app.firestore().batch();
-
-        // This needs to happen before |route| is passed to addTicksToCounts().
-        delete route.ticks[tickId];
-        (route.deletedTicks = route.deletedTicks || {})[tickId] = tick;
-        batch.set(routeRef(routeId), route);
-
-        addTicksToCounts(
-          counts,
-          new Map([[routeId, new Map([[tickId, tick]])]]),
-          new Map([[routeId, route]]),
-          true /* remove */
-        );
-        batch.set(countsRef(), counts);
-
-        return batch.commit();
-      })
+    const batch = app.firestore().batch();
+    deleteTick(this.deleteTickId, this.deleteRouteId, batch)
+      .then(() => batch.commit())
       .then(() => {
-        for (const item of this.items) if (item.removeTick(tickId)) break;
+        for (const item of this.items)
+          if (item.removeTick(this.deleteTickId)) break;
       })
       .catch(err => {
         this.errorMsg = `Failed to delete tick: ${err.message}`;

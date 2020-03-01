@@ -6,7 +6,7 @@
 // Data API to objects stored in Firestore.
 
 import { ApiRoute, ApiTick } from '@/api';
-import { AreaId, AreaMap, Route, RouteType, Tick, TickStyle } from '@/models';
+import { Route, RouteType, Tick, TickStyle } from '@/models';
 
 // Converts the |style| and |leadStyle| values from an ApiTick object to the
 // TickStyle enum used in a Tick object.
@@ -123,66 +123,6 @@ export function createRoute(apiRoute: ApiRoute): Route {
   // If a route's pitches are unset, Mountain Project returns an empty string.
   if (typeof apiRoute.pitches === 'number') route.pitches = apiRoute.pitches;
   return route;
-}
-
-// Generates an AreaId based on the supplied location components.
-export function makeAreaId(location: string[]): AreaId {
-  // Area IDs are used as document IDs in the 'areas' subcollection, so we
-  // percent-escape various characters to avoid running afoul of the naming
-  // rules at https://cloud.google.com/firestore/quotas.
-  let id: AreaId = location
-    // Forward slashes can't appear in Firestore path components.
-    // Pipes are used for separating components.
-    // Percent signs are used for escaping.
-    .map(l => l.replace(/[/|%]/g, c => '%' + c.charCodeAt(0).toString(16)))
-    .join('|');
-
-  // Handle more weird Firestore document-naming rules: docs can't be named '.',
-  // '..', or be matched by /__.*__/.
-  if (id == '.') {
-    id = '%2e';
-  } else if (id == '..') {
-    id = '%2e%2e';
-  } else if (id.length >= 4 && id.startsWith('__') && id.endsWith('__')) {
-    id = '%5f%5f' + id.slice(2, id.length - 2) + '%5f%5f';
-  }
-
-  return id;
-}
-
-// Recursively walks |map| in order to add an area identified by |id|.
-// |location| contains the area's location components, e.g.
-// ['Colorado', 'Boulder', 'Boulder Canyon', 'Castle Rock'].
-export function addAreaToAreaMap(id: AreaId, location: string[], map: AreaMap) {
-  const name = location[0];
-  if (!map.children) map.children = {};
-  if (!map.children[name]) map.children[name] = {};
-
-  // If we're down to the final component, we're done. Otherwise, recurse.
-  if (location.length == 1) map.children[name]!.areaId = id;
-  else addAreaToAreaMap(id, location.slice(1), map.children[name]!);
-}
-
-// Placeholder for weird/missing regions.
-export const unknownRegion = 'Unknown';
-
-// Returns a region (generally a U.S. state or a country) for the supplied
-// Mountain Project area.
-//
-// Mountain Project's area hierarchy is a U.S.-centric mess. See
-// https://www.mountainproject.com/route-guide:
-//
-// - Every U.S. state has its own top-level area.
-// - Everything else goes under an 'International' top-level area.
-// - 'International' mostly contains continents ('Africa', 'Asia', etc.) which
-//   themselves contain countries, but also includes 'Antarctica' and
-//   'Australia'.
-export function getRegion(loc: string[]): string {
-  if (!loc.length || loc[0] == 'In Progress') return unknownRegion;
-  if (loc[0] != 'International') return loc[0]; // U.S. state
-  if (loc.length < 2) return unknownRegion;
-  if (['Antarctica', 'Australia'].indexOf(loc[1]) != -1) return loc[1];
-  return loc.length >= 3 ? loc[2] : loc[1];
 }
 
 // Simplifies a YDS rock grade from Mountain Project into a '5.x' string with an

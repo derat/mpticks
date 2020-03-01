@@ -17,7 +17,6 @@ import {
 } from '@/testutil';
 import flushPromises from 'flush-promises';
 
-import { makeAreaId } from '@/convert';
 import { formatDateString } from '@/dateutil';
 import { areaMapRef, areaRef, countsRef, routeRef } from '@/docs';
 import {
@@ -30,6 +29,7 @@ import {
   TickStyleToString,
 } from '@/models';
 import { testCounts, testRoute, testRouteSummary, testTick } from '@/testdata';
+import { makeAreaId } from '@/update';
 
 import NoTicks from '@/components/NoTicks.vue';
 import Ticks, { compareNames } from './Ticks.vue';

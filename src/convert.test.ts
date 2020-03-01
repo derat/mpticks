@@ -6,13 +6,10 @@ import { ApiRoute, ApiTick } from '@/api';
 import {
   createRoute,
   createTick,
-  getRegion,
   getRouteType,
   getTickStyle,
-  makeAreaId,
   normalizeVGrade,
   normalizeYdsGrade,
-  unknownRegion,
 } from '@/convert';
 import { RouteType, TickStyle } from '@/models';
 import { testApiRoute, testApiTick, testRoute, testTick } from '@/testdata';
@@ -165,65 +162,6 @@ describe('getTickStyle', () => {
       ['', '', TickStyle.UNKNOWN],
     ] as [string, string, TickStyle][]).forEach(([style, leadStyle, exp]) => {
       expect(getTickStyle(style, leadStyle)).toEqual(exp);
-    });
-  });
-});
-
-describe('getRegion', () => {
-  it('converts area locations to regions', () => {
-    ([
-      // States should be returned.
-      [['Colorado'], 'Colorado'],
-      [['Colorado', 'Some Area'], 'Colorado'],
-      [['Colorado', 'Flatirons', 'North', 'Baby Giraffe'], 'Colorado'],
-      // Handle international areas that don't have countries under them.
-      [['International', 'Australia', 'Sydney'], 'Australia'],
-      [['International', 'Antarctica', 'Holtanna'], 'Antarctica'],
-      // Countries (or territories) should be returned otherwise.
-      [['International', 'Asia', 'Georgia', 'Chiatura'], 'Georgia'],
-      [
-        [
-          'International',
-          'North America',
-          'Puerto Rico',
-          'Nuevo Bayamón',
-          'Dante',
-        ],
-        'Puerto Rico',
-      ],
-      // If the country is missing, use the continent. I don't know whether this
-      // is expected to ever happen.
-      [['International', 'Asia'], 'Asia'],
-      [['International', 'South America'], 'South America'],
-      // Handle unexpected data.
-      [['In Progress', 'Banburries'], unknownRegion],
-      [['In Progress'], unknownRegion],
-      [['International'], unknownRegion],
-      [[], unknownRegion],
-    ] as [string[], string][]).forEach(([loc, region]) => {
-      expect(getRegion(loc)).toEqual(region);
-    });
-  });
-});
-
-describe('makeAreaId', () => {
-  it('escapes disallowed characters', () => {
-    ([
-      [['A', 'B', 'C'], 'A|B|C'],
-      [['A/%B', 'C%|D', 'E|/F'], 'A%2f%25B|C%25%7cD|E%7c%2fF'],
-      [['.'], '%2e'],
-      [['.A'], '.A'],
-      [['..'], '%2e%2e'],
-      [['..A'], '..A'],
-      [['__foo__'], '%5f%5ffoo%5f%5f'],
-      [['____'], '%5f%5f%5f%5f'],
-      [['___'], '___'],
-      [['__'], '__'],
-    ] as [string[], string][]).forEach(([location, exp]) => {
-      expect(makeAreaId(location)).toBe(exp);
-      // It's just a nice-to-have, but check that the area ID decodes to the
-      // original components joined by pipes.
-      expect(decodeURIComponent(makeAreaId(location))).toBe(location.join('|'));
     });
   });
 });

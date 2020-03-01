@@ -3,7 +3,13 @@
 // found in the LICENSE file.
 
 import { ApiRoute, ApiTick } from '@/api';
-import { getRegion } from '@/convert';
+import {
+  formatDate,
+  formatDateString,
+  getDayOfWeek,
+  parseDate,
+} from '@/dateutil';
+import { truncateLatLong } from '@/geoutil';
 import {
   Counts,
   compareTicks,
@@ -17,13 +23,7 @@ import {
   TickId,
   TickStyle,
 } from '@/models';
-import {
-  formatDate,
-  formatDateString,
-  getDayOfWeek,
-  parseDate,
-} from '@/dateutil';
-import { truncateLatLong } from '@/geoutil';
+import { getRegion } from '@/update';
 
 // Returns an ApiRoute with arbitrary but consistent (for |routeId|) data.
 export function testApiRoute(routeId: RouteId, location?: string[]): ApiRoute {

@@ -11,6 +11,13 @@ import VueRouter from 'vue-router';
 Vue.use(VueRouter);
 
 import firebase from '@/firebase';
+firebase
+  .firestore()
+  .enablePersistence({ synchronizeTabs: true })
+  .catch(err => {
+    console.log('Firestore persistence disabled:', err);
+  });
+
 import { router } from '@/router';
 import vuetify from '@/plugins/vuetify';
 import App from '@/App.vue';

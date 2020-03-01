@@ -130,13 +130,14 @@
 <script lang="ts">
 import colors from 'vuetify/lib/util/colors';
 import { Component, Vue } from 'vue-property-decorator';
+import Chart from 'chart.js';
+import loadGoogleMapsApi from 'load-google-maps-api';
+
 import Alert from '@/components/Alert.vue';
 import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
-import Chart from 'chart.js';
-import loadGoogleMapsApi from 'load-google-maps-api';
-
+import app from '@/firebase';
 import {
   ChartDataSet,
   makeMonthLabels,
@@ -151,17 +152,13 @@ import { formatDate, formatDateString, parseDate } from '@/dateutil';
 import {
   Counts,
   countsVersion,
-  newCounts,
-  Route,
   RouteId,
   RouteTypeToString,
-  Tick,
-  TickId,
   TickStyle,
   TickStyleToString,
   User,
 } from '@/models';
-import { addTicksToCounts } from '@/stats';
+import { getRouteTicks, loadAllRoutes, updateCounts } from '@/update';
 
 @Component({ components: { Alert, NoTicks, Spinner } })
 export default class Stats extends Vue {
@@ -696,32 +693,12 @@ export default class Stats extends Vue {
   // message while stats are being updated.
   rebuildCounts(): Promise<Counts> {
     this.rebuildingCounts = true;
-
-    const counts = newCounts();
-    return userRef()
-      .collection('routes')
-      .get()
-      .then(snapshot => {
-        const routeTicks = new Map<RouteId, Map<TickId, Tick>>();
-        const routes = new Map<RouteId, Route>();
-        snapshot.docs.forEach(doc => {
-          const routeId = parseInt(doc.id);
-          const route = doc.data() as Route;
-          routes.set(routeId, route);
-          routeTicks.set(
-            routeId,
-            new Map(
-              Object.entries(route.ticks).map(([tickId, tick]) => [
-                parseInt(tickId),
-                tick as Tick,
-              ])
-            )
-          );
-        });
-        addTicksToCounts(counts, routeTicks, routes);
-      })
-      .then(() => countsRef().set(counts))
-      .then(() => counts)
+    const batch = app.firestore().batch();
+    return loadAllRoutes()
+      .then(routes =>
+        updateCounts(getRouteTicks(routes), routes, true /* overwrite */, batch)
+      )
+      .then(counts => batch.commit().then(() => counts))
       .finally(() => {
         this.rebuildingCounts = false;
       });

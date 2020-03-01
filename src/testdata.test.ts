@@ -4,10 +4,10 @@
 
 import { testCounts, testRoute, testTick } from './testdata';
 
-import { getRegion } from '@/convert';
 import { getDayOfWeek, parseDate } from '@/dateutil';
 import { truncateLatLong } from '@/geoutil';
 import { countsVersion, isCleanTickStyle } from '@/models';
+import { getRegion } from '@/update';
 
 describe('testCounts', () => {
   it('correctly counts ticks', () => {

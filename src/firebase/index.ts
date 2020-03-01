@@ -16,11 +16,4 @@ const app = firebase.initializeApp({
   appId: process.env.VUE_APP_FIREBASE_APP_ID,
 });
 
-app
-  .firestore()
-  .enablePersistence({ synchronizeTabs: true })
-  .catch(err => {
-    console.log('Firestore persistence disabled:', err);
-  });
-
 export default app;

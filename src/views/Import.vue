@@ -99,36 +99,20 @@ import Alert from '@/components/Alert.vue';
 import firebase from 'firebase/app';
 import app from '@/firebase';
 
-import {
-  areaMapRef,
-  areaRef,
-  countsRef,
-  importsRef,
-  userRef,
-  routeRef,
-} from '@/docs';
+import { importsRef, userRef, routeRef } from '@/docs';
 import { getRoutes, getTicks } from '@/api';
 import {
-  Area,
-  AreaId,
-  AreaMap,
   Counts,
   importedRoutesBatchSize,
   importedTicksBatchSize,
-  newCounts,
   Route,
   RouteId,
   Tick,
   TickId,
   User,
 } from '@/models';
-import {
-  addAreaToAreaMap,
-  createTick,
-  createRoute,
-  makeAreaId,
-} from '@/convert';
-import { addTicksToCounts } from '@/stats';
+import { createTick, createRoute } from '@/convert';
+import { saveRoutesToAreas, updateCounts } from '@/update';
 
 @Component({ components: { Alert } })
 export default class Import extends Vue {
@@ -206,7 +190,13 @@ export default class Import extends Vue {
     this.getTicks(routeTicks, batch)
       .then(() => this.getRoutes(Array.from(routeTicks.keys()), routes, batch))
       .then(() => this.updateRoutes(routeTicks, routes, batch))
-      .then(() => this.updateStats(routeTicks, routes, batch))
+      .then(
+        (): Promise<void | Counts> => {
+          if (!routeTicks.size) return Promise.resolve();
+          this.log('Updating stats...');
+          return updateCounts(routeTicks, routes, false /* overwrite */, batch);
+        }
+      )
       .then(() => {
         this.log('Writing updated data to Firestore...');
         return batch.commit();
@@ -326,8 +316,8 @@ export default class Import extends Vue {
           );
         }
 
-        // Load and update Firestore area documents to list the new routes.
-        return this.saveRoutesToAreas(newRoutes, batch);
+        this.log('Updating areas...');
+        return saveRoutesToAreas(newRoutes, false /* overwrite */, batch);
       });
     });
   }
@@ -352,63 +342,6 @@ export default class Import extends Vue {
           })
       )
     ).then(ids => ids.filter(id => !!id));
-  }
-
-  // Loads areas from Firestore and adds each route to the appropriate area.
-  saveRoutesToAreas(
-    routes: Map<RouteId, Route>,
-    batch: firebase.firestore.WriteBatch
-  ): Promise<void> {
-    if (!routes.size) return Promise.resolve();
-
-    this.log('Updating areas...');
-
-    // Figure out which areas are needed.
-    const areaLocations = new Map<AreaId, string[]>();
-    for (const r of routes.values()) {
-      areaLocations.set(makeAreaId(r.location), r.location);
-    }
-
-    const areas = new Map<AreaId, Area>();
-    let areaMap: AreaMap = {};
-
-    // Load the area map from Firestore so new areas can be added to it.
-    return areaMapRef()
-      .get()
-      .then(snap => {
-        if (snap.exists) areaMap = snap.data() as AreaMap;
-      })
-      .then(() =>
-        // Try to load each area from Firestore.
-        Promise.all(
-          Array.from(areaLocations).map(([areaId, location]) =>
-            areaRef(areaId)
-              .get()
-              .then(snap => {
-                if (snap.exists) {
-                  areas.set(areaId, snap.data() as Area);
-                } else {
-                  areas.set(areaId, { routes: {} });
-                  addAreaToAreaMap(areaId, location, areaMap);
-                }
-              })
-          )
-        )
-      )
-      .then(() => {
-        // Update areas to contain route summaries.
-        routes.forEach((route: Route, routeId: RouteId) => {
-          areas.get(makeAreaId(route.location))!.routes[routeId] = {
-            name: route.name,
-            grade: route.grade,
-          };
-        });
-        // Queue up writes.
-        batch.set(areaMapRef(), areaMap);
-        areas.forEach((area: Area, areaId: AreaId) => {
-          batch.set(areaRef(areaId), area);
-        });
-      });
   }
 
   // Records the ticks in |routeTicks| to |routes| and sets the updated data in
@@ -441,32 +374,6 @@ export default class Import extends Vue {
     routes.forEach((route: Route, routeId: RouteId) => {
       batch.set(routeRef(routeId), route);
     });
-  }
-
-  // Loads, updates, and writes the stats document to include the ticks in
-  // |routeTicks|. |routes| is used to get route information; the ticks in
-  // |routeTicks| should already be incorporated.
-  updateStats(
-    routeTicks: Map<RouteId, Map<TickId, Tick>>,
-    routes: Map<RouteId, Route>,
-    batch: firebase.firestore.WriteBatch
-  ): Promise<void> {
-    if (!routeTicks.size) return Promise.resolve();
-
-    this.log('Updating stats...');
-    return countsRef()
-      .get()
-      .then(snap => {
-        const counts: Counts = newCounts();
-        if (snap.exists) {
-          // Copy over fields from Firestore while keeping unset versions.
-          const data = snap.data()!;
-          Object.assign(counts, data);
-          if (!data.hasOwnProperty('version')) counts.version = 0;
-        }
-        addTicksToCounts(counts, routeTicks, routes);
-        batch.set(countsRef(), counts);
-      });
   }
 }
 </script>

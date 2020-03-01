@@ -22,7 +22,7 @@ import {
   getTicksUrl,
   maxRoutesPerRequest,
 } from '@/api';
-import { makeAreaId } from '@/convert';
+import { parseDate, getDayOfWeek } from '@/dateutil';
 import {
   areaMapRef,
   areaRef,
@@ -31,6 +31,7 @@ import {
   userRef,
   routeRef,
 } from '@/docs';
+import { truncateLatLong } from '@/geoutil';
 import {
   AreaId,
   importedRoutesBatchSize,
@@ -50,8 +51,7 @@ import {
   testRouteSummary,
   testTick,
 } from '@/testdata';
-import { parseDate, getDayOfWeek } from '@/dateutil';
-import { truncateLatLong } from '@/geoutil';
+import { makeAreaId } from '@/update';
 
 import Import from './Import.vue';
 
