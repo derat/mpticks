@@ -97,10 +97,13 @@ corresponding names are changed.
 
 When a route is imported (which only happens the first time it's ticked),
 mpticks uses its area list to determine its location on the Ticks page. The
-route's location doesn't get updated if or when areas are renamed later.
+route's location won't be automatically updated if or when areas are renamed
+later.
 
-I sent a feature request via the MP feedback form on 2020-02-19 but didn't hear
-back from anyone.
+I sent a feature request via the MP feedback form on 2020-02-19 to update
+`get-routes` to return area IDs, but I didn't hear back from anyone. As a
+workaround, I've added a button to the Import page that can be used (sparingly)
+to reimport all route data from Mountain Project.
 
 ## Cloud Firestore data
 
@@ -154,6 +157,8 @@ names corresponding to Firebase user IDs and correspond to the `User` interface:
 *   `numImports`: Number field containing the number of successful imports.
 *   `lastImportTime`: Date field containing the start time of the last
     successful import.
+*   `numReimports`: Number field containing the number of times that route data
+    has been reimported.
 
 #### `routes` subcollection
 

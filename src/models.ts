@@ -233,6 +233,8 @@ export interface User {
   numImports: number;
   // Time of the last import.
   lastImportTime: Date;
+  // Number of times that routes have been reimported.
+  numReimports: number;
 }
 
 // The 'counts' document in the 'stats' subcollection. Contains tick and pitch

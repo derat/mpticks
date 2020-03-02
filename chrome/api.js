@@ -61,7 +61,7 @@ export function getCreds() {
 }
 
 // Fetches and returns all ticks from Mountain Project.
-// See the documented TypeScript getTicks() function in src/api.ts.
+// See the documented TypeScript getApiTicks() function in src/api.ts.
 export function getTicks(email, key, ticks = []) {
   return getUrl(
     'https://www.mountainproject.com/data/get-ticks' +
@@ -76,7 +76,7 @@ export function getTicks(email, key, ticks = []) {
 }
 
 // Fetches and returns the requested routes from Mountain Project.
-// See the documented TypeScript getRoutes() function in src/api.ts.
+// See the documented TypeScript getApiRoutes() function in src/api.ts.
 export function getRoutes(routeIds, key, routes = []) {
   if (!routeIds.length) return Promise.resolve([]);
 

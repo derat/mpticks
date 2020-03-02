@@ -27,6 +27,7 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 
 	users := 0
 	importsHist := newHistogram(0, 100, 5)
+	reimportsHist := newHistogram(0, 5, 6)
 	routesHist := newHistogram(0, 2500, 10)
 	ticksHist := newHistogram(0, 5000, 10)
 
@@ -47,6 +48,7 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 			NumRoutes      int64     `firestore:"numRoutes"`
 			NumImports     int64     `firestore:"numImports"`
 			LastImportTime time.Time `firestore:"lastImportTime"`
+			NumReimports   int64     `firestore:"numReimports"`
 		}
 		if err := doc.DataTo(&user); err != nil {
 			http.Error(w, fmt.Sprintf("Failed decoding %v: %v", doc.Ref.Path, err), http.StatusInternalServerError)
@@ -56,6 +58,7 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 		users++
 		routesHist.add(user.NumRoutes)
 		importsHist.add(user.NumImports)
+		reimportsHist.add(user.NumReimports)
 
 		countsRefs = append(countsRefs, doc.Ref.Collection("stats").Doc("counts"))
 	}
@@ -87,6 +90,7 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 
 	fmt.Fprintf(w, "Users: %v\n", users)
 	writeHist("Imports", importsHist)
+	writeHist("Reimports", reimportsHist)
 	writeHist("Routes", routesHist)
 	writeHist("Ticks", ticksHist)
 }

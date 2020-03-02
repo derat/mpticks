@@ -69,10 +69,47 @@
         <v-btn
           ref="importButton"
           color="primary"
-          :disabled="!valid || importing"
+          :disabled="!valid || importing || reimportingRoutes"
           @click="onImportClick"
           >{{ importing ? 'Importing...' : 'Import new ticks' }}</v-btn
         >
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <v-col cols="12" lg="8" class="pb-1">
+        <v-btn
+          ref="showAdvancedButton"
+          v-if="!showAdvanced"
+          @click="showAdvanced = true"
+          small
+          >Show advanced</v-btn
+        >
+        <template v-if="showAdvanced">
+          <div class="body-2">
+            <p>
+              If routes have been updated in Mountain Project since they were
+              initially imported (e.g. names, grades, or areas have been
+              changed), you can reimport them into this app. Your ticks will not
+              be modified.
+            </p>
+
+            <p class="reimport-warning">
+              Note that this eats up this app's quota and might be slow, and if
+              you do it too often Mountain Project may block your account's
+              access to their API. Please use it sparingly.
+            </p>
+          </div>
+          <v-btn
+            ref="reimportRoutesButton"
+            :disabled="!valid || importing || reimportingRoutes"
+            @click="onReimportRoutesClick"
+            small
+            >{{
+              reimportingRoutes ? 'Reimporting...' : 'Reimport routes'
+            }}</v-btn
+          >
+        </template>
       </v-col>
     </v-row>
 
@@ -93,6 +130,7 @@
 </template>
 
 <script lang="ts">
+import _ from 'lodash';
 import { Component, Vue } from 'vue-property-decorator';
 import Alert from '@/components/Alert.vue';
 
@@ -100,7 +138,7 @@ import firebase from 'firebase/app';
 import app from '@/firebase';
 
 import { importsRef, userRef, routeRef } from '@/docs';
-import { getRoutes, getTicks } from '@/api';
+import { getApiRoutes, getApiTicks } from '@/api';
 import {
   Counts,
   importedRoutesBatchSize,
@@ -112,7 +150,12 @@ import {
   User,
 } from '@/models';
 import { createTick, createRoute } from '@/convert';
-import { saveRoutesToAreas, updateCounts } from '@/update';
+import {
+  getRouteTicks,
+  loadAllRoutes,
+  saveRoutesToAreas,
+  updateCounts,
+} from '@/update';
 
 @Component({ components: { Alert } })
 export default class Import extends Vue {
@@ -126,8 +169,14 @@ export default class Import extends Vue {
   // Whether the form contains valid input.
   valid = false;
 
+  // Whether advanced options are shown.
+  showAdvanced = false;
+
   // Time at which the current import started. Null when not importing.
   importStartTime: Date | null = null;
+
+  // True if route data is being reimported.
+  reimportingRoutes = false;
 
   // Rules for input fields.
   emailRules = [(v: string) => !!v || 'Email address must be supplied'];
@@ -227,39 +276,43 @@ export default class Import extends Vue {
       .then(snap => {
         let maxTickId = snap.exists ? (snap.data() as User).maxTickId || 0 : 0;
         this.log(`Importing ticks newer than ${maxTickId}...`);
-        return getTicks(this.email, this.key, maxTickId + 1).then(apiTicks => {
-          this.log(`Got ${apiTicks.length} new tick(s).`);
-          if (!apiTicks.length) return;
+        return getApiTicks(this.email, this.key, maxTickId + 1).then(
+          apiTicks => {
+            this.log(`Got ${apiTicks.length} new tick(s).`);
+            if (!apiTicks.length) return;
 
-          for (const apiTick of apiTicks) {
-            try {
-              const routeId = apiTick.routeId;
-              if (!routeTicks.get(routeId)) {
-                routeTicks.set(routeId, new Map<TickId, Tick>());
+            for (const apiTick of apiTicks) {
+              try {
+                const routeId = apiTick.routeId;
+                if (!routeTicks.get(routeId)) {
+                  routeTicks.set(routeId, new Map<TickId, Tick>());
+                }
+                routeTicks
+                  .get(routeId)!
+                  .set(apiTick.tickId, createTick(apiTick));
+                maxTickId = Math.max(maxTickId, apiTick.tickId);
+              } catch (err) {
+                this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
               }
-              routeTicks.get(routeId)!.set(apiTick.tickId, createTick(apiTick));
-              maxTickId = Math.max(maxTickId, apiTick.tickId);
-            } catch (err) {
-              this.log(`Skipping invalid tick ${apiTick}: ${err}`, true);
+            }
+            batch.set(userRef(), { maxTickId }, { merge: true });
+
+            // Save the original data from the API "just in case".
+            for (let i = 0; i * importedTicksBatchSize < apiTicks.length; i++) {
+              batch.set(
+                importsRef().doc(
+                  `${this.importStartTime!.toISOString()}.ticks.${i}`
+                ),
+                {
+                  ticks: apiTicks.slice(
+                    i * importedTicksBatchSize,
+                    (i + 1) * importedTicksBatchSize
+                  ),
+                }
+              );
             }
           }
-          batch.set(userRef(), { maxTickId }, { merge: true });
-
-          // Save the original data from the API "just in case".
-          for (let i = 0; i * importedTicksBatchSize < apiTicks.length; i++) {
-            batch.set(
-              importsRef().doc(
-                `${this.importStartTime!.toISOString()}.ticks.${i}`
-              ),
-              {
-                ticks: apiTicks.slice(
-                  i * importedTicksBatchSize,
-                  (i + 1) * importedTicksBatchSize
-                ),
-              }
-            );
-          }
-        });
+        );
       });
   }
 
@@ -278,7 +331,7 @@ export default class Import extends Vue {
 
       // Get the missing routes from the Mountain Project API.
       this.log(`Importing ${missing.length} route(s) from Mountain Project...`);
-      return getRoutes(missing, this.key).then(apiRoutes => {
+      return getApiRoutes(missing, this.key).then(apiRoutes => {
         // Create the new routes that we got from the API.
         this.log(`Got ${apiRoutes.length} route(s).`);
         const newRoutes = new Map<RouteId, Route>();
@@ -375,6 +428,76 @@ export default class Import extends Vue {
       batch.set(routeRef(routeId), route);
     });
   }
+
+  // Loads all routes from Firebase and then fetches the corresponding routes
+  // from Mountain Project and updates metadata (but not ticks). Area and stats
+  // documents are also regenerated.
+  onReimportRoutesClick() {
+    this.reimportingRoutes = true;
+    this.errorMsg = '';
+
+    let routes = new Map<RouteId, Route>();
+    let numUpdatedRoutes = 0;
+
+    const batch = app.firestore().batch();
+    batch.set(
+      userRef(),
+      { numReimports: firebase.firestore.FieldValue.increment(1) },
+      { merge: true }
+    );
+
+    this.log('Loading routes from Firestore...');
+    loadAllRoutes()
+      .then(oldRoutes => {
+        routes = oldRoutes;
+        this.log(`Loaded ${routes.size} route(s) from Firestore.`);
+        this.log('Fetching route data from Mountain Project...');
+        return getApiRoutes(Array.from(routes.keys()), this.key);
+      })
+      .then(apiRoutes => {
+        this.log(`Fetched ${apiRoutes.length} route(s) from Mountain Project.`);
+        for (const apiRoute of apiRoutes) {
+          const routeId: RouteId = apiRoute.id;
+          const newRoute = createRoute(apiRoute);
+          const oldRoute = routes.get(routeId);
+          if (!oldRoute) continue;
+
+          newRoute.ticks = oldRoute.ticks;
+          if (typeof oldRoute.deletedTicks !== 'undefined') {
+            newRoute.deletedTicks = oldRoute.deletedTicks;
+          }
+          if (_.isEqual(newRoute, oldRoute)) continue;
+
+          routes.set(routeId, newRoute);
+          batch.set(routeRef(routeId), newRoute);
+          numUpdatedRoutes++;
+        }
+
+        this.log(`Updated ${numUpdatedRoutes} route(s).`);
+        if (!numUpdatedRoutes) return Promise.resolve();
+
+        this.log('Updating areas and regenerating stats...');
+        return Promise.all([
+          saveRoutesToAreas(routes, true, batch),
+          updateCounts(getRouteTicks(routes), routes, true, batch),
+        ])
+          .then(() => {
+            this.log('Writing updated data to Firestore...');
+            return batch.commit();
+          })
+          .then(() => {
+            this.log('Reimporting routes complete.');
+          });
+      })
+      .catch(err => {
+        const msg = `Reimporting routes failed: ${err.message}`;
+        this.errorMsg = msg;
+        this.log(msg, true);
+      })
+      .finally(() => {
+        this.reimportingRoutes = false;
+      });
+  }
 }
 </script>
 
@@ -384,5 +507,8 @@ export default class Import extends Vue {
 }
 #log-textarea {
   scroll-behavior: smooth;
+}
+.reimport-warning {
+  font-weight: bold;
 }
 </style>

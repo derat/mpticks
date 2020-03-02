@@ -8,8 +8,9 @@
 import axios from 'axios';
 
 // Exposed for unit tests.
-export const getTicksUrl = 'https://www.mountainproject.com/data/get-ticks';
-export const getRoutesUrl = 'https://www.mountainproject.com/data/get-routes';
+export const getApiTicksUrl = 'https://www.mountainproject.com/data/get-ticks';
+export const getApiRoutesUrl =
+  'https://www.mountainproject.com/data/get-routes';
 
 // A single tick returned by the get-ticks API endpoint.
 export interface ApiTick {
@@ -35,14 +36,14 @@ interface GetTicksResult {
 // Makes one or more calls to the Mountain Project get-ticks API endpoint to
 // fetch all of the ticks belonging to the specified user. |ticks| is used to
 // pass along earlier results when recursing.
-export function getTicks(
+export function getApiTicks(
   email: string,
   key: string,
   minTickId: number = 0,
   ticks: ApiTick[] = []
 ): Promise<ApiTick[]> {
   return axios
-    .get(getTicksUrl, { params: { email, key, startPos: ticks.length } })
+    .get(getApiTicksUrl, { params: { email, key, startPos: ticks.length } })
     .then(response => {
       const result = (response.data as unknown) as GetTicksResult;
       if (!result.success) throw new Error('API reported failure');
@@ -57,7 +58,7 @@ export function getTicks(
       }
 
       // Recurse to get additional ticks.
-      return getTicks(email, key, minTickId, ticks);
+      return getApiTicks(email, key, minTickId, ticks);
     })
     .catch(err => {
       throw improveError(err);
@@ -97,7 +98,7 @@ export const maxRoutesPerRequest = 200;
 // Makes one or more calls to the Mountain Project get-routes API endpoint to
 // return information about the specified routes. |routes| is used to pass along
 // earlier results when recursing.
-export function getRoutes(
+export function getApiRoutes(
   routeIds: number[],
   key: string,
   routes: ApiRoute[] = []
@@ -109,14 +110,14 @@ export function getRoutes(
     routeIds: routeIds.slice(0, maxRoutesPerRequest).join(','),
   };
   return axios
-    .get(getRoutesUrl, { params })
+    .get(getApiRoutesUrl, { params })
     .then(response => {
       const result = (response.data as unknown) as GetRoutesResult;
       if (!result.success) throw new Error('API reported failure');
 
       routes = routes.concat(result.routes as ApiRoute[]);
       if (routeIds.length <= maxRoutesPerRequest) return routes;
-      return getRoutes(routeIds.slice(maxRoutesPerRequest), key, routes);
+      return getApiRoutes(routeIds.slice(maxRoutesPerRequest), key, routes);
     })
     .catch(err => {
       throw improveError(err);

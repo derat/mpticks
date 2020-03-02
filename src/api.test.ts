@@ -8,10 +8,10 @@ import MockAdapter from 'axios-mock-adapter';
 import {
   ApiRoute,
   ApiTick,
-  getRoutes,
-  getRoutesUrl,
-  getTicks,
-  getTicksUrl,
+  getApiRoutes,
+  getApiRoutesUrl,
+  getApiTicks,
+  getApiTicksUrl,
   maxRoutesPerRequest,
 } from './api';
 
@@ -26,7 +26,7 @@ afterAll(() => {
   mockAxios.restore();
 });
 
-describe('getTicks', () => {
+describe('getApiTicks', () => {
   beforeEach(() => {
     mockAxios.reset();
   });
@@ -45,7 +45,7 @@ describe('getTicks', () => {
   // parameter. Will return |count| ticks starting with id |startId|.
   function handleGetTicks(startPos: number, startId: number, count: number) {
     mockAxios
-      .onGet(getTicksUrl, { params: { email, key, startPos } })
+      .onGet(getApiTicksUrl, { params: { email, key, startPos } })
       .replyOnce(200, {
         hardest: '',
         average: '',
@@ -56,7 +56,7 @@ describe('getTicks', () => {
 
   it('handles not receiving any ticks', done => {
     handleGetTicks(0, -1, 0);
-    getTicks(email, key).then(ticks => {
+    getApiTicks(email, key).then(ticks => {
       expect(ticks).toEqual([]);
       done();
     });
@@ -65,7 +65,7 @@ describe('getTicks', () => {
   it('returns a single set of ticks', done => {
     handleGetTicks(0, 100, 3);
     handleGetTicks(3, -1, 0);
-    getTicks(email, key).then(ticks => {
+    getApiTicks(email, key).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 3));
       done();
     });
@@ -77,7 +77,7 @@ describe('getTicks', () => {
     handleGetTicks(3, 97, 3);
     handleGetTicks(6, 94, 1);
     handleGetTicks(7, -1, 0);
-    getTicks(email, key).then(ticks => {
+    getApiTicks(email, key).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 7));
       done();
     });
@@ -86,7 +86,7 @@ describe('getTicks', () => {
   it("doesn't return already-seen ticks", done => {
     handleGetTicks(0, 100, 3);
     handleGetTicks(3, 97, 3);
-    getTicks(email, key, 97 /* minTickId */).then(ticks => {
+    getApiTicks(email, key, 97 /* minTickId */).then(ticks => {
       expect(ticks).toEqual(createTicks(100, 4));
       done();
     });
@@ -94,14 +94,14 @@ describe('getTicks', () => {
 
   it("doesn't return anything if all ticks have been seen", done => {
     handleGetTicks(0, 100, 3);
-    getTicks(email, key, 101 /* minTickId */).then(ticks => {
+    getApiTicks(email, key, 101 /* minTickId */).then(ticks => {
       expect(ticks).toEqual([]);
       done();
     });
   });
 });
 
-describe('getRoutes', () => {
+describe('getApiRoutes', () => {
   beforeEach(() => {
     mockAxios.reset();
   });
@@ -110,7 +110,7 @@ describe('getRoutes', () => {
   // parameter. Will return the requested routes.
   function handleGetRoutes(routeIds: number[]) {
     mockAxios
-      .onGet(getRoutesUrl, { params: { key, routeIds: routeIds.join(',') } })
+      .onGet(getApiRoutesUrl, { params: { key, routeIds: routeIds.join(',') } })
       .replyOnce(200, {
         routes: routeIds.map(id => testApiRoute(id)),
         success: true,
@@ -120,7 +120,7 @@ describe('getRoutes', () => {
   it('returns a single set of routes', done => {
     const ids = [123, 456, 789];
     handleGetRoutes(ids);
-    getRoutes(ids, key).then(routes => {
+    getApiRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });
@@ -129,7 +129,7 @@ describe('getRoutes', () => {
   it('uses a single request when possible', done => {
     const ids = [...Array(maxRoutesPerRequest).keys()].map(i => i + 1);
     handleGetRoutes(ids);
-    getRoutes(ids, key).then(routes => {
+    getApiRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });
@@ -141,7 +141,7 @@ describe('getRoutes', () => {
     handleGetRoutes(ids.slice(0, max));
     handleGetRoutes(ids.slice(max, 2 * max));
     handleGetRoutes(ids.slice(2 * max));
-    getRoutes(ids, key).then(routes => {
+    getApiRoutes(ids, key).then(routes => {
       expect(routes).toEqual(ids.map(id => testApiRoute(id)));
       done();
     });

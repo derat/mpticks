@@ -18,8 +18,8 @@ import flushPromises from 'flush-promises';
 import {
   ApiRoute,
   ApiTick,
-  getRoutesUrl,
-  getTicksUrl,
+  getApiRoutesUrl,
+  getApiTicksUrl,
   maxRoutesPerRequest,
 } from '@/api';
 import { parseDate, getDayOfWeek } from '@/dateutil';
@@ -101,24 +101,27 @@ describe('Import', () => {
     return wrapper.find({ ref });
   }
 
+  async function clickButton(ref: string) {
+    const button = findRef(ref);
+    expect(button.attributes('disabled')).toBeFalsy();
+    button.trigger('click');
+    await flushPromises();
+  }
+
   // Fills the form, clicks the import button, and waits for the import to
   // finish.
   async function doImport() {
     findRef('emailField').vm.$emit('input', email);
     findRef('keyField').vm.$emit('input', key);
     await flushPromises(); // validate the form
-
-    const button = findRef('importButton');
-    expect(button.attributes('disabled')).toBeFalsy();
-    button.trigger('click');
-    await flushPromises(); // do the import
+    await clickButton('importButton');
   }
 
   function handleGetTicks(ticks: ApiTick[]) {
     mockAxios
-      .onGet(getTicksUrl, { params: { email, key, startPos: 0 } })
+      .onGet(getApiTicksUrl, { params: { email, key, startPos: 0 } })
       .replyOnce(200, { hardest: '', average: '', ticks, success: true })
-      .onGet(getTicksUrl, { params: { email, key, startPos: ticks.length } })
+      .onGet(getApiTicksUrl, { params: { email, key, startPos: ticks.length } })
       .replyOnce(200, { hardest: '', average: '', ticks: [], success: true });
   }
 
@@ -127,7 +130,7 @@ describe('Import', () => {
       const routesSlice = routes.slice(i, i + maxRoutesPerRequest);
       const routeIds = routesSlice.map(r => r.id).join(',');
       mockAxios
-        .onGet(getRoutesUrl, { params: { routeIds, key } })
+        .onGet(getApiRoutesUrl, { params: { routeIds, key } })
         .replyOnce(200, { routes: routesSlice, success: true });
     }
   }
@@ -310,5 +313,57 @@ describe('Import', () => {
         );
       });
     expect(numSavedTicks).toBe(numItems);
+  });
+
+  it('reimports updated routes', async () => {
+    // Perform an initial import.
+    handleGetTicks([testApiTick(tid1, rid1)]);
+    handleGetRoutes([testApiRoute(rid1, loc)]);
+    await doImport();
+
+    // Update the route doc to contain a deleted tick.
+    const oldRoute = MockFirebase.getDoc(routeRef(rid1)) as Route;
+    oldRoute.deletedTicks = { 1000: testTick(1000, rid1) };
+    MockFirebase.setDoc(routeRef(rid1), oldRoute);
+
+    // Simulate the API returning updated data for the route.
+    const newLoc = ['C'];
+    const newAid = makeAreaId(newLoc);
+    const newApiRoute = testApiRoute(rid1, newLoc);
+    newApiRoute.name = 'Updated Name';
+    newApiRoute.rating = '5.15d';
+    handleGetRoutes([newApiRoute]);
+
+    // Trigger a reimport.
+    await clickButton('showAdvancedButton');
+    await clickButton('reimportRoutesButton');
+
+    const newRoute = testRoute(rid1, [tid1], newLoc);
+    newRoute.name = newApiRoute.name;
+    newRoute.grade = newApiRoute.rating;
+    newRoute.deletedTicks = oldRoute.deletedTicks;
+
+    // The new route should've been written to Firestore, and other docs should
+    // also be updated appropriately.
+    expect(MockFirebase.getDoc(userRef())).toEqual({
+      maxTickId: tid1,
+      numRoutes: 1,
+      numImports: 1,
+      lastImportTime: new Date(mockTime),
+      numReimports: 1,
+    });
+    expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(newRoute);
+    expect(MockFirebase.getDoc(areaRef(newAid))).toEqual({
+      routes: { [rid1]: { name: newRoute.name, grade: newRoute.grade } },
+    });
+    expect(MockFirebase.getDoc(areaMapRef())).toEqual({
+      children: { C: { areaId: newAid } },
+    });
+    expect(MockFirebase.getDoc(countsRef())).toEqual(
+      testCounts(new Map([[rid1, newRoute]]))
+    );
+
+    handleGetRoutes([newApiRoute]);
+    await clickButton('reimportRoutesButton');
   });
 });
