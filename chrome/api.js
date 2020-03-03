@@ -101,7 +101,7 @@ export function deleteTicks(tickIds, cb) {
     tickIds,
     tickId =>
       getUrl(
-        'https://www.mountainproject.com/ajax/delete-tick/' + id.toString()
+        'https://www.mountainproject.com/ajax/delete-tick/' + tickId.toString()
       ),
     cb
   );
