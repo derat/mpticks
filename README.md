@@ -37,8 +37,11 @@ Project anytime soon, hence the existence of this app.
 2.  Enter the email address that you use to log in to Mountain Project and your
     [private API key] and import your ticks.
 3.  View your ticks, look at your stats, export your ticks and routes, etc.
+4.  If you feel like it, delete your repetitive ticks from Mountain Project
+    using the [Mountain Project Tick Cleaner] Chrome extension.
 
 [private API key]: https://www.mountainproject.com/data
+[Mountain Project Tick Cleaner]: https://chrome.google.com/webstore/detail/mountain-project-tick-cle/cefbdlamhlclnhdgeffngpfacmfmkkhj
 
 ## Frequently Asked Questions
 

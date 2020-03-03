@@ -35,7 +35,13 @@
       This app provides an alternate location for storing ticks. You submit
       ticks to Mountain Project like usual using the website or mobile app and
       then import them into this app. After that, you can delete some or all of
-      your ticks from Mountain Project if you want.
+      your ticks from Mountain Project if you want. The
+      <a
+        href="https://chrome.google.com/webstore/detail/mountain-project-tick-cle/cefbdlamhlclnhdgeffngpfacmfmkkhj"
+        target="_blank"
+        >Mountain Project Tick Cleaner</a
+      >
+      Chrome extension can help with this.
     </p>
     <p v-if="!short">
       Mountain Project doesn't currently provide an interface for importing
