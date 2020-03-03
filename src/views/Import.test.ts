@@ -317,8 +317,9 @@ describe('Import', () => {
 
   it('reimports updated routes', async () => {
     // Perform an initial import.
+    const oldApiRoute = testApiRoute(rid1, loc);
     handleGetTicks([testApiTick(tid1, rid1)]);
-    handleGetRoutes([testApiRoute(rid1, loc)]);
+    handleGetRoutes([oldApiRoute]);
     await doImport();
 
     // Update the route doc to contain a deleted tick.
@@ -334,7 +335,9 @@ describe('Import', () => {
     newApiRoute.rating = '5.15d';
     handleGetRoutes([newApiRoute]);
 
-    // Trigger a reimport.
+    // Trigger a reimport after a second.
+    const importTime = new Date(mockTime);
+    mockTime += 1000;
     await clickButton('showAdvancedButton');
     await clickButton('reimportRoutesButton');
 
@@ -349,7 +352,7 @@ describe('Import', () => {
       maxTickId: tid1,
       numRoutes: 1,
       numImports: 1,
-      lastImportTime: new Date(mockTime),
+      lastImportTime: importTime,
       numReimports: 1,
     });
     expect(MockFirebase.getDoc(routeRef(rid1))).toEqual(newRoute);
@@ -363,7 +366,13 @@ describe('Import', () => {
       testCounts(new Map([[rid1, newRoute]]))
     );
 
-    handleGetRoutes([newApiRoute]);
-    await clickButton('reimportRoutesButton');
+    // The old and new route data received via the API should've been recorded.
+    const routesRegExp = new RegExp(`^${importsRef().path}/.*\.routes`);
+    const savedRoutes = MockFirebase.listDocs()
+      .filter(p => p.match(routesRegExp))
+      .sort()
+      .map(p => MockFirebase.getDoc(p)!.routes)
+      .flat();
+    expect(savedRoutes).toEqual([oldApiRoute, newApiRoute]);
   });
 });
