@@ -71,20 +71,36 @@ func (h *histogram) add(n int64) {
 // labelWidth specifies a lower bound for the width to use for labels.
 // barWidth specifies the width of the bar used for the largest count.
 func (h *histogram) write(w io.Writer, labelWidth, barWidth int) error {
+	makeLabel := func(min, max int64) string {
+		if min == max {
+			return fmt.Sprintf("%v", min)
+		}
+		return fmt.Sprintf("%v-%v", min, max)
+	}
+
+	// Find the overflow label width. (Underflow could technically be wider if
+	// it's negative, but *shrug*.)
+	ow := len(fmt.Sprintf("%v", h.buckets[len(h.buckets)-1].max+1)) + 1
+	if ow > labelWidth {
+		labelWidth = ow
+	}
+
+	// Find the maximum bar and label widths.
 	maxCount := 0
 	for _, b := range h.buckets {
 		if b.count > maxCount {
 			maxCount = b.count
 		}
+		lw := len(makeLabel(b.min, b.max))
+		if lw > labelWidth {
+			labelWidth = lw
+		}
 	}
 
-	// Figure out how much space to use for the labels on the left.
-	nw := len(strconv.FormatInt(h.buckets[len(h.buckets)-1].max+1, 10))
-	lw := int(math.Max(float64(2*nw+1), float64(labelWidth)))
-	fs := fmt.Sprintf("%%%ds |%%s\n", lw)
+	fmtStr := fmt.Sprintf("%%%ds |%%s\n", labelWidth)
 
 	var perr error
-	pl := func(label string, count int) {
+	printLine := func(label string, count int) {
 		if perr != nil {
 			return
 		}
@@ -93,17 +109,17 @@ func (h *histogram) write(w io.Writer, labelWidth, barWidth int) error {
 		if len(bar) > 0 {
 			bar += " " + strconv.Itoa(count)
 		}
-		_, perr = fmt.Fprintf(w, fs, label, bar)
+		_, perr = fmt.Fprintf(w, fmtStr, label, bar)
 	}
 
 	if h.underflow > 0 {
-		pl(fmt.Sprintf("<%v", h.buckets[0].min), h.underflow)
+		printLine(fmt.Sprintf("<%v", h.buckets[0].min), h.underflow)
 	}
 	for _, b := range h.buckets {
-		pl(fmt.Sprintf("%v-%v", b.min, b.max), b.count)
+		printLine(makeLabel(b.min, b.max), b.count)
 	}
 	if h.overflow > 0 {
-		pl(fmt.Sprintf(">%v", h.buckets[len(h.buckets)-1].max), h.overflow)
+		printLine(fmt.Sprintf(">%v", h.buckets[len(h.buckets)-1].max), h.overflow)
 	}
 
 	return perr

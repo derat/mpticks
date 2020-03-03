@@ -9,6 +9,27 @@ import (
 	"testing"
 )
 
+func TestHistogramSingle(t *testing.T) {
+	h := newHistogram(1, 4, 4)
+	for i := 0; i <= 5; i++ {
+		h.add(int64(i))
+	}
+	var b bytes.Buffer
+	if err := h.write(&b, 0, 2); err != nil {
+		t.Fatal("write failed: ", err)
+	}
+	const exp = `<1 |## 1
+ 1 |## 1
+ 2 |## 1
+ 3 |## 1
+ 4 |## 1
+>4 |## 1
+`
+	if b.String() != exp {
+		t.Errorf("write produced %q; want %q", b.String(), exp)
+	}
+}
+
 func TestHistogramEven(t *testing.T) {
 	h := newHistogram(1, 20, 10)
 	for i := 0; i <= 21; i++ {
@@ -45,9 +66,9 @@ func TestHistogramUneven(t *testing.T) {
 	if err := h.write(&b, 0, 2); err != nil {
 		t.Fatal("write failed: ", err)
 	}
-	const exp = `  1-3 |## 3
-  4-6 |## 3
- 7-10 |## 4
+	const exp = ` 1-3 |## 3
+ 4-6 |## 3
+7-10 |## 4
 `
 	if b.String() != exp {
 		t.Errorf("write produced %q; want %q", b.String(), exp)
