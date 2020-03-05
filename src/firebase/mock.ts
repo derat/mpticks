@@ -52,16 +52,31 @@ function pathID(path: string) {
 // error: "The module factory of `jest.mock()` is not allowed to reference any
 // out-of-scope variables."
 
+// Stub implementation of firebase.firestore.SnapshotMetadata.
+class MockSnapshotMetadata {
+  constructor(public fromCache: boolean, public hasPendingWrites: boolean) {}
+}
+
 // Stub implementation of firebase.firestore.DocumentSnapshot.
 class MockDocumentSnapshot {
   _id: string;
   _data: DocData | undefined;
-  constructor(id: string, data: DocData | undefined) {
+  _metadata: MockSnapshotMetadata;
+
+  constructor(
+    id: string,
+    data: DocData | undefined,
+    metadata: MockSnapshotMetadata
+  ) {
     this._id = id;
     this._data = data;
+    this._metadata = metadata;
   }
   get id() {
     return this._id;
+  }
+  get metadata() {
+    return this._metadata;
   }
   data() {
     return this._data;
@@ -79,11 +94,16 @@ class MockDocumentSnapshot {
 // Stub implementation of firebase.firestore.QuerySnapshot.
 class MockQuerySnapshot {
   _docs: MockDocumentSnapshot[];
-  constructor(docs: MockDocumentSnapshot[]) {
+  _metadata: MockSnapshotMetadata;
+  constructor(docs: MockDocumentSnapshot[], metadata: MockSnapshotMetadata) {
     this._docs = docs;
+    this._metadata = metadata;
   }
   get docs() {
     return this._docs;
+  }
+  get metadata() {
+    return this._metadata;
   }
 }
 
@@ -105,7 +125,11 @@ class MockDocumentReference {
   }
   get() {
     return Promise.resolve(
-      new MockDocumentSnapshot(this.id, MockFirebase.getDoc(this.path))
+      new MockDocumentSnapshot(
+        this.id,
+        MockFirebase.getDoc(this.path),
+        new MockSnapshotMetadata(MockFirebase.serveFromCache, false)
+      )
     );
   }
   set(data: DocData, options?: firebase.firestore.SetOptions) {
@@ -150,8 +174,13 @@ class MockCollectionReference {
           )
           .map(
             path =>
-              new MockDocumentSnapshot(pathID(path), MockFirebase.getDoc(path))
-          )
+              new MockDocumentSnapshot(
+                pathID(path),
+                MockFirebase.getDoc(path),
+                new MockSnapshotMetadata(MockFirebase.serveFromCache, false)
+              )
+          ),
+        new MockSnapshotMetadata(MockFirebase.serveFromCache, false)
       )
     );
   }
@@ -227,6 +256,9 @@ export const MockFirebase = new (class {
   // May be set by tests to inject additional logic into getDoc().
   // If null is returned, getDoc() returns the document as usual.
   getDocHook: ((path: string) => DocData | null) | null = null;
+  // If true, the |serveFromCache| field in document and query snapshots
+  // metadata will be true.
+  serveFromCache = false;
 
   // Firestore documents keyed by path.
   _docs: Record<string, DocData> = {};
