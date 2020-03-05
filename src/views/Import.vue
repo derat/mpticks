@@ -65,7 +65,7 @@
     </v-form>
 
     <v-row>
-      <v-col class="pb-1">
+      <v-col>
         <v-btn
           ref="importButton"
           color="primary"
@@ -77,7 +77,7 @@
     </v-row>
 
     <v-row>
-      <v-col cols="12" lg="8" class="pb-1">
+      <v-col cols="12" lg="8">
         <v-btn
           ref="showAdvancedButton"
           v-if="!showAdvanced"
@@ -117,10 +117,10 @@
           id="log-textarea"
           label="Log"
           :value="logMessages.join('\n')"
+          hide-details
           outlined
           readonly
           rows="8"
-          class="mb-n7"
         />
       </v-col>
     </v-row>
