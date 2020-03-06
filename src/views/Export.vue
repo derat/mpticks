@@ -4,7 +4,7 @@
 
 <template>
   <div class="mx-3">
-    <Alert :text.sync="errorMsg" />
+    <Alert ref="errorAlert" :text.sync="errorMsg" />
     <v-row>
       <v-col cols="12" lg="8" class="pb-0">
         <p>
@@ -41,7 +41,7 @@
         <v-btn
           ref="exportButton"
           color="primary"
-          :disabled="exporting"
+          :disabled="exporting || offline"
           @click="onExportClick"
           >{{ exportButtonLabel }}</v-btn
         >
@@ -51,14 +51,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import Alert from '@/components/Alert.vue';
+import NetworkWatcher from '@/mixins/NetworkWatcher.ts';
+
 import { ApiRoute, ApiTick } from '@/api';
 import { importsRef } from '@/docs';
 import { ImportedRoutes, ImportedTicks } from '@/models';
 
 @Component({ components: { Alert } })
-export default class Export extends Vue {
+export default class Export extends Mixins(NetworkWatcher) {
   exporting = false; // true while data is being exported
   errorMsg = ''; // data for alert
 
@@ -73,9 +75,15 @@ export default class Export extends Vue {
     importsRef()
       .get()
       .then(snapshot => {
+        if (snapshot.metadata.fromCache) {
+          throw new Error("Can't export cached data");
+        }
         const routes: ApiRoute[] = [];
         const ticks: ApiTick[] = [];
         snapshot.docs.forEach(doc => {
+          if (doc.metadata.fromCache) {
+            throw new Error("Can't export cached data");
+          }
           if (doc.id.indexOf('.routes.') != -1) {
             routes.push(...((doc.data() as ImportedRoutes).routes || []));
           } else if (doc.id.indexOf('.ticks.') != -1) {
@@ -93,7 +101,7 @@ export default class Export extends Vue {
         }
       })
       .catch(err => {
-        this.errorMsg = err.message;
+        this.errorMsg = `Failed to export data: ${err.message}`;
         console.error(err);
       })
       .finally(() => {

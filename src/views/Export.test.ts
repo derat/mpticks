@@ -7,11 +7,15 @@ import firebase from 'firebase/app';
 
 import Vue from 'vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 
 import flushPromises from 'flush-promises';
 
 import { testApiRoute, testApiTick } from '@/testdata';
+import {
+  newVuetifyMountOptions,
+  setUpVuetifyTesting,
+  stubConsole,
+} from '@/testutil';
 
 import Export from './Export.vue';
 
@@ -92,6 +96,22 @@ describe('Export', () => {
 
   it("skips doing anything when there's no data", async () => {
     await doExport();
+    expect(downloads.length).toBe(0);
+  });
+
+  it('refuses to export cached data', async () => {
+    MockFirebase.setDoc(`${importsPath}/1.routes.0}`, {
+      routes: [testApiRoute(1, [])],
+    });
+    MockFirebase.serveFromCache = true;
+
+    const origConsole = stubConsole();
+    await doExport();
+    console = origConsole;
+
+    expect(wrapper.find({ ref: 'errorAlert' }).text()).toContain(
+      'Failed to export data'
+    );
     expect(downloads.length).toBe(0);
   });
 });
