@@ -69,7 +69,7 @@
         <v-btn
           ref="importButton"
           color="primary"
-          :disabled="!valid || importing || reimporting"
+          :disabled="!valid || importing || reimporting || offline"
           @click="onImportClick"
           >{{ importing ? 'Importing...' : 'Import new ticks' }}</v-btn
         >
@@ -102,7 +102,7 @@
           </div>
           <v-btn
             ref="reimportRoutesButton"
-            :disabled="!valid || importing || reimporting"
+            :disabled="!valid || importing || reimporting || offline"
             @click="onReimportRoutesClick"
             small
             >{{ reimporting ? 'Reimporting...' : 'Reimport routes' }}</v-btn
@@ -129,8 +129,9 @@
 
 <script lang="ts">
 import _ from 'lodash';
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 import Alert from '@/components/Alert.vue';
+import NetworkWatcher from '@/mixins/NetworkWatcher.ts';
 
 import firebase from 'firebase/app';
 import app from '@/firebase';
@@ -156,7 +157,7 @@ import {
 } from '@/update';
 
 @Component({ components: { Alert } })
-export default class Import extends Vue {
+export default class Import extends Mixins(NetworkWatcher) {
   // Models for UI components.
   errorMsg = '';
   email = '';

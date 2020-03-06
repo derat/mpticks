@@ -31,6 +31,7 @@
                 }}</span>
                 <span class="tick-pitches">{{ item.tickPitches }}p</span>
                 <v-icon
+                  v-if="online"
                   class="tick-delete-icon"
                   :size="18"
                   @click.stop="onDeleteIconClick(item.tickId, item.routeId)"
@@ -91,8 +92,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
+import { Component, Mixins, Prop, Watch } from 'vue-property-decorator';
 import Alert from '@/components/Alert.vue';
+import NetworkWatcher from '@/mixins/NetworkWatcher.ts';
 import NoTicks from '@/components/NoTicks.vue';
 import Spinner from '@/components/Spinner.vue';
 
@@ -299,7 +301,7 @@ class AreaItem implements Item {
 }
 
 @Component({ components: { Alert, NoTicks, Spinner } })
-export default class Ticks extends Vue {
+export default class Ticks extends Mixins(NetworkWatcher) {
   // If set, the supplied route will be initially opened.
   @Prop(Number) readonly initialRouteId?: RouteId;
 
