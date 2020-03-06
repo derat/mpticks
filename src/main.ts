@@ -18,6 +18,8 @@ firebase
     console.log('Firestore persistence disabled:', err);
   });
 
+import '@/register-service-worker';
+
 import { router } from '@/router';
 import vuetify from '@/plugins/vuetify';
 import App from '@/App.vue';
