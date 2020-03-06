@@ -33,7 +33,11 @@
     </v-navigation-drawer>
 
     <v-app-bar color="primary" app>
-      <v-app-bar-nav-icon @click.stop="drawer = !drawer" color="white" />
+      <v-app-bar-nav-icon
+        @click.stop="drawer = !drawer"
+        color="white"
+        aria-label="Toggle navigation drawer"
+      />
       <v-toolbar-title class="white--text">{{
         $route.meta.title
       }}</v-toolbar-title>
