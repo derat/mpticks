@@ -14,7 +14,6 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import { mount, Wrapper } from '@vue/test-utils';
-import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 import Stats from './Stats.vue';
 import NoTicks from '@/components/NoTicks.vue';
 
@@ -32,6 +31,11 @@ import {
   TickStyleToString,
 } from '@/models';
 import { testCounts, testRoute } from '@/testdata';
+import {
+  newVuetifyMountOptions,
+  setUpVuetifyTesting,
+  stubConsole,
+} from '@/testutil';
 
 setUpVuetifyTesting();
 
@@ -294,10 +298,9 @@ describe('Stats', () => {
     await mountView();
   });
 
-  it('rebuilds stale counts doc', async () => {
+  it('rebuilds stale counts', async () => {
     const rid: RouteId = 1;
-    const loc = ['A'];
-    const route = testRoute(rid, [2], loc);
+    const route = testRoute(rid, [2], ['A']);
     MockFirebase.setDoc(routeRef(rid), route);
     MockFirebase.setDoc(userRef(), { maxTickId: 0, numRoutes: 25 });
     MockFirebase.setDoc(countsRef(), { version: countsVersion - 1 });
@@ -312,5 +315,22 @@ describe('Stats', () => {
     expect(MockFirebase.getDoc(countsRef())).toEqual(
       testCounts(new Map([[rid, route]]))
     );
+  });
+
+  it('refuses to rebuild counts using cached data', async () => {
+    MockFirebase.setDoc(routeRef(1), testRoute(1, [2], ['A']));
+    MockFirebase.setDoc(userRef(), { maxTickId: 0, numRoutes: 25 });
+    const counts = { version: countsVersion - 1 };
+    MockFirebase.setDoc(countsRef(), counts);
+
+    MockFirebase.serveFromCache = true;
+    const origConsole = stubConsole();
+    await mountView();
+    console = origConsole;
+
+    expect(wrapper.find({ ref: 'errorAlert' }).text()).toContain(
+      'Failed to load stats'
+    );
+    expect(MockFirebase.getDoc(countsRef())).toEqual(counts);
   });
 });

@@ -4,7 +4,7 @@
 
 <template>
   <div class="mx-3">
-    <Alert :text.sync="errorMsg" />
+    <Alert ref="errorAlert" :text.sync="errorMsg" />
 
     <!-- Using v-show instead of v-if so the canvas will exist when we try to
          draw into it from mounted(). -->
@@ -237,7 +237,7 @@ export default class Stats extends Vue {
     ])
       .catch(err => {
         this.errorMsg = `Failed to load stats: ${err.message}`;
-        throw err;
+        console.error(err);
       })
       .finally(() => {
         this.ready = true;

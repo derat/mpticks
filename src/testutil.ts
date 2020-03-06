@@ -62,3 +62,16 @@ export function newVuetifyMountOptions(
 export function getValue(w: Wrapper<Vue>): any {
   return (w.vm as any).value;
 }
+
+// Replaces the console object with a stub version that doesn't log anything.
+// The original console object is returned.
+export function stubConsole() {
+  const orig = console;
+  console = {
+    log: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  } as Console;
+  return orig;
+}

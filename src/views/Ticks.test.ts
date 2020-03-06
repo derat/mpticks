@@ -10,11 +10,6 @@ import 'firebase/firestore';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import { mount, Wrapper } from '@vue/test-utils';
-import {
-  getValue,
-  newVuetifyMountOptions,
-  setUpVuetifyTesting,
-} from '@/testutil';
 import flushPromises from 'flush-promises';
 
 import { formatDateString } from '@/dateutil';
@@ -29,6 +24,12 @@ import {
   TickStyleToString,
 } from '@/models';
 import { testCounts, testRoute, testRouteSummary, testTick } from '@/testdata';
+import {
+  getValue,
+  newVuetifyMountOptions,
+  setUpVuetifyTesting,
+  stubConsole,
+} from '@/testutil';
 import { makeAreaId } from '@/update';
 
 import NoTicks from '@/components/NoTicks.vue';
@@ -291,6 +292,52 @@ describe('Ticks', () => {
       testCounts(
         new Map([
           [routeId1, newRoute1],
+          [routeId2, route2],
+          [routeId3, route3],
+        ])
+      )
+    );
+  });
+
+  it('refuses to delete a tick using cached data', async () => {
+    // Show the first route's tick.
+    await mountView();
+    await toggleItem(0);
+    await toggleItem(2);
+    const expVisible = [
+      area1,
+      subArea1,
+      getRouteLabel(route1),
+      getTickLabel(tick1),
+      area2,
+    ];
+    expect(getLabels()).toEqual(expVisible);
+
+    // Try to delete the tick.
+    MockFirebase.serveFromCache = true;
+    const deleteIcon = wrapper.find('.tick-delete-icon');
+    deleteIcon.trigger('click');
+    await flushPromises();
+    const dialog = wrapper.find({ ref: 'deleteDialog' });
+    expect(getValue(dialog)).toBeTruthy();
+    wrapper.find({ ref: 'deleteConfirmButton' }).trigger('click');
+
+    const origConsole = stubConsole();
+    await flushPromises();
+    console = origConsole;
+
+    // The tick should still be displayed, and there should be an error.
+    expect(getLabels()).toEqual(expVisible);
+    expect(wrapper.find({ ref: 'errorAlert' }).text()).toContain(
+      'Failed to delete tick'
+    );
+
+    // The route and count documents should be unchanged.
+    expect(MockFirebase.getDoc(routeRef(routeId1))!).toEqual(route1);
+    expect(MockFirebase.getDoc(countsRef())!).toEqual(
+      testCounts(
+        new Map([
+          [routeId1, route1],
           [routeId2, route2],
           [routeId3, route3],
         ])

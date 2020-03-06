@@ -11,7 +11,6 @@ import MockAdapter from 'axios-mock-adapter';
 
 import Vue from 'vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import { setUpVuetifyTesting, newVuetifyMountOptions } from '@/testutil';
 
 import flushPromises from 'flush-promises';
 
@@ -51,6 +50,11 @@ import {
   testRouteSummary,
   testTick,
 } from '@/testdata';
+import {
+  newVuetifyMountOptions,
+  setUpVuetifyTesting,
+  stubConsole,
+} from '@/testutil';
 import { makeAreaId } from '@/update';
 
 import Import from './Import.vue';
@@ -374,5 +378,27 @@ describe('Import', () => {
       .map(p => MockFirebase.getDoc(p)!.routes)
       .flat();
     expect(savedRoutes).toEqual([oldApiRoute, newApiRoute]);
+  });
+
+  it('refuses to import ticks using cached data', async () => {
+    const userDoc = {
+      maxTickId: tid1,
+      numRoutes: 1,
+      numImports: 10,
+      lastImportTime: new Date(2019, 11, 15),
+    };
+    MockFirebase.setDoc(userRef(), userDoc);
+
+    MockFirebase.serveFromCache = true;
+    handleGetTicks([testApiTick(tid1, rid1)]);
+    handleGetRoutes([testApiRoute(rid1, loc)]);
+
+    const origConsole = stubConsole();
+    await doImport();
+    console = origConsole;
+
+    // An error should be displayed and the user doc shouldn't be updated.
+    expect(findRef('errorAlert').text()).toContain('Import failed');
+    expect(MockFirebase.getDoc(userRef())).toEqual(userDoc);
   });
 });

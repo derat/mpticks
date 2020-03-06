@@ -4,7 +4,7 @@
 
 <template>
   <div v-if="ready">
-    <Alert :text.sync="errorMsg" class="mx-3 mb-3" />
+    <Alert ref="errorAlert" :text.sync="errorMsg" class="mx-3 mb-3" />
 
     <!-- I'm not sure why, but v-row adds a negative margin that v-col then seems
          to cancel out with padding. All of this seems to result in the page
@@ -348,7 +348,7 @@ export default class Ticks extends Vue {
       })
       .catch(err => {
         this.errorMsg = `Failed to load ticks: ${err.message}`;
-        throw err;
+        console.error(err);
       })
       .finally(() => (this.ready = true));
   }
@@ -464,7 +464,7 @@ export default class Ticks extends Vue {
       })
       .catch(err => {
         this.errorMsg = `Failed to delete tick: ${err.message}`;
-        throw err;
+        console.error(err);
       })
       .finally(() => {
         this.deleteDialogShown = false;

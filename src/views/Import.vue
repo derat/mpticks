@@ -4,7 +4,7 @@
 
 <template>
   <div class="mx-3">
-    <Alert :text.sync="errorMsg" />
+    <Alert ref="errorAlert" :text.sync="errorMsg" />
 
     <v-row>
       <v-col cols="12" lg="8">
@@ -275,6 +275,9 @@ export default class Import extends Vue {
     return userRef()
       .get()
       .then(snap => {
+        if (snap.metadata.fromCache) {
+          throw new Error("Can't update user doc using cached data");
+        }
         let maxTickId = snap.exists ? (snap.data() as User).maxTickId || 0 : 0;
         this.log(`Importing ticks newer than ${maxTickId}...`);
         return getApiTicks(this.email, this.key, maxTickId + 1).then(
@@ -366,6 +369,9 @@ export default class Import extends Vue {
         routeRef(id)
           .get()
           .then(snap => {
+            if (snap.metadata.fromCache) {
+              throw new Error("Can't update routes while offline");
+            }
             if (!snap.exists) return id;
             routes.set(id, snap.data() as Route);
             return 0;

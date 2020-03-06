@@ -83,6 +83,9 @@ export function saveRoutesToAreas(
     : areaMapRef()
         .get()
         .then(snap => {
+          if (snap.metadata.fromCache) {
+            throw new Error("Can't update area map using cached data");
+          }
           if (snap.exists) areaMap = snap.data() as AreaMap;
         })
   ).then(() =>
@@ -93,7 +96,12 @@ export function saveRoutesToAreas(
           ? Promise.resolve(null)
           : areaRef(areaId)
               .get()
-              .then(snap => (snap.exists ? (snap.data() as Area) : null))
+              .then(snap => {
+                if (snap.metadata.fromCache) {
+                  throw new Error("Can't update areas using cached data");
+                }
+                return snap.exists ? (snap.data() as Area) : null;
+              })
         ).then(area => {
           if (area) {
             areas.set(areaId, area);
@@ -149,8 +157,14 @@ export function loadAllRoutes(): Promise<Map<RouteId, Route>> {
     .collection('routes')
     .get()
     .then(snapshot => {
+      if (snapshot.metadata.fromCache) {
+        throw new Error("Can't load all routes using cached data");
+      }
       const routes = new Map<RouteId, Route>();
       snapshot.docs.forEach(doc => {
+        if (doc.metadata.fromCache) {
+          throw new Error("Can't load all routes using cached data");
+        }
         const routeId = parseInt(doc.id);
         const route = doc.data() as Route;
         routes.set(routeId, route);
@@ -189,12 +203,18 @@ export function deleteTick(
     routeRef(routeId)
       .get()
       .then(snap => {
+        if (snap.metadata.fromCache) {
+          throw new Error("Can't update route using cached data");
+        }
         if (!snap.exists) throw new Error(`Can't find route ${routeId}`);
         return snap.data() as Route;
       }),
     countsRef()
       .get()
       .then(snap => {
+        if (snap.metadata.fromCache) {
+          throw new Error("Can't update stats using cached data");
+        }
         if (!snap.exists) throw new Error("Can't find stats");
         return snap.data() as Counts;
       }),
@@ -233,6 +253,9 @@ export function updateCounts(
     : countsRef()
         .get()
         .then(snap => {
+          if (snap.metadata.fromCache) {
+            throw new Error("Can't update stats using cached data");
+          }
           const counts = newCounts();
           if (snap.exists) {
             // Copy over fields from Firestore while keeping unset versions.
