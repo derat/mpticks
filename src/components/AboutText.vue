@@ -53,7 +53,9 @@
     </p>
     <p>
       There's
-      <a href="https://github.com/derat/mpticks#mpticks" target="_blank"
+      <a
+        href="https://github.com/derat/mpticks/blob/master/README.md#mpticks"
+        target="_blank"
         >more information</a
       >
       and source code in the
