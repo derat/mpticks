@@ -8,13 +8,15 @@ process.env.VUE_APP_GIT_COMMIT = require('child_process')
   .toString()
   .trim();
 
+const appName = process.env.VUE_APP_NAME || 'mpticks';
+
 module.exports = {
   pwa: {
-    name: 'mpticks',
+    name: appName,
     manifestPath: 'manifest.json',
     manifestOptions: {
-      name: 'mpticks',
-      short_name: 'mpticks',
+      name: appName,
+      short_name: appName,
       icons: [
         {
           src: '/maskable-512x512.png',
