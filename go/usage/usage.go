@@ -26,10 +26,11 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 	}
 
 	users := 0
-	importsHist := newHistogram(0, 100, 5)
-	reimportsHist := newHistogram(0, 5, 6)
-	routesHist := newHistogram(0, 2500, 10)
-	ticksHist := newHistogram(0, 5000, 10)
+	importsHist := newHistogram(1, 100, 5)
+	lastImportHist := newHistogram(1, 30, 6)
+	reimportsHist := newHistogram(1, 5, 5)
+	routesHist := newHistogram(1, 2500, 10)
+	ticksHist := newHistogram(1, 5000, 10)
 
 	var countsRefs []*firestore.DocumentRef // users/<uid>/stats/counts
 
@@ -59,6 +60,9 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 		routesHist.add(user.NumRoutes)
 		importsHist.add(user.NumImports)
 		reimportsHist.add(user.NumReimports)
+		if !user.LastImportTime.IsZero() {
+			lastImportHist.add(int64(time.Now().Sub(user.LastImportTime) / (24 * time.Hour)))
+		}
 
 		countsRefs = append(countsRefs, doc.Ref.Collection("stats").Doc("counts"))
 	}
@@ -89,6 +93,7 @@ func HandleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 	}
 
 	fmt.Fprintf(w, "Users: %v\n", users)
+	writeHist("Days since last import", lastImportHist)
 	writeHist("Imports", importsHist)
 	writeHist("Reimports", reimportsHist)
 	writeHist("Routes", routesHist)

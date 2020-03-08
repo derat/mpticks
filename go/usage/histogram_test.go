@@ -9,25 +9,28 @@ import (
 	"testing"
 )
 
+func checkHist(t *testing.T, h *histogram, lw, bw int, exp string) {
+	var b bytes.Buffer
+	if err := h.write(&b, lw, bw); err != nil {
+		t.Fatal("write failed: ", err)
+	}
+	if b.String() != exp {
+		t.Errorf("write produced %q; want %q", b.String(), exp)
+	}
+}
+
 func TestHistogramSingle(t *testing.T) {
 	h := newHistogram(1, 4, 4)
 	for i := 0; i <= 5; i++ {
 		h.add(int64(i))
 	}
-	var b bytes.Buffer
-	if err := h.write(&b, 0, 2); err != nil {
-		t.Fatal("write failed: ", err)
-	}
-	const exp = `<1 |## 1
+	checkHist(t, h, 0, 2, `<1 |## 1
  1 |## 1
  2 |## 1
  3 |## 1
  4 |## 1
 >4 |## 1
-`
-	if b.String() != exp {
-		t.Errorf("write produced %q; want %q", b.String(), exp)
-	}
+`)
 }
 
 func TestHistogramEven(t *testing.T) {
@@ -35,11 +38,7 @@ func TestHistogramEven(t *testing.T) {
 	for i := 0; i <= 21; i++ {
 		h.add(int64(i))
 	}
-	var b bytes.Buffer
-	if err := h.write(&b, 0, 5); err != nil {
-		t.Fatal("write failed: ", err)
-	}
-	const exp = `   <1 |### 1
+	checkHist(t, h, 0, 5, `   <1 |### 1
   1-2 |##### 2
   3-4 |##### 2
   5-6 |##### 2
@@ -51,10 +50,7 @@ func TestHistogramEven(t *testing.T) {
 17-18 |##### 2
 19-20 |##### 2
   >20 |### 1
-`
-	if b.String() != exp {
-		t.Errorf("write produced %q; want %q", b.String(), exp)
-	}
+`)
 }
 
 func TestHistogramUneven(t *testing.T) {
@@ -62,15 +58,28 @@ func TestHistogramUneven(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		h.add(int64(i))
 	}
-	var b bytes.Buffer
-	if err := h.write(&b, 0, 2); err != nil {
-		t.Fatal("write failed: ", err)
-	}
-	const exp = ` 1-3 |## 3
+	checkHist(t, h, 0, 2, ` 1-3 |## 3
  4-6 |## 3
 7-10 |## 4
-`
-	if b.String() != exp {
-		t.Errorf("write produced %q; want %q", b.String(), exp)
-	}
+`)
+}
+
+func TestHistogramOnlyUnderflow(t *testing.T) {
+	h := newHistogram(1, 3, 3)
+	h.add(0)
+	checkHist(t, h, 0, 2, `<1 |## 1
+ 1 |
+ 2 |
+ 3 |
+`)
+}
+
+func TestHistogramOnlyOverflow(t *testing.T) {
+	h := newHistogram(1, 3, 3)
+	h.add(4)
+	checkHist(t, h, 0, 2, ` 1 |
+ 2 |
+ 3 |
+>3 |## 1
+`)
 }

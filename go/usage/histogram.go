@@ -96,6 +96,12 @@ func (h *histogram) write(w io.Writer, labelWidth, barWidth int) error {
 			labelWidth = lw
 		}
 	}
+	if h.underflow > maxCount {
+		maxCount = h.underflow
+	}
+	if h.overflow > maxCount {
+		maxCount = h.overflow
+	}
 
 	fmtStr := fmt.Sprintf("%%%ds |%%s\n", labelWidth)
 
