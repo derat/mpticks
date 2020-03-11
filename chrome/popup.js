@@ -54,7 +54,7 @@ function updateTickList(routeTicks, tickIdsToDelete, routeNames) {
           }
           tickItem.appendChild(
             document.createTextNode(
-              `Tick ${tick.tickId}: ${tick.date} ${tick.style} ${tick.leadStyle}`
+              `Tick ${tick.tickId}: ${tick.date} ${tick.style} ${tick.leadStyle} ${tick.pitches}p`
             )
           );
           tickList.appendChild(tickItem);

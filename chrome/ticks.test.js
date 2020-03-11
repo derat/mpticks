@@ -15,8 +15,14 @@ describe('groupAndSortTicks', () => {
   });
 
   // Returns a tick object using the supplied data and an ascending tick ID.
-  function makeTick(style, leadStyle = '', routeId = rid, date = '2020-01-01') {
-    return { tickId: nextTickId++, routeId, date, style, leadStyle };
+  function makeTick(
+    style,
+    leadStyle = '',
+    routeId = rid,
+    date = '2020-01-01',
+    pitches = 1
+  ) {
+    return { tickId: nextTickId++, routeId, date, style, leadStyle, pitches };
   }
 
   it('favors onsights over falls', () => {
@@ -51,6 +57,13 @@ describe('groupAndSortTicks', () => {
   });
 
   it('favors lower tick IDs', () => {
+    // A tick with more pitches should be favored even if it has a worse style.
+    const t1 = makeTick('Lead', 'Onsight', rid, '2020-01-10', 1);
+    const t2 = makeTick('Follow', '', rid, '2020-02-20', 3);
+    expect(groupAndSortTicks([t1, t2])).toEqual({ [rid]: [t2, t1] });
+  });
+
+  it('favors ticks with more pitches', () => {
     const t1 = makeTick('Send', '', rid, '2020-01-10');
     const t2 = makeTick('Send', '', rid, '2020-01-10');
     const t3 = makeTick('Send', '', rid, '2020-01-10');

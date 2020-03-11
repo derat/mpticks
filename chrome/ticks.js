@@ -30,14 +30,15 @@ export function groupAndSortTicks(ticks) {
     'Fell/Hung': 5,
   };
 
-  // Returns a string to use when comparing |tick| against other ticks.
-  // Ticks are ordered by style, date, and then ID. Keys that are
+  // Returns a string to use when comparing |tick| against other ticks. Ticks
+  // are ordered by pitches, style, date, and then ID. Keys that are
   // lexicographically smaller correspond to "better" ticks.
   const makeSortKey = tick => {
+    const pitchesKey = (100 - (tick.pitches || 1)).toString().padStart(2, '0');
     const styleKey = styleValues[tick.style] || 9;
     const leadStyleKey = leadStyleValues[tick.leadStyle] || 9;
     const paddedId = tick.tickId.toString().padStart(10, '0');
-    return `${styleKey}-${leadStyleKey}-${tick.date}-${paddedId}`;
+    return `${pitchesKey}|${styleKey}|${leadStyleKey}|${tick.date}|${paddedId}`;
   };
 
   // Group ticks by route.
