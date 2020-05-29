@@ -10,6 +10,8 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@babel/core": "^7.10.1",
+    "@babel/helper-compilation-targets": "^7.10.1",
     "@mdi/font": "^4.8.95",
     "@types/chart.js": "^2.9.12",
     "@types/googlemaps": "^3.39.2",
