@@ -9,7 +9,7 @@ import (
 	"context"
 	"net/http"
 
-	"mpticks/go/usage"
+	"github.com/derat/mpticks/go/usage"
 )
 
 // Usage is the entry point into the "Usage" Cloud Function.

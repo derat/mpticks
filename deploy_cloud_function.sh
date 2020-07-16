@@ -22,4 +22,4 @@ project=$(jq -r .projects.default < ./.firebaserc)
 echo "Deploying $1 to ${project}..."
 
 gcloud --project "${project}" functions deploy "$1" \
-  --runtime go111 --trigger-http
+  --runtime go113 --trigger-http --set-env-vars "GCP_PROJECT=${project}"

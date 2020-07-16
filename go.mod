@@ -1,4 +1,4 @@
-module mpticks
+module github.com/derat/mpticks
 
 go 1.12
 
