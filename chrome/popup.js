@@ -11,7 +11,7 @@ import {
   fakeGetTicks,
   fakeDeleteTicks,
 } from './api.js';
-import { groupAndSortTicks } from './ticks.js';
+import { groupTicksByRoute, sortTicks } from './ticks.js';
 
 // Can be set to true for development.
 const useFakeApi = false;
@@ -52,9 +52,10 @@ function updateTickList(routeTicks, tickIdsToDelete, routeNames) {
           if (tickIdsToDelete.has(tick.tickId)) {
             tickItem.classList.add('delete');
           }
+          const pitches = tick.pitches ? ` ${tick.pitches}p` : '';
           tickItem.appendChild(
             document.createTextNode(
-              `Tick ${tick.tickId}: ${tick.date} ${tick.style} ${tick.leadStyle} ${tick.pitches}p`
+              `Tick ${tick.tickId}: ${tick.date} ${tick.style} ${tick.leadStyle}${pitches}`
             )
           );
           tickList.appendChild(tickItem);
@@ -94,15 +95,11 @@ function onLoadClicked() {
       return useFakeApi ? fakeGetTicks() : getTicks(email, key);
     })
     .then(ticks => {
-      routeTicks = groupAndSortTicks(ticks);
-
+      routeTicks = groupTicksByRoute(ticks);
       const routeIdsToUpdate = [];
       Object.entries(routeTicks).forEach(([routeId, ticks]) => {
-        // Preserve the first/best tick from each route's list.
-        ticks.slice(1).forEach(t => tickIdsToDelete.add(t.tickId));
         if (ticks.length > 1) routeIdsToUpdate.push(routeId);
       });
-
       button.innerText = 'Loading routes...';
       return useFakeApi
         ? fakeGetRoutes(routeIdsToUpdate)
@@ -110,7 +107,18 @@ function onLoadClicked() {
     })
     .then(routes => {
       const routeNames = {}; // keyed by route ID
-      for (const r of routes) routeNames[r.id] = r.name;
+      const routePitches = {}; // keyed by route ID
+      for (const r of routes) {
+        routeNames[r.id] = r.name;
+        routePitches[r.id] = r.pitches;
+      }
+
+      Object.entries(routeTicks).forEach(([routeId, ticks]) => {
+        // Preserve the first/best tick from each route's list.
+        sortTicks(ticks, routePitches[routeId])
+          .slice(1)
+          .forEach(t => tickIdsToDelete.add(t.tickId));
+      });
 
       updateTickList(routeTicks, tickIdsToDelete, routeNames);
       document.getElementById('screen-1').classList.add('hidden');

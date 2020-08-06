@@ -122,6 +122,7 @@ export function fakeGetTicks() {
         date: `2020-01-0${(i % 9) + 1}`,
         style: 'Lead',
         leadStyle: ['Onsight', 'Redpoint', 'Fell/Hung'][i % 3],
+        pitches: 1 + (i % 2),
       });
     }
     window.setTimeout(() => resolve(ticks), 500);
@@ -138,6 +139,7 @@ export function fakeGetRoutes(routeIds) {
           id => ({
             id,
             name: `Route #${id}`,
+            pitches: 1,
             // We don't use any other fields.
           }),
           500

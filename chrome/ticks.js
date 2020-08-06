@@ -2,10 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Groups the supplied ticks by route ID and sorts each route's ticks from best
-// to worst. |ticks| is an array of tick objects. Returns an object mapping from
-// route ID to array of tick objects.
-export function groupAndSortTicks(ticks) {
+// Groups the supplied ticks by route ID. |ticks| is an array of tick objects.
+// Returns an object mapping from route ID to array of tick objects.
+export function groupTicksByRoute(ticks) {
+  const routeTicks = {};
+  for (const tick of ticks) {
+    const routeId = tick.routeId;
+    if (!routeTicks[routeId]) routeTicks[routeId] = [];
+    routeTicks[routeId].push(tick);
+  }
+  return routeTicks;
+}
+
+// Sorts the supplied ticks from best to worst. Accepts and returns an array of
+// tick objects. |routePitches| is MP's pitch count for the route.
+export function sortTicks(ticks, routePitches) {
   // Main style and lead tick style values from best to worst for some
   // definition of "best" and "worst". makeSortKey() needs to be updated if
   // these ever exceed single digits.
@@ -34,29 +45,23 @@ export function groupAndSortTicks(ticks) {
   // are ordered by pitches, style, date, and then ID. Keys that are
   // lexicographically smaller correspond to "better" ticks.
   const makeSortKey = tick => {
-    const pitchesKey = (100 - (tick.pitches || 1)).toString().padStart(2, '0');
+    // Some users use the tick's pitch count to record multiple laps on a
+    // single-pitch route. If the API supplied a pitch count for the route, use
+    // it to cap the tick's pitch count. More details at
+    // https://github.com/derat/mpticks/issues/4.
+    let pitches = tick.pitches || 1;
+    if (routePitches && pitches > routePitches) pitches = routePitches;
+
+    const pitchesKey = (100 - pitches).toString().padStart(2, '0');
     const styleKey = styleValues[tick.style] || 9;
     const leadStyleKey = leadStyleValues[tick.leadStyle] || 9;
     const paddedId = tick.tickId.toString().padStart(10, '0');
     return `${pitchesKey}|${styleKey}|${leadStyleKey}|${tick.date}|${paddedId}`;
   };
 
-  // Group ticks by route.
-  const routeTicks = {}; // keys are route IDs, values are arrays of ticks
   const tickSortKeys = {}; // keys are tick IDs, values are strings
-  for (const tick of ticks) {
-    const routeId = tick.routeId;
-    if (!routeTicks[routeId]) routeTicks[routeId] = [];
-    routeTicks[routeId].push(tick);
-    tickSortKeys[tick.tickId] = makeSortKey(tick);
-  }
-
-  // Sort each route's ticks from best to worse.
-  Object.values(routeTicks).forEach(ticks => {
-    ticks.sort((a, b) =>
-      tickSortKeys[a.tickId].localeCompare(tickSortKeys[b.tickId])
-    );
-  });
-
-  return routeTicks;
+  for (const tick of ticks) tickSortKeys[tick.tickId] = makeSortKey(tick);
+  return ticks.sort((a, b) =>
+    tickSortKeys[a.tickId].localeCompare(tickSortKeys[b.tickId])
+  );
 }
