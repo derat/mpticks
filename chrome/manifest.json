@@ -4,9 +4,13 @@
   "version": "0.2",
   "description": "Delete repeated ticks from Mountain Project",
   "manifest_version": 2,
-  "permissions": ["*://*.mountainproject.com/*"],
+  "permissions": ["*://*.mountainproject.com/*", "storage"],
   "browser_action": {
     "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": true
   },
   "icons": {
     "48": "icon-48.png",

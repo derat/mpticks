@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mountain Project Tick Cleaner Options</title>
+    <style>
+      .row {
+        display: block;
+        margin-bottom: 12px;
+      }
+      .row.last {
+        margin-bottom: 20px;
+      }
+      .row span:first-child {
+        display: inline-block;
+        margin-right: 8px;
+        min-width: 40px;
+      }
+      input[type='input'] {
+        width: 5em;
+      }
+    </style>
+    <script src="options.js" type="module"></script>
+  </head>
+
+  <body>
+    <label class="row" for="email-input">
+      <span>Email</span>
+      <input id="email-input" type="text" />
+    </label>
+    <label class="row" for="api-key-input">
+      <span>API key</span>
+      <input id="api-key-input" type="text" />
+    </label>
+  </body>
+</html>

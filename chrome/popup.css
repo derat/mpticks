@@ -21,6 +21,14 @@ body {
   font-style: italic;
 }
 
+.input-row {
+  margin: 8px 0;
+}
+.input-row label {
+  display: inline-block;
+  width: 60px;
+}
+
 .hidden {
   display: none;
 }

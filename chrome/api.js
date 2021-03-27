@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import { emailKey, apiKeyKey } from './constants.js';
+
 // Fetches |url| and returns a promise for the string response body.
 function getUrl(url) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.onload = () => {
       if (xhr.status != 200) {
@@ -32,7 +34,7 @@ function recursivelyDeleteTicks(tickIds, deleteFunc, cb) {
   if (!tickIds.size) return Promise.resolve();
 
   const id = tickIds.values().next().value;
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     deleteFunc(id).then(() => {
       if (cb) cb(id);
       tickIds.delete(id);
@@ -51,12 +53,28 @@ function recursivelyDeleteTicks(tickIds, deleteFunc, cb) {
 // Returns a promise for a two-element array containing the signed-in user's
 // email address and API key.
 export function getCreds() {
-  return getUrl('https://www.mountainproject.com/data').then(body => {
-    const m = body.match(
-      new RegExp('<a href="/data/get-user\\?email=([^"&]+)&amp;key=([^"]+)"')
+  return new Promise((resolve) => {
+    // Check if the user set their credentials via the extension's options page.
+    chrome.storage.sync.get([emailKey, apiKeyKey], (items) =>
+      resolve(
+        items[emailKey] && items[apiKeyKey]
+          ? [items[emailKey], items[apiKeyKey]]
+          : undefined
+      )
     );
-    if (!m) throw new Error("Didn't find email/key (are you logged in to MP?)");
-    return [m[1], m[2]];
+  }).then((creds) => {
+    if (creds) return creds;
+
+    // Otherwise, try to get them from MP (although I assume this will be
+    // forever broken now, sigh).
+    return getUrl('https://www.mountainproject.com/data').then((body) => {
+      const m = body.match(
+        new RegExp('<a href="/data/get-user\\?email=([^"&]+)&amp;key=([^"]+)"')
+      );
+      if (!m)
+        throw new Error("Didn't find email/key (try setting in options page)");
+      return [m[1], m[2]];
+    });
   });
 }
 
@@ -66,7 +84,7 @@ export function getTicks(email, key, ticks = []) {
   return getUrl(
     'https://www.mountainproject.com/data/get-ticks' +
       `?email=${email}&key=${key}&startPos=${ticks.length}`
-  ).then(body => {
+  ).then((body) => {
     const result = JSON.parse(body);
     if (!result.success) throw new Error('API reported failure');
     if (!result.ticks.length) return ticks;
@@ -84,7 +102,7 @@ export function getRoutes(routeIds, key, routes = []) {
   return getUrl(
     'https://www.mountainproject.com/data/get-routes' +
       `?key=${key}&routeIds=${routeIds.slice(0, maxRoutes).join(',')}`
-  ).then(body => {
+  ).then((body) => {
     const result = JSON.parse(body);
     if (!result.success) throw new Error('API reported failure');
     routes = routes.concat(result.routes);
@@ -99,7 +117,7 @@ export function getRoutes(routeIds, key, routes = []) {
 export function deleteTicks(tickIds, cb) {
   return recursivelyDeleteTicks(
     tickIds,
-    tickId =>
+    (tickId) =>
       getUrl(
         'https://www.mountainproject.com/ajax/delete-tick/' + tickId.toString()
       ),
@@ -113,7 +131,7 @@ export function fakeGetTicks() {
   const numTicks = 120;
   const numRoutes = 17;
 
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const ticks = [];
     for (let i = 1; i <= numTicks; i++) {
       ticks.push({
@@ -132,11 +150,11 @@ export function fakeGetTicks() {
 // Fake version of getRoutes() that returns a promise that's resolved with fake
 // data for the supplied route IDs after a short delay.
 export function fakeGetRoutes(routeIds) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     window.setTimeout(() =>
       resolve(
         routeIds.map(
-          id => ({
+          (id) => ({
             id,
             name: `Route #${id}`,
             pitches: 1,
@@ -151,5 +169,5 @@ export function fakeGetRoutes(routeIds) {
 
 // Fake version of deleteTicks() that doesn't delete anything.
 export function fakeDeleteTicks(tickIds, cb) {
-  return recursivelyDeleteTicks(tickIds, tickId => Promise.resolve(), cb);
+  return recursivelyDeleteTicks(tickIds, (tickId) => Promise.resolve(), cb);
 }

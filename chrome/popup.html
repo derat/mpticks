@@ -12,42 +12,35 @@
   <body>
     <h1 class="title">Mountain Project Tick Cleaner</h1>
 
-    <p class="disclaimer">
-      This extension is unaffiliated with Mountain Project.
-    </p>
+    <p class="disclaimer">This extension is unaffiliated with Mountain Project.</p>
 
     <div id="screen-1">
       <p>
         This extension loads your ticks from
-        <a href="https://www.mountainproject.com/" target="_blank">
-          Mountain Project
-        </a>
-        and deletes all but the "best" tick for each route. "Best" is determined
-        by comparing ticks' numbers of pitches, then their styles, and then
-        their dates.
+        <a href="https://www.mountainproject.com/" target="_blank"> Mountain Project </a>
+        and deletes all but the "best" tick for each route. "Best" is determined by comparing ticks'
+        numbers of pitches, then their styles, and then their dates.
       </p>
 
       <p>
-        For example, if you led a route several times but fell (entering a style
-        of "Lead" and a lead style of "Fell/Hung") and later redpointed the
-        route ("Lead" and "Redpoint"), then the "Fell/Hung" ticks will be
-        deleted and the "Redpoint" tick preserved.
+        For example, if you led a route several times but fell (entering a style of "Lead" and a
+        lead style of "Fell/Hung") and later redpointed the route ("Lead" and "Redpoint"), then the
+        "Fell/Hung" ticks will be deleted and the "Redpoint" tick preserved.
       </p>
 
       <p>
-        If you onsighted a route ("Lead" and "Onsight") and later repeated it
-        several times ("Lead" with an empty lead style), then the ticks with an
-        empty lead style will be deleted and the "Onsight" tick preserved.
+        If you onsighted a route ("Lead" and "Onsight") and later repeated it several times ("Lead"
+        with an empty lead style), then the ticks with an empty lead style will be deleted and the
+        "Onsight" tick preserved.
       </p>
 
       <p>
-        When you click the "Load ticks" button below, this extension will use
-        the
+        When you click the "Load ticks" button below, this extension will use the
         <a href="https://www.mountainproject.com/data" target="_blank">
           Mountain Project Data API
         </a>
-        to load all of your ticks and then display them in this popup. You'll be
-        able to review the proposed changes before any ticks are deleted.
+        to load all of your ticks and then display them in this popup. You'll be able to review the
+        proposed changes before any ticks are deleted.
       </p>
 
       <!-- prettier-ignore -->
@@ -56,20 +49,32 @@
         target="_blank">this extension's GitHub page</a> for more information.
       </p>
 
+      <!-- prettier-ignore -->
+      <p>
+        <b>2021 update:</b> <a target="_blank"
+        href="https://rockandice.com/climbing-news/mountain-project-acquired-by-onx/">Mountain
+        Project got sold to onX</a>, who <a target="_blank"
+        href="https://www.mountainproject.com/forum/topic/120168991/mountain-project-data-api-deprecated">"deprecated"
+        the API</a> and started <a target="_blank"
+        href="https://www.eff.org/deeplinks/2021/03/free-climbing-rock-climbers-open-data-project-threatened-bogus-copyright-claims">filing
+        lawsuits</a>. If you already saved your API key, you should be able to enter it and your
+        email address on this extension's options page. Otherwise, I think you're out of luck.
+      </p>
+
       <button id="load-button">Load ticks</button>
     </div>
 
     <div id="screen-2" class="hidden">
       <p>
-        The crossed-out ticks in the following list will be permanently deleted
-        if you click the "Delete ticks" button at the bottom of the popup.
+        The crossed-out ticks in the following list will be permanently deleted if you click the
+        "Delete ticks" button at the bottom of the popup.
       </p>
       <div id="route-container"></div>
       <p class="delete-warning">
-        There's no way to undelete ticks, so make sure you've backed them up
-        somewhere before you click this button. You can import ticks into
-        <a href="https://mpticks.web.app/" target="_blank">mpticks</a>, or
-        export them in CSV format from your Ticks page on Mountain Project.
+        There's no way to undelete ticks, so make sure you've backed them up somewhere before you
+        click this button. You can import ticks into
+        <a href="https://mpticks.web.app/" target="_blank">mpticks</a>, or export them in CSV format
+        from your Ticks page on Mountain Project.
       </p>
       <button id="delete-button">Delete ticks</button>
       <span id="delete-status"></span>

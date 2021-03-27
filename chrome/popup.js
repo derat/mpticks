@@ -30,10 +30,10 @@ function updateTickList(routeTicks, tickIdsToDelete, routeNames) {
 
   Object.keys(routeTicks)
     .sort((a, b) => parseInt(a) - parseInt(b)) // ascending route ID
-    .forEach(routeId => {
+    .forEach((routeId) => {
       const ticks = routeTicks[routeId];
       // Skip the route if none of its ticks are being deleted.
-      if (!ticks.find(t => tickIdsToDelete.has(t.tickId))) return;
+      if (!ticks.find((t) => tickIdsToDelete.has(t.tickId))) return;
 
       const routeName = routeNames[routeId] || 'Unknown';
       const routeDiv = document.createElement('div');
@@ -47,7 +47,7 @@ function updateTickList(routeTicks, tickIdsToDelete, routeNames) {
       tickList.classList.add('tick-list');
       ticks
         .sort((a, b) => a.date.localeCompare(b.date) || a.tickId - b.tickId)
-        .forEach(tick => {
+        .forEach((tick) => {
           const tickItem = document.createElement('li');
           if (tickIdsToDelete.has(tick.tickId)) {
             tickItem.classList.add('delete');
@@ -88,13 +88,13 @@ function onLoadClicked() {
 
   button.innerText = 'Loading credentials...';
   (useFakeApi ? Promise.resolve(['', '']) : getCreds())
-    .then(creds => {
+    .then((creds) => {
       email = creds[0];
       key = creds[1];
       button.innerText = 'Loading ticks...';
       return useFakeApi ? fakeGetTicks() : getTicks(email, key);
     })
-    .then(ticks => {
+    .then((ticks) => {
       routeTicks = groupTicksByRoute(ticks);
       const routeIdsToUpdate = [];
       Object.entries(routeTicks).forEach(([routeId, ticks]) => {
@@ -105,7 +105,7 @@ function onLoadClicked() {
         ? fakeGetRoutes(routeIdsToUpdate)
         : getRoutes(routeIdsToUpdate, key);
     })
-    .then(routes => {
+    .then((routes) => {
       const routeNames = {}; // keyed by route ID
       const routePitches = {}; // keyed by route ID
       for (const r of routes) {
@@ -117,7 +117,7 @@ function onLoadClicked() {
         // Preserve the first/best tick from each route's list.
         sortTicks(ticks, routePitches[routeId])
           .slice(1)
-          .forEach(t => tickIdsToDelete.add(t.tickId));
+          .forEach((t) => tickIdsToDelete.add(t.tickId));
       });
 
       updateTickList(routeTicks, tickIdsToDelete, routeNames);
@@ -126,7 +126,7 @@ function onLoadClicked() {
         .getElementById(tickIdsToDelete.size ? 'screen-2' : 'screen-2-empty')
         .classList.remove('hidden');
     })
-    .catch(err => {
+    .catch((err) => {
       displayError(err);
       button.innerText = 'Load ticks';
       button.disabled = undefined;
@@ -146,7 +146,7 @@ function onDeleteClicked() {
   const status = document.getElementById('delete-status');
   let numDeleted = 0;
 
-  (useFakeApi ? fakeDeleteTicks : deleteTicks)(tickIdsToDelete, id => {
+  (useFakeApi ? fakeDeleteTicks : deleteTicks)(tickIdsToDelete, (id) => {
     console.log(`Deleted tick ${id}`);
     status.innerText = `Deleted ${++numDeleted} of ${deleteCount} tick(s)`;
   })
@@ -157,7 +157,7 @@ function onDeleteClicked() {
         .getElementById('deleted-count')
         .appendChild(document.createTextNode(deleteCount.toString()));
     })
-    .catch(err => {
+    .catch((err) => {
       displayError(err);
       button.innerText = 'Delete ticks';
       button.disabled = undefined;
