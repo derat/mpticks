@@ -227,7 +227,7 @@ class RouteItem implements Item {
   loadChildren(): Promise<void> {
     return routeRef(this.routeId)
       .get()
-      .then(snap => {
+      .then((snap) => {
         if (!snap.exists) return;
         const route = snap.data() as Route;
         this.children = Object.entries(route.ticks)
@@ -280,7 +280,7 @@ class AreaItem implements Item {
   loadChildren(): Promise<void> {
     return areaRef(this.areaId!)
       .get()
-      .then(snap => {
+      .then((snap) => {
         if (!snap.exists) return;
         const area = snap.data() as Area;
         this.children = (this.childAreas as Item[]).concat(
@@ -323,7 +323,7 @@ export default class Ticks extends Mixins(NetworkWatcher) {
   mounted() {
     const areasPromise = areaMapRef()
       .get()
-      .then(snap => {
+      .then((snap) => {
         if (!snap.exists) return;
         this.haveTicks = true;
         const map = snap.data() as AreaMap;
@@ -337,7 +337,7 @@ export default class Ticks extends Mixins(NetworkWatcher) {
     const routePromise = this.initialRouteId
       ? routeRef(this.initialRouteId)
           .get()
-          .then(snap => {
+          .then((snap) => {
             if (snap.exists) return (snap.data() as Route).location;
             throw new Error(`${this.initialRouteId} not found`);
           })
@@ -348,7 +348,7 @@ export default class Ticks extends Mixins(NetworkWatcher) {
       .then(([location]) => {
         if (location) this.openInitialRoute(location);
       })
-      .catch(err => {
+      .catch((err) => {
         this.errorMsg = `Failed to load ticks: ${err.message}`;
         console.error(err);
       })
@@ -363,7 +363,7 @@ export default class Ticks extends Mixins(NetworkWatcher) {
 
     // Open the area corresponding to each location component.
     let id = '';
-    this.openIds.push(...location.map(c => (id += (id ? '|' : '') + c)));
+    this.openIds.push(...location.map((c) => (id += (id ? '|' : '') + c)));
 
     // We won't be able to open the route until it's present in
     // |this.items|. Save its parent's ID here so we know when that happens.
@@ -464,7 +464,7 @@ export default class Ticks extends Mixins(NetworkWatcher) {
         for (const item of this.items)
           if (item.removeTick(this.deleteTickId)) break;
       })
-      .catch(err => {
+      .catch((err) => {
         this.errorMsg = `Failed to delete tick: ${err.message}`;
         console.error(err);
       })
@@ -530,5 +530,6 @@ export default class Ticks extends Mixins(NetworkWatcher) {
 .route-link {
   margin-left: 8px;
   opacity: 0.6;
+  text-decoration: none;
 }
 </style>
