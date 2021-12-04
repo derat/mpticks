@@ -1,7 +1,7 @@
 {
   "name": "Mountain Project Tick Cleaner",
   "short_name": "MP Tick Cleaner",
-  "version": "0.3",
+  "version": "0.4",
   "description": "Delete repeated ticks from Mountain Project",
   "manifest_version": 2,
   "permissions": ["*://*.mountainproject.com/*", "storage"],
