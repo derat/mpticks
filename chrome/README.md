@@ -15,8 +15,8 @@ deleted. "Best" is defined as follows:
     *   Lead (Flash)
     *   Lead (Redpoint)
     *   Lead (Pinkpoint)
-    *   Lead (Fell/Hung)
     *   Lead
+    *   Lead (Fell/Hung)
     *   Follow
     *   TR
     *   Attempt

@@ -59,8 +59,9 @@ describe('sortTicks', () => {
     const t1 = makeTick('Lead', 'Fell/Hung');
     const t2 = makeTick('Lead', 'Fell/Hung');
     const t3 = makeTick('Lead', 'Redpoint');
-    const t4 = makeTick('Lead', 'Fell/Hung');
-    expect(sortTicks([t1, t2, t3, t4])).toEqual([t3, t1, t2, t4]);
+    const t4 = makeTick('Lead', '');
+    const t5 = makeTick('Lead', 'Fell/Hung');
+    expect(sortTicks([t1, t2, t3, t4, t5])).toEqual([t3, t4, t1, t2, t5]);
   });
 
   it('favors earlier climbs', () => {

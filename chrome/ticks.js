@@ -38,13 +38,14 @@ export function sortTicks(ticks, routePitches) {
     Flash: 2,
     Redpoint: 3,
     Pinkpoint: 4,
-    'Fell/Hung': 5,
+    '': 5, // 'Lead' without more detail still comes before 'Fell/Hung'
+    'Fell/Hung': 6,
   };
 
   // Returns a string to use when comparing |tick| against other ticks. Ticks
   // are ordered by pitches, style, date, and then ID. Keys that are
   // lexicographically smaller correspond to "better" ticks.
-  const makeSortKey = tick => {
+  const makeSortKey = (tick) => {
     // Some users use the tick's pitch count to record multiple laps on a
     // single-pitch route. If the API supplied a pitch count for the route, use
     // it to cap the tick's pitch count. More details at
