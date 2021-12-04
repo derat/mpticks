@@ -1,6 +1,6 @@
 # mpticks
 
-[![Build Status](https://travis-ci.org/derat/mpticks.svg?branch=master)](https://travis-ci.org/derat/mpticks)
+[![Build Status](https://app.travis-ci.com/derat/mpticks.svg?branch=main)](https://app.travis-ci.com/derat/mpticks)
 
 ## Background
 
