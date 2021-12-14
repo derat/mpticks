@@ -1,6 +1,6 @@
 # mpticks
 
-[![Build Status](https://app.travis-ci.com/derat/mpticks.svg?branch=main)](https://app.travis-ci.com/derat/mpticks)
+![Build Status](https://storage.googleapis.com/derat-build-badges/90fa1254-0172-47ae-b338-223ae526ec2c.svg)
 
 ## Background
 

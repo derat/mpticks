@@ -1,0 +1,60 @@
+steps:
+  # Load a previously-saved copy of NPM's node_modules/ directory from GCS to
+  # make the 'npm install' command take a few seconds instead of several
+  # minutes. This is inspired by this blog post:
+  # https://blog.truaro.dev/improving-cloud-build-with-dependencies-cache/
+  - id: load_npm_cache
+    name: google/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo $(date -u) "Copying ${_NPM_CACHE_URL} to ${_NPM_CACHE_FILE}..."
+        gsutil cp "$_NPM_CACHE_URL" "$_NPM_CACHE_FILE" || exit 0
+        echo $(date -u) "Decompressing ${_NPM_CACHE_FILE}..."
+        tar zxf "$_NPM_CACHE_FILE" || exit 0
+        echo $(date -u) "Done restoring node_modules"
+
+  - id: npm_install
+    name: $_NPM_CONT
+    entrypoint: npm
+    args: ['--no-audit', 'install']
+
+  - id: unit_tests
+    name: $_NPM_CONT
+    entrypoint: npm
+    args: ['run', 'test:unit']
+
+  # Save the node_modules/ directory to GCS so the next build can use it.
+  - id: save_npm_cache
+    name: google/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo $(date -u) "Creating ${_NPM_CACHE_FILE}..."
+        tar zcf $_NPM_CACHE_FILE node_modules
+        echo $(date -u) "Copying ${_NPM_CACHE_FILE} to ${_NPM_CACHE_URL}..."
+        gsutil cp $_NPM_CACHE_FILE $_NPM_CACHE_URL
+        echo $(date -u) "Done saving node_modules"
+
+  - id: go_test
+    waitFor: ['-']
+    name: golang
+    entrypoint: go
+    args: ['test', '-v', './...']
+
+substitutions:
+  # Node 17 apparently made an OpenSSL change that broke Webpack with
+  # "Error: error:0308010C:digital envelope routines::unsupported":
+  # https://github.com/webpack/webpack/issues/14532
+  # Somehow this is apparently still broken in node:17 as of 20211214.
+  _NPM_CONT: node:16
+
+  # This tarball contains a cached copy of the NPM node_modules/ dir.
+  _NPM_CACHE_URL: gs://${PROJECT_ID}-cache/mpticks-test_node_modules.tgz
+  _NPM_CACHE_FILE: node_modules.tgz
+
+tags:
+  - commit-$COMMIT_SHA
+  - trigger-name-$TRIGGER_NAME
