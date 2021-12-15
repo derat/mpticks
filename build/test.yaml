@@ -57,7 +57,3 @@ substitutions:
   # This tarball contains a cached copy of the NPM node_modules/ dir.
   _NPM_CACHE_URL: gs://${PROJECT_ID}-cache/mpticks-test_node_modules.tgz
   _NPM_CACHE_FILE: node_modules.tgz
-
-tags:
-  - commit-$COMMIT_SHA
-  - trigger-name-$TRIGGER_NAME

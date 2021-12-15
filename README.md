@@ -1,6 +1,6 @@
 # mpticks
 
-![Build Status](https://storage.googleapis.com/derat-build-badges/90fa1254-0172-47ae-b338-223ae526ec2c.svg)
+[![Build Status](https://storage.googleapis.com/derat-build-badges/90fa1254-0172-47ae-b338-223ae526ec2c.svg)](https://storage.googleapis.com/derat-build-badges/90fa1254-0172-47ae-b338-223ae526ec2c.html)
 
 ## Background
 
