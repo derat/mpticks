@@ -44,6 +44,9 @@ steps:
     entrypoint: go
     args: ['test', '-v', './...']
 
+# TODO: Remove this after node_modules has been cached.
+timeout: 900s
+
 substitutions:
   # Node 17 apparently made an OpenSSL change that broke Webpack with
   # "Error: error:0308010C:digital envelope routines::unsupported":
